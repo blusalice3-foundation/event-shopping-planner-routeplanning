@@ -1,4 +1,16 @@
 import {
+  sameDay,
+  existingDayKey,
+} from "../../features/consistency/domain/context";
+import {
+  planShoppingMove,
+  shoppingItemIds,
+  shoppingExecuteIds,
+  shoppingMoveVisitBaseline,
+} from "../commands/shoppingMoveMutation";
+import type { QueueShoppingMovePatch } from "../commands/ApplicationSnapshotCommitPort";
+import type { ApplicationShoppingMove } from "../ports/PersistenceCommandPort";
+import {
   isPersistenceWriteStopReason,
   type PersistenceWriteStopReason,
 } from "../ports/PersistenceCommandPort";
@@ -84,7 +96,11 @@ import {
   collectDayMutation,
   dayMutationStores,
 } from "../../features/consistency/domain/dayMutation";
-import { measureShoppingOperation } from "../../utils/shoppingPerformance";
+import {
+  measureShoppingOperation,
+  recordAcceptedShoppingMove,
+  recordShoppingMoveUiApply,
+} from "../../utils/shoppingPerformance";
 
 export const MEMO_SAVE_DELAY_MS = 300;
 export const MEMO_SAVE_MAX_WAIT_MS = 1000;
@@ -129,6 +145,8 @@ type Batch = {
   blockedItemOperations?: ReadonlySet<string>;
   assertCurrent?: ApplicationSnapshotGuard;
   inputItemIds?: readonly string[];
+  shoppingMoves?: readonly ApplicationShoppingMove[];
+  shoppingOnly?: boolean;
 };
 function changedSnapshotStores(
   base: PersistenceSnapshot,
@@ -167,8 +185,30 @@ function planBatch(
   choices: MutationChoices = {},
 ): MutationPlan {
   batch.assertCurrent?.(latest);
+  if (batch.shoppingOnly && batch.shoppingMoves?.length === 1)
+    return planShoppingMove(latest, batch.shoppingMoves[0], choices);
   if (batch.itemContentEdits)
     return planItemContentMutation(latest, batch.itemContentEdits);
+  let shoppingReview: MutationConfirmation | undefined;
+  let moveValidation = latest;
+  for (const move of batch.shoppingMoves ?? []) {
+    const checked = planShoppingMove(moveValidation, move, choices);
+    moveValidation = checked.snapshot;
+    if (checked.confirmation)
+      shoppingReview = shoppingReview
+        ? {
+            ...shoppingReview,
+            details: [
+              ...shoppingReview.details,
+              ...checked.confirmation.details,
+            ],
+            comparison: [
+              shoppingReview.comparison,
+              checked.confirmation.comparison,
+            ],
+          }
+        : checked.confirmation;
+  }
   const projected = projectConsistencySnapshot(
     latest,
     batch.context.eventName,
@@ -236,7 +276,7 @@ function planBatch(
   );
   if (normalized.eventLists !== projected.eventLists)
     changed.eventLists = normalized.eventLists;
-  return confirmChangedFieldConflicts(
+  const result = confirmChangedFieldConflicts(
     planProjectedMutation(
       latest,
       changed,
@@ -247,6 +287,24 @@ function planBatch(
     ),
     changedFieldConflicts(batch.base, batch.draft, projected),
   );
+  if (shoppingReview)
+    return {
+      ...result,
+      confirmation: result.confirmation
+        ? {
+            ...result.confirmation,
+            details: [
+              ...result.confirmation.details,
+              ...shoppingReview.details,
+            ],
+            comparison: [
+              result.confirmation.comparison,
+              shoppingReview.comparison,
+            ],
+          }
+        : shoppingReview,
+    };
+  return result;
 }
 function acceptedBatchEdits(
   batch: Batch,
@@ -451,6 +509,7 @@ export function useApplicationSnapshot(
     () =>
       createApplicationMutationCoordinator({
         onPendingStateChanged: notifyPendingMutationState,
+        onApplyLifecycle: recordShoppingMoveUiApply,
         readCurrent: () => rawRef.current,
         readExportCurrent: readAcceptedSnapshot,
         readMutationCurrent: (snapshot, id) =>
@@ -467,6 +526,7 @@ export function useApplicationSnapshot(
         commitDaySnapshot: persistence.commitDayApplicationSnapshot,
         commitItemContentEdits: persistence.commitItemContentEdits,
         commitDayMutation: persistence.commitDayMutation,
+        commitShoppingMove: persistence.commitShoppingMove,
         createBackupFile: async (base, accepted) => {
           if (!persistence.createBackupFile) {
             if (writeStopReason.current) throw writeStopReason.current;
@@ -912,28 +972,35 @@ export function useApplicationSnapshot(
     (batch: Batch) => {
       if (batch.itemContentEdits) batch.retainOnConflict = true;
       submitted.current.push(batch);
-      const events = batch.itemContentEdits
-        ? [...new Set(batch.itemContentEdits.map((edit) => edit.eventName))]
-        : [
-            ...new Set(
-              keys.flatMap((key) => [
-                ...Object.keys(batch.base[key]),
-                ...Object.keys(batch.draft[key]),
-              ]),
-            ),
-          ].filter((name) =>
-            keys.some(
-              (key) =>
-                !jsonEqual(
-                  recordEntry(batch.base[key], name),
-                  recordEntry(batch.draft[key], name),
+      const events =
+        batch.shoppingOnly && batch.shoppingMoves?.length === 1
+          ? [batch.shoppingMoves[0].eventName]
+          : batch.itemContentEdits
+            ? [...new Set(batch.itemContentEdits.map((edit) => edit.eventName))]
+            : [
+                ...new Set(
+                  keys.flatMap((key) => [
+                    ...Object.keys(batch.base[key]),
+                    ...Object.keys(batch.draft[key]),
+                  ]),
                 ),
-            ),
-          );
+              ].filter((name) =>
+                keys.some(
+                  (key) =>
+                    !jsonEqual(
+                      recordEntry(batch.base[key], name),
+                      recordEntry(batch.draft[key], name),
+                    ),
+                ),
+              );
       return request({
         id: batch.id,
         events,
         itemContentEdits: batch.itemContentEdits,
+        shoppingMove:
+          batch.shoppingOnly && batch.shoppingMoves?.length === 1
+            ? batch.shoppingMoves[0]
+            : undefined,
         // Snapshot guards must run in the planner, including on CAS retries.
         dayMutation: batch.assertCurrent
           ? undefined
@@ -1029,6 +1096,7 @@ export function useApplicationSnapshot(
               };
             }
 
+            draft.current.shoppingOnly = false;
             Object.assign(draft.current.draft, { [key]: next });
             draft.current.itemContentEdits = collectItemContentEdits(
               draft.current.base,
@@ -1058,6 +1126,226 @@ export function useApplicationSnapshot(
         ]),
       ) as unknown as PersistedStateSetters,
     [flushDraft, rebuildPreview],
+  );
+  const queueShoppingMovePatch = useCallback<QueueShoppingMovePatch>(
+    (input) => {
+      const stopped = writeStopReason.current;
+      if (stopped) return { status: "blocked", reason: stopped.message };
+      const context = contextRef.current;
+      if (
+        input.eventName !== context.eventName ||
+        input.day !== context.day ||
+        (input.eventGeneration !== undefined &&
+          input.eventGeneration !== coordinator.generation(input.eventName))
+      )
+        return {
+          status: "blocked",
+          reason: "移動対象のイベントまたは日付が変わりました。",
+        };
+      if (retained.current.size || suspended.current.size)
+        return {
+          status: "blocked",
+          reason: "保留中の操作を再試行または取り消してください。",
+        };
+      try {
+        const latest = draft.current?.draft ?? previewRef.current;
+        const items = recordEntry(latest.eventLists, input.eventName);
+        if (!items)
+          return {
+            status: "blocked",
+            reason: "移動対象のイベントがありません。",
+          };
+        const baselineItemIds = shoppingItemIds(items);
+        const itemIds = input.eventListItems
+          ? shoppingItemIds(input.eventListItems)
+          : baselineItemIds;
+        const baselineExecuteIds = shoppingExecuteIds(
+          latest,
+          input.eventName,
+          input.day,
+        );
+        if (
+          !semanticEqual(input.baselineItemIds, baselineItemIds) ||
+          !semanticEqual(input.baselineExecuteIds, baselineExecuteIds)
+        )
+          return {
+            status: "blocked",
+            reason:
+              "移動の計算後に品目の順序が変わりました。もう一度移動してください。",
+          };
+        const requestedDays =
+          input.executeModeItems ??
+          recordEntry(latest.executeModeItems, input.eventName) ??
+          {};
+        const nextForIds = {
+          ...latest,
+          executeModeItems: {
+            ...latest.executeModeItems,
+            [input.eventName]: requestedDays,
+          },
+        };
+        const executeIds = [
+          ...shoppingExecuteIds(nextForIds, input.eventName, input.day),
+        ];
+        const command: ApplicationShoppingMove = {
+          version: 1,
+          eventName: input.eventName,
+          day: input.day,
+          sourceColumn: input.sourceColumn,
+          targetColumn: input.targetColumn,
+          requestedIds: [...input.requestedIds],
+          effectiveIds: [...input.effectiveIds],
+          hoverId: input.hoverId,
+          candidateSortMode: input.candidateSortMode,
+          baselineItemIds,
+          itemIds,
+          baselineExecuteIds,
+          executeIds,
+          baselineVisits: shoppingMoveVisitBaseline(
+            latest,
+            input.eventName,
+            input.day,
+          ),
+        };
+        // Validate and prepare every patch before touching the accepted draft.
+        const index = new Map(
+          items.map((item) => [(item as { id: string }).id, item]),
+        );
+        if (
+          index.size !== items.length ||
+          new Set(itemIds).size !== itemIds.length ||
+          itemIds.length !== items.length ||
+          itemIds.some((id) => !index.has(id)) ||
+          executeIds.some((id) => !index.has(id))
+        )
+          return { status: "blocked", reason: "移動対象が変更されています。" };
+        if (
+          Object.entries(requestedDays).some(
+            ([key, ids]) =>
+              !sameDay(key, input.day) &&
+              !semanticEqual(
+                ids,
+                recordEntry(latest.executeModeItems, input.eventName)?.[key],
+              ),
+          )
+        )
+          return {
+            status: "blocked",
+            reason: "移動対象外の日付は変更できません。",
+          };
+        const sourceIds = new Set(baselineExecuteIds);
+        const targetIds = new Set(executeIds);
+        const effectiveIds = new Set(input.effectiveIds);
+        const crossColumn = input.sourceColumn !== input.targetColumn;
+        if (
+          !input.effectiveIds.length ||
+          effectiveIds.size !== input.effectiveIds.length ||
+          targetIds.size !== executeIds.length ||
+          input.requestedIds.some((id) => !effectiveIds.has(id)) ||
+          input.effectiveIds.some(
+            (id) =>
+              !index.has(id) ||
+              !sameDay(
+                (index.get(id) as { eventDate: string }).eventDate,
+                input.day,
+              ) ||
+              sourceIds.has(id) !== (input.sourceColumn === "execute"),
+          ) ||
+          baselineItemIds.some(
+            (id) =>
+              sourceIds.has(id) !== targetIds.has(id) &&
+              (!crossColumn || !effectiveIds.has(id)),
+          ) ||
+          (crossColumn &&
+            input.effectiveIds.some(
+              (id) => targetIds.has(id) !== (input.targetColumn === "execute"),
+            ))
+        )
+          return {
+            status: "blocked",
+            reason: "移動元の品目が変更されています。",
+          };
+        const orderChanged = !semanticEqual(itemIds, baselineItemIds);
+        const executeChanged = !semanticEqual(executeIds, baselineExecuteIds);
+        if (!orderChanged && !executeChanged)
+          return crossColumn
+            ? { status: "blocked", reason: "列間の移動対象がありません。" }
+            : { status: "noop", reason: "same-order" };
+        const latestDays =
+          recordEntry(latest.executeModeItems, input.eventName) ?? {};
+        const dayKey = existingDayKey(latestDays, input.day) ?? input.day;
+        const next: PersistenceSnapshot = {
+          ...latest,
+          ...(orderChanged
+            ? {
+                eventLists: {
+                  ...latest.eventLists,
+                  [input.eventName]: itemIds.map((id) => index.get(id)!),
+                },
+              }
+            : {}),
+          ...(executeChanged
+            ? {
+                executeModeItems: {
+                  ...latest.executeModeItems,
+                  [input.eventName]: { ...latestDays, [dayKey]: executeIds },
+                },
+              }
+            : {}),
+        };
+        // Keep content edits on their original accepted/retry path before a structural proposal.
+        const boundary =
+          draft.current &&
+          (draft.current.itemContentEdits ||
+            draft.current.context.eventName !== input.eventName ||
+            draft.current.context.day !== input.day);
+        const previousBatch = boundary ? null : draft.current;
+        const id = previousBatch?.id ?? `application:${sequence.current + 1}`;
+        const shoppingMoves = [
+          ...(previousBatch?.shoppingMoves ?? []),
+          command,
+        ];
+        const batch: Batch = previousBatch
+          ? {
+              ...previousBatch,
+              draft: next,
+              shoppingMoves,
+              shoppingOnly: false,
+              itemContentEdits: collectItemContentEdits(
+                previousBatch.base,
+                next,
+              ),
+            }
+          : {
+              id,
+              context: { ...context },
+              base: latest,
+              draft: next,
+              retryOnFailure: true,
+              shoppingMoves,
+              shoppingOnly: true,
+            };
+        const moveId = `${id}:move:${shoppingMoves.length}`;
+        // Preparation can throw without changing the existing accepted draft.
+        queueMicrotask(flushDraft);
+        if (boundary) flushDraft();
+        if (!previousBatch) sequence.current++;
+        draft.current = batch;
+        previewRef.current = next;
+        previewInputs.current = { raw: rawRef.current, ...context };
+        recordAcceptedShoppingMove(id, moveId);
+        return { status: "accepted", operationId: id, moveId };
+      } catch (error) {
+        return {
+          status: "blocked",
+          reason:
+            error instanceof Error
+              ? error.message
+              : "移動を受け付けられませんでした。",
+        };
+      }
+    },
+    [coordinator, flushDraft],
   );
   const updateItemFields = useCallback(
     (
@@ -1163,6 +1451,7 @@ export function useApplicationSnapshot(
           ...inputs.map((input) => input.itemId),
         ]),
       ];
+      draft.current.shoppingOnly = false;
       draft.current.draft = next;
       draft.current.itemContentEdits = mergedEdits;
       previewRef.current = next;
@@ -1454,6 +1743,7 @@ export function useApplicationSnapshot(
     handlers,
     request,
     commitPatch,
+    queueShoppingMovePatch,
     coordinator,
     stopWrites,
     getWriteStopReason: () => writeStopReason.current,

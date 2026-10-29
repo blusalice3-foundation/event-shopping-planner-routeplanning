@@ -1,5 +1,39 @@
 # Performance evidence contract
 
+## 2026-10-28の現行基準：対象3群160ms／160ms
+
+ユーザー指定により `range`／`drag`／`transfer` は中央値160.0ms以下・95%点160.0ms以下とし、識別子 `dnd-selection-rendering-160-160-2026-10-28`、基準日2026-10-28を用いる。shopping65／100msと基準日、`performance-samples-2026-10-26`、PR2／completion10、全144条件・終了点・fixture・保存整合性・retry0は維持する。
+
+正常500品目touch同列移動の中央値+1.95ms・95%点+4.90msは受容・追加修正対象外と記録し、解消済みへ変更しない。元150msのrun・raw・criteria ID・当初合否は不変で、新160msの再判定には元source／run・旧基準と新基準・新policy sourceを別記録する。旧基準の不合格・欠測・機能失敗を成功へ変換しない。その他の相対差の包括受容とも扱わない。
+
+## 買い物・D&D計測器v4（2026-10-27）
+
+`shopping-rendering-v4` は、前方向の複数・範囲移動の期待順序とDOM応答終了条件の不足を補正した計測器である。v4導入時は2026-10-26の時間基準等を維持した。その後、対象3群の時間上限だけを上記2026-10-28の160ms方針へ変更し、回数、対象144ケース、fixtureの値・件数・負荷条件、ジェスチャー、各終了点、保存の原子性・整合性、retry 0は維持する。
+
+前方向（候補→実行）の移動では、移動前の全品目順・実行順・移動対象の凍結順・訪問単位・anchorから、保存後の完全な期待実行順と表示順を独立に作る。移動後の実配置や参照画像を期待値の根拠にしない。前方向の折り畳みヘッダーへのdropは参照訪問の後ろという既存動作を保持する。全品目の保存順、実行順、論理DOM順、mount済みの移動対象順、実フレームの可視ID順を期待値と照合する。共通検証器でも入力前の記録から期待順を再計算し、期待値と実測値の両方を書き換えた不正な証拠を拒否する。逆方向（実行→候補）は既存の候補順・保存・表示の検証を維持する。
+
+DOM応答では、入力前に固定した必須移動先IDすべてについて、各カードとチェックボックスの存在、移動対象カードのDOM順がそろうことを要求する。主対象だけの出現では終了しない。既存の画面外統合シナリオの除外は、入力前に確認した対象IDと理由を明示し、共通検証器で根拠を照合した場合に限る。計測中の照合は移動対象に限定し、全DOM走査・layout取得や全品目のmountを追加しない。
+
+v3とv4は終了条件の意味が異なるため、旧v3のrawをv4の正式受入へ付け替えない。現行の変更前後比較は、同じv4・fixture・completion profile・環境で新規採取したrunを使う。過去110→150msの再判定契約だけは固定した旧v3ソースと比較器で検証し、現行比較器はv3の記録やv3／v4の混在を受理しない。旧raw・元artifact・当初合否は保持する。
+
+2026-10-27の追加修正 `7fd1c0c596e9eeafc186866afb655ebedf670df9` は、採取後に観測不能証拠を読むオフライン検証器とそのテストだけを変更する。v4で実際に出力された13項目について、入力前状態・source hit・相関ID・必要カード・独立した期待順序と結び付けて検証する。測定処理・終了点・fixture・元rawは変更しない。測定時のrun ID・ソース・instrument hashをそのまま保持し、読み直しには検証器のコミットとファイルhashを別記録として付ける。観測不能のraw配列と中央値・95%点は欠測のままとし、失敗したフレームへ時間やframeVerifiedを作らない。
+
+全条件の受入は単一の独立runにそろった証拠から判定する。途中失敗したrunを、後続runの成功サンプルで補充しない。独立した確認runを行った場合も、初回の失敗・診断・確認runを分けて記録し、未解明の原因を解消済みに変更しない。
+
+2026-10-28確認：製品ソース3e6cece・同じv4／fixture／completion10の独立した通常runは全144ケース・576指標が成立した。オフラインconsumer7fd1c0cの比較結果は、変更前4frameの真正未観測と旧機能失敗によりincompleteを維持する。絶対基準の通過と相対性能の解消を分け、正常操作で繰り返し残る増加を通過へ読み替えない。実行根拠・原失敗の保全・sourceの対応は[レビュー修正記録](dnd-selection-rendering-review-remediation-20261027.md)を参照する。
+
+新160msの読み取り専用再判定は、確定方針source `b9cea9f` に結び付けて1回完了した。実測source3eの変更後主530指標は全通過し、保存46指標は別扱い。元150msのrun・raw・当初合否、変更前の機能失敗・真正未観測、全277相対増加行を保持し、受容注記は指定の同列500touch responseだけとした。[別再判定の最終記録](D:/esp-fix-validation-20261027/criteria-160-actual-reassessment-20261027T174731976Z-1d69efc8/final-handoff.json)。
+
+## 買い物ブラウザ性能の測定回数（2026-10-26）
+
+`run-shopping-browser-evidence.mjs` が実行する4群は、PR確認 `pr` が各操作・指標2回、実装完了判定 `completion` が各操作・指標10回である。`ESP_PERFORMANCE_PROFILE` またはrunnerの `--profile` で選び、指定なしは `completion` とする。PR2回の `passed` は実装完了へ流用せず、完了の前後比較は同じ `completion` profileで採取する。
+
+必須条件shopping16（150／500品目・各6操作）・range20・drag8・transfer100、時間基準shopping65／100ms・対象3群160／160ms（2026-10-28改訂、旧150msは履歴）、全操作、fixture、ウォームアップ、入力・DOM・実フレーム・次操作の終了点、保存・再読込・整合性検証、retry 0は維持する。通常一括実行は `npm run test:browser:pr`／`npm run test:browser:completion`。`.github/workflows/quality.yml` はPR eventで `pr`、非PRで `completion` を指定する。
+
+runとartifactには `samplingPolicyId: "performance-samples-2026-10-26"` と `samplingProfile`（`id`、`sampleCount`、`policyDate`、`completionEligible`）を保存し、時間基準のcriteria IDとは分けて識別する。異なるprofileを合算したり、過去20回のrawを切り詰めたりしない。旧raw・当初合否・元artifactと中断runは履歴として保持し、新回数のrunは独立して保存する。詳細は[現行の性能基準](dnd-selection-rendering-performance-criteria-20261024.md)と[AGENTS.md](../AGENTS.md)を参照する。
+
+以下のcanonical physical own-gateは別のscenario・authorityを持つ既存契約である。今回の買い物4群の回数変更を、その30 samples契約や `.github/workflows/performance-evidence.yml` へ広げない。
+
 ## 状態
 
 `config/ui-scenarios.json` と `config/performance-budgets.json` は、Phase 0 の5シナリオに

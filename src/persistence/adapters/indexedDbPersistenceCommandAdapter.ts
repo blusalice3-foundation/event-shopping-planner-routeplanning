@@ -46,6 +46,7 @@ export type IndexedDbPersistenceCommandDelegate = Pick<
 > & {
   commitItemContentEdits?: PersistenceCommandPort["commitItemContentEdits"];
   commitDayMutation?: PersistenceCommandPort["commitDayMutation"];
+  commitShoppingMove?: PersistenceCommandPort["commitShoppingMove"];
   readDayApplicationSnapshot?: PersistenceCommandPort["readDayApplicationSnapshot"];
   commitDayApplicationSnapshot?: PersistenceCommandPort["commitDayApplicationSnapshot"];
   adoptRecoveryCandidate(
@@ -147,6 +148,19 @@ export function createIndexedDbPersistenceCommandAdapter(
       ? {
           commitItemContentEdits: async (...args) => {
             const result = await delegate.commitItemContentEdits!(...args);
+            if (result.status === "committed") observed = result.read.snapshot;
+            return result;
+          },
+        }
+      : {}),
+    ...(delegate.commitShoppingMove
+      ? {
+          commitShoppingMove: async (
+            ...args: Parameters<
+              NonNullable<PersistenceCommandPort["commitShoppingMove"]>
+            >
+          ) => {
+            const result = await delegate.commitShoppingMove!(...args);
             if (result.status === "committed") observed = result.read.snapshot;
             return result;
           },
@@ -271,6 +285,7 @@ export function createIndexedDbPersistenceCommandAdapter(
     "commitApplicationSnapshotAtomically",
     "commitDayApplicationSnapshot",
     "commitDayMutation",
+    "commitShoppingMove",
     "commitItemContentEdits",
     "restoreAppDataAtomically",
     "deleteEventAtomically",

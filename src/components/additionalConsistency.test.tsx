@@ -185,6 +185,11 @@ it("new import must not announce completion or clear its URL before persistence 
       openDuplicateEvent: vi.fn(),
       clearRangeSelection: vi.fn(),
       clearSelection: vi.fn(),
+      removeSelectedItemIds: vi.fn(),
+      queueShoppingMovePatch: vi.fn(() => ({
+        status: "blocked" as const,
+        reason: "unused",
+      })),
       setSortState: vi.fn(),
       setBlockSortDirection: vi.fn(),
       setCandidateNumberSortDirection: vi.fn(),

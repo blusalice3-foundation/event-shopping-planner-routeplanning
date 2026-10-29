@@ -395,6 +395,8 @@ Excelの「データ」→「データの入力規則」で、ラベルセルと
 
 実行列だけを表示し、会場で購入結果を記録するモードです。
 
+実行モードでは、上下ボタンやドラッグ操作による並べ替えはできません。巡回順を変更する場合は編集モードへ切り替えてください。
+
 1. 編集モードで当日の実行列を準備し、「🏃‍♂️ 実行」を開きます。
 2. 巡回順に品目を確認し、各カードの購入状態ボタンで「購入済」「売切」「欠席」「後回し」「遅参」「限数」などへ更新します。価格、予定数量、限数時の実購入数もカードまたは詳細編集から入力できます。
 3. 既定の「スペース別」表示で、同じスペースの品目をまとめて扱います。展開したスペースの「全購入」「全売切」「全欠席」「全後回」「全遅参」「全限数」で、スペース内を一括変更できます。同じ一括ボタンをもう一度押すと、その対象を未購入へ戻します。限数以外への一括変更では、すでに限数となっている品目は変更されません。
@@ -657,6 +659,37 @@ npm run dev
 cleanなworktreeでpreviewを停止した後、`npm run test:release-a-rollback`を実行すると、検証済みRelease A成果物から既知の互換baselineへ戻し、同じorigin・同じChrome profileのまま再びRelease Aへ進める往復演習を自動実行します。実際のService Worker `controllerchange`とソースhash、checkpoint/journal/archive読取、rollback版UIからの通常autosaveとreload保持、旧原本hash不変・削除呼出し0件を確認し、一時source・profile・processを終了時に削除します。
 
 旧localStorage原本の物理cleanupはRelease Aでは強制OFFで、通常起動・migration・autosave・復旧UIから実行されません。Release B用の静的gateは`VITE_PERSISTENCE_RELEASE_CHANNEL=release-b`と`VITE_PERSISTENCE_LEGACY_CLEANUP=true`の二重一致が必要ですが、これだけでは実行されません。runtime kill switch、対応clientとService Workerのversion証明、全clientのquiescence、およびWeb Lockの排他を同時に証明できない場合はfail closedで延期します。production proof providerとoperator UIが未構成のため、Release Bは運用禁止です。運用条件と禁止事項は[永続化復旧runbook](docs/persistence-recovery-runbook.md)を参照してください。
+
+### 買い物操作の性能基準（編集・レビュー時）
+
+2026-10-25のユーザー指定により、通常の `shopping` 受入は150／500品目の16条件です。1,500品目は通常利用の範疇ではないため修正対象外とし、既存の買い物8条件とbounded DOM 1件は `npm run test:shopping-large-list-diagnostic:run` による任意診断として保持します。通常runner／CIの必須判定や未完了判定に使わず、過去のraw・当初合否はそのまま残します。
+
+2026-10-28の最新ユーザー指定により、D&D・選択・描画改善プランに直接関連する動作だけ、中央値・95%点ともに160.0ms以下を通過基準とします。変更・追加する操作の内容から、次の性能試験群を選んでください。
+
+| 性能試験群                    | 対象                                |      中央値 |       95%点 |        測定回数 |
+| ----------------------------- | ----------------------------------- | ----------: | ----------: | --------------: |
+| `range` / `drag` / `transfer` | D&D・範囲選択・描画・移動後の次操作 | 160.0ms以下 | 160.0ms以下 | PR各2／完了各10 |
+| `shopping`                    | 通常の買い物6操作                   |  65.0ms以下 | 100.0ms以下 | PR各2／完了各10 |
+
+通常6操作など本プランの対象外の動作は、計画書に回帰確認として掲載されている場合も従来の65.0ms／100ms基準を維持します。保存完了時間は操作反応と分けた補助指標です。
+
+2026-10-26の先行ユーザー指定による測定回数は、PR確認用の各2回と実装完了判定用の各10回を維持します。profileは `pr`／`completion`、環境変数は `ESP_PERFORMANCE_PROFILE`、通常runnerのCLIは `--profile pr|completion` です。指定なしは `completion`。PRの2回が通過しても、実装完了とは判定しません。
+
+- `npm run test:browser:pr`: PR確認。全条件・全操作を各2回で確認します。
+- `npm run test:browser:completion`: 実装完了判定。全条件・全操作を各10回で確認します。
+- `npm run test:browser`: 環境変数でprofileを選択し、未指定なら10回です。CIはPR eventで `pr`、非PRで `completion` を指定します。
+
+判定には[性能基準の共通定義](scripts/shopping-performance-evidence-contract.mjs)の `performanceAcceptanceCriteriaForGroup(group, profile)` を使います。`samplingPolicyId` と `samplingProfile` に用途・回数・完了判定へ利用可能かを記録し、前後比較も同じprofileで揃えてください。必須条件はshopping16・range20・drag8・transfer100、時間基準、入力・DOM反映・実フレーム・次操作の終了点、fixture、ウォームアップ、保存の原子性・整合性検証、retry 0を維持します。過去20回のraw・当初合否・中断runは保持し、新しい回数のrunは別記録にします。部分実行・診断・PR2回の通過を、実装完了の全条件合格へ流用しません。
+
+対象3群の現行基準は `dnd-selection-rendering-160-160-2026-10-28`、基準日は2026-10-28です。shopping65／100ms、測定回数、全条件・操作・終了点・保存整合性は維持します。過去の50／55／65／110／150msのraw・当初合否・元artifact・中断runは保持し、160ms再判定は元run・測定source・旧150ms／新160ms・新policy sourceを併記した別記録にします。旧artifactの閾値・criteria ID・合否を変更せず、150msで測定したrunを160msで新規採取したrunへ読み替えません。
+
+2026-10-27〜28のレビュー修正では、前方向の完全順序を入力前から独立に検証し、DOM応答は必要な全カードとチェックボックス・順序がそろうまで終了しないようにしました。計測器は `shopping-rendering-v4` です。測定ソース `3e6cece` の新しい正式completionは全144ケース・全576指標各10回が成立し、主530指標すべてが時間基準内でした。機能427件通過・既存54件skip、自動PWAも1テスト・2操作が通過しています。初回143／144の失敗と旧記録は保持しています。正常500品目touch同列移動の中央値+1.95ms・95%点+4.90msは、2026-10-28のユーザー指示で受容し追加修正を行いません。改善・解消とは扱わず、その他の観測差と比較限界も保持します。今回の自動・ローカル確認と、全相対差の解消・実機体感・実CIを含む原計画の完全受入は区別します。検討した製品変更2案は不採用で、製品 `src`／`public` は6208722と同一です。オフライン検証器の修正は `7fd1c0c` として別に記録します。最新の成否・根拠・限界は[レビュー修正・自動検証記録](docs/dnd-selection-rendering-review-remediation-20261027.md)を参照してください。物理touch・人の体感と実GitHub CIは、ユーザー指定で今回保留・未確認です。
+
+160ms方針の確定ソース `b9cea9f` でRelease Aビルドとローカル試験計1,526件が通過しました。旧150msで採取した正式実測の主530指標は、[160msの別再判定](D:/esp-fix-validation-20261027/criteria-160-actual-reassessment-20261027T174731976Z-1d69efc8/final-handoff.json)でも全通過しています。試験の外側guardが実行ログ追記で終了1となった元記録と、入力不変性を確認した別監査も保持しています。今回指定された自動・ローカル検証の結果は上記レビュー修正記録に集約しました。
+
+2026-10-26の正式150ms通常runnerは採取HEAD `6b95af67d75b5a4cc81c8535cd2d7b2e27987ce3`（製品src／publicはbe259と同一）で全5群完走・passed・exit0となりました。性能144ケース・各10・全576行を確認し、530主指標は基準内です。比較はbefore4真正未観測によりincompleteで、before24機能postcondition失敗を保持します。全180増加を列挙して正常2経路・最大2件を区間評価し、因果未確定部分を記録しました。一般機能は408 expected・54skip・flaky1・unexpected0で、当該初回timeout／retry1成功を保持します。同caseの別診断5回はretry0で通過して再現しませんでしたが、正式flakyを置き換えず、環境起因とも断定しません。品質はcore3,565件通過・既存88skip、foundation1,370件通過、静的検査とRelease A build通過。installed Windows PWAの2操作は独立raw37確認・0失敗ですが、実GitHub CIとphysical touch／human feelは未確認です。採取HEADと後続docs-only HEADを分け、最終根拠・限界は[実装状況](docs/dnd-selection-rendering-implementation-20261024.md)へ記録します。
+
+適用範囲の詳細は[プラン限定の性能基準](docs/dnd-selection-rendering-performance-criteria-20261024.md)、作業時のルールは[AGENTS.md](AGENTS.md)を参照してください。
 
 ### 技術構成
 

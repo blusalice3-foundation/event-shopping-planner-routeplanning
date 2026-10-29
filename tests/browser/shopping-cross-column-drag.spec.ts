@@ -1,5 +1,14 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { summarizePerformanceSamples } from "./performance-summary";
+import {
+  shoppingEvidenceIdentity,
+  performanceMeasurementSampleCount,
+  performanceAcceptanceCriteriaForGroup,
+  shoppingBrowserEnvironment,
+} from "./shopping-performance-evidence";
+
+const shoppingPerformanceThresholds =
+  performanceAcceptanceCriteriaForGroup("drag").acceptanceThresholds;
 
 test.use({
   video: "off",
@@ -84,7 +93,18 @@ function fixture(count = 150, candidateOrder = false) {
             { id: "hall-b", name: "Bホール", vertices: [], blockNames: ["B"] },
           ],
         },
-      },
+      } as Record<
+        string,
+        Record<
+          string,
+          Array<{
+            id: string;
+            name: string;
+            vertices: Array<{ row: number; col: number }>;
+            blockNames: string[];
+          }>
+        >
+      >,
       hallRouteSettings: {},
     },
   };
@@ -790,6 +810,217 @@ async function ids(page: Page, column: string) {
     .evaluateAll((rows) =>
       rows.map((row) => (row as HTMLElement).dataset.itemId),
     );
+}
+function selectionFixture(sourceColumn: "candidate" | "execute") {
+  const backup = fixture(6);
+  backup.data.eventLists[eventName] = [
+    makeItem("move-1", "11"),
+    makeItem("move-2", "12"),
+    makeItem("move-3", "13"),
+    makeItem("source-stay", "14"),
+    makeItem("target", "21"),
+    makeItem("outside", "22"),
+  ];
+  backup.data.executeModeItems[eventName][day] =
+    sourceColumn === "execute"
+      ? ["move-1", "move-2", "move-3", "source-stay"]
+      : ["target", "outside"];
+  return backup;
+}
+const selectionBox = (page: Page, id: string) =>
+  page.locator(rowSelector(id)).getByRole("checkbox");
+const headerMove = (page: Page, column: "candidate" | "execute") =>
+  page.getByRole("button", {
+    name:
+      column === "candidate"
+        ? /^選択したアイテムを実行列に移動 /u
+        : /^選択したアイテムを実行列から戻す /u,
+  });
+async function actualSelectionDrag(page: Page, id: string, targetId: string) {
+  await page
+    .locator(rowSelector(id))
+    .dragTo(page.locator(rowSelector(targetId)), {
+      sourcePosition: { x: 4, y: 40 },
+      targetPosition: { x: 4, y: 30 },
+    });
+}
+async function savedExecuteIds(page: Page): Promise<string[]> {
+  return (
+    (await stored(page, "executeModeItems"))[eventName] as Record<
+      string,
+      string[]
+    >
+  )[day];
+}
+for (const sourceColumn of ["candidate", "execute"] as const) {
+  for (const kind of ["single", "multiple", "range"] as const) {
+    test(`selection after actual native cross-column transfer: ${sourceColumn} ${kind}`, async ({
+      page,
+    }) => {
+      await restore(page, selectionFixture(sourceColumn));
+      await grouping(page, false);
+      const targetColumn =
+        sourceColumn === "candidate" ? "execute" : "candidate";
+      const moving =
+        kind === "single"
+          ? ["move-1"]
+          : kind === "multiple"
+            ? ["move-1", "move-3"]
+            : ["move-1", "move-2", "move-3"];
+      if (kind === "range") {
+        const displayed = (await ids(page, sourceColumn)).filter(
+          (id): id is string => !!id && moving.includes(id),
+        );
+        await selectionBox(page, displayed[0]).check();
+        await selectionBox(page, displayed.at(-1)!).check();
+        await page
+          .getByTitle("範囲内のチェックを入れる", { exact: true })
+          .first()
+          .click();
+      } else {
+        for (const id of moving) await selectionBox(page, id).check();
+      }
+      await expect(headerMove(page, sourceColumn)).toHaveText(
+        new RegExp(`\\(${moving.length}件\\)$`, "u"),
+      );
+      await expect(headerMove(page, targetColumn)).toHaveCount(0);
+      // Mixed-column selection intentionally hides both header move buttons.
+      // After transfer, the unrelated target check must be the only one left.
+      await selectionBox(page, "outside").check();
+      await expect(headerMove(page, sourceColumn)).toHaveCount(0);
+      await expect(headerMove(page, targetColumn)).toHaveCount(0);
+      for (const id of moving)
+        await expect(selectionBox(page, id)).toBeChecked();
+      const before = await savedExecuteIds(page);
+      const afterFirst =
+        sourceColumn === "candidate"
+          ? [...before, ...moving]
+          : before.filter((id) => !moving.includes(id));
+
+      await actualSelectionDrag(page, moving[0], "target");
+      await expect
+        .poll(async () => (await savedExecuteIds(page)).slice().sort())
+        .toEqual(afterFirst.slice().sort());
+      for (const id of moving) {
+        await expect(
+          page.locator(
+            `[data-shopping-drag-column="${targetColumn}"] ${rowSelector(id)}`,
+          ),
+        ).toBeVisible();
+        await expect(selectionBox(page, id)).not.toBeChecked();
+      }
+      await expect(selectionBox(page, "outside")).toBeChecked();
+      await expect(headerMove(page, sourceColumn)).toHaveCount(0);
+      await expect(headerMove(page, targetColumn)).toHaveText(/\(1件\)$/u);
+      await expect(
+        page.getByTitle("範囲内のチェックを外す", { exact: true }),
+      ).toHaveCount(0);
+
+      // A single new click must check only that card, and the next drag must use
+      // exactly the two IDs shown by the parent header count.
+      await selectionBox(page, moving[0]).check();
+      await expect(selectionBox(page, moving[0])).toBeChecked();
+      for (const id of moving.slice(1))
+        await expect(selectionBox(page, id)).not.toBeChecked();
+      await expect(headerMove(page, targetColumn)).toHaveText(/\(2件\)$/u);
+      await actualSelectionDrag(page, moving[0], "source-stay");
+      const nextIds = [moving[0], "outside"];
+      const afterSecond =
+        sourceColumn === "execute"
+          ? [...afterFirst, ...nextIds]
+          : afterFirst.filter((id) => !nextIds.includes(id));
+      await expect
+        .poll(async () => (await savedExecuteIds(page)).slice().sort())
+        .toEqual(afterSecond.slice().sort());
+      for (const id of nextIds) {
+        await expect(
+          page.locator(
+            `[data-shopping-drag-column="${sourceColumn}"] ${rowSelector(id)}`,
+          ),
+        ).toBeVisible();
+        await expect(selectionBox(page, id)).not.toBeChecked();
+      }
+      for (const id of moving.slice(1))
+        await expect(
+          page.locator(
+            `[data-shopping-drag-column="${targetColumn}"] ${rowSelector(id)}`,
+          ),
+        ).toBeVisible();
+      await expect(headerMove(page, "candidate")).toHaveCount(0);
+      await expect(headerMove(page, "execute")).toHaveCount(0);
+      await expect(
+        page.getByRole("button", { name: "選択を解除", exact: true }),
+      ).toHaveCount(0);
+    });
+  }
+}
+
+test("selection restores a hidden candidate check and excludes it from the visible drag", async ({
+  page,
+}) => {
+  const backup = selectionFixture("candidate");
+  backup.data.eventLists[eventName].find(
+    (item) => item.id === "move-3",
+  )!.block = "B";
+  await restore(page, backup);
+  await grouping(page, false);
+  await selectionBox(page, "move-1").check();
+  await selectionBox(page, "move-3").check();
+  await expect(headerMove(page, "candidate")).toHaveText(/\(2件\)$/u);
+  const filter = page.getByRole("button", { name: "A", exact: true });
+  await filter.click();
+  await expect(page.locator(rowSelector("move-3"))).toHaveCount(0);
+  await expect(headerMove(page, "candidate")).toHaveText(/\(2件\)$/u);
+  await filter.click();
+  await expect(selectionBox(page, "move-3")).toBeChecked();
+  await expect(selectionBox(page, "move-1")).toBeChecked();
+  await filter.click();
+  await actualSelectionDrag(page, "move-1", "target");
+  await expect
+    .poll(async () => (await savedExecuteIds(page)).includes("move-1"))
+    .toBe(true);
+  expect(await savedExecuteIds(page)).not.toContain("move-3");
+  await expect(headerMove(page, "candidate")).toHaveText(/\(1件\)$/u);
+  await expect(headerMove(page, "execute")).toHaveCount(0);
+  await filter.click();
+  await expect(selectionBox(page, "move-3")).toBeChecked();
+  await expect(selectionBox(page, "move-1")).not.toBeChecked();
+});
+
+for (const column of ["candidate", "execute"] as const) {
+  test(`selection survives same-column native reorder: ${column}`, async ({
+    page,
+  }) => {
+    await restore(page, selectionFixture(column));
+    await grouping(page, false);
+    await selectionBox(page, "move-1").check();
+    await selectionBox(page, "move-2").check();
+    await expect(headerMove(page, column)).toHaveText(/\(2件\)$/u);
+    const readOrder = async () =>
+      column === "execute"
+        ? savedExecuteIds(page)
+        : (
+            (await stored(page, "eventLists"))[eventName] as { id: string }[]
+          ).map((item) => item.id);
+    const before = await readOrder();
+    await start(page, "native", "move-1");
+    await hover(
+      page,
+      "native",
+      "source-stay",
+      column === "candidate" ? "before" : "after",
+      false,
+    );
+    await finish(page, "native", true, column);
+    await expect.poll(readOrder).not.toEqual(before);
+    expect((await readOrder()).slice().sort()).toEqual(before.slice().sort());
+    await expect(selectionBox(page, "move-1")).toBeChecked();
+    await expect(selectionBox(page, "move-2")).toBeChecked();
+    await expect(headerMove(page, column)).toHaveText(/\(2件\)$/u);
+    await expect(
+      page.getByTitle("範囲内のチェックを入れる", { exact: true }),
+    ).toHaveCount(0);
+  });
 }
 for (const input of ["native", "touch"] as const) {
   test(`execution group boundary and durable order: ${input}`, async ({
@@ -1885,9 +2116,7 @@ async function installRenderProbe(page: Page) {
           type: data?.type ?? data?.kind ?? data?.operation ?? data?.method,
         });
       };
-      Worker.prototype.postMessage = function (
-        ...args: Parameters<Worker["postMessage"]>
-      ) {
+      Worker.prototype.postMessage = function (...args: unknown[]) {
         if (!observedWorkers.has(this)) {
           observedWorkers.add(this);
           this.addEventListener("message", (event) =>
@@ -1895,7 +2124,7 @@ async function installRenderProbe(page: Page) {
           );
         }
         recordRpc("send", args[0]);
-        return postMessage.apply(this, args);
+        return Reflect.apply(postMessage, this, args);
       };
       Object.assign(window, { __dragRpcEvents: rpcEvents });
     }
@@ -2070,6 +2299,170 @@ async function attach(testInfo: TestInfo, name: string, data: unknown) {
     contentType: "application/json",
   });
 }
+
+test.describe("held touch drag cleanup", () => {
+  test.use({ hasTouch: true, viewport: { width: 1440, height: 1600 } });
+  for (const layout of ["flat", "space", "hall"] as const)
+    test(`held touch same-order drop immediately restores every source: ${layout}`, async ({
+      page,
+      context,
+    }, testInfo) => {
+      const backup = fixture(8);
+      const selected = ["held-0", "held-1", "held-2"];
+      backup.data.eventLists[eventName] = Array.from(
+        { length: 5 },
+        (_, index) => makeItem(`held-${index}`, String(index + 1)),
+      );
+      backup.data.executeModeItems[eventName][day] = backup.data.eventLists[
+        eventName
+      ].map((item) => item.id);
+      if (layout === "flat") backup.data.hallDefinitions = {};
+      await restore(page, backup);
+      await grouping(page, layout === "space");
+      await select(page, selected);
+      await expect(
+        page.getByTitle("範囲内のチェックを外す", { exact: true }).first(),
+      ).toBeVisible();
+      const before = (await stored(page, "executeModeItems"))[eventName];
+      const source = page.locator(rowSelector(selected[0]));
+      const handle = await source
+        .locator("[data-drag-handle] > svg")
+        .boundingBox();
+      const target = await page.locator(rowSelector("held-3")).boundingBox();
+      expect(handle).not.toBeNull();
+      expect(target).not.toBeNull();
+      const session = await context.newCDPSession(page);
+      try {
+        await session.send("Emulation.setTouchEmulationEnabled", {
+          enabled: true,
+          maxTouchPoints: 1,
+        });
+        await session.send("Input.dispatchTouchEvent", {
+          type: "touchStart",
+          touchPoints: [
+            {
+              x: handle!.x + handle!.width / 2,
+              y: handle!.y + handle!.height / 2,
+              id: 1,
+            },
+          ],
+        });
+        await expect(page.locator(".esp-shopping-touch-clone")).toBeVisible();
+        // Hold until all dragged sources really reach the dimmed state. This exposes
+        // a 200ms return transition that a quick gesture can otherwise hide.
+        await expect
+          .poll(() =>
+            page.evaluate(
+              (ids) =>
+                ids.map((id) =>
+                  Number(
+                    getComputedStyle(
+                      document.querySelector(
+                        `[data-item-id="${id}"]:not(.esp-shopping-touch-clone)`,
+                      )!,
+                    ).opacity,
+                  ),
+                ),
+              selected,
+            ),
+          )
+          .toEqual([0.4, 0.4, 0.4]);
+        await session.send("Input.dispatchTouchEvent", {
+          type: "touchMove",
+          touchPoints: [
+            { x: target!.x + 4, y: target!.y + target!.height * 0.2, id: 1 },
+          ],
+        });
+        await page.evaluate((ids) => {
+          const state = window as unknown as {
+            __heldTouchCleanup?: Promise<unknown>;
+          };
+          state.__heldTouchCleanup = new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              observer.disconnect();
+              reject(new Error("Touch clone did not clean up"));
+            }, 5000);
+            const sample = () => {
+              if (document.querySelector(".esp-shopping-touch-clone")) return;
+              const rows = ids.map(
+                (id) =>
+                  document.querySelector<HTMLElement>(
+                    `[data-item-id="${id}"]:not(.esp-shopping-touch-clone)`,
+                  )!,
+              );
+              const result = {
+                ids,
+                opacities: rows.map((row) =>
+                  Number(getComputedStyle(row).opacity),
+                ),
+                interactive: rows.map((row) => {
+                  const box = row.getBoundingClientRect();
+                  return row.contains(
+                    document.elementFromPoint(box.x + 20, box.y + 40),
+                  );
+                }),
+              };
+              observer.disconnect();
+              clearTimeout(timeout);
+              resolve(result);
+            };
+            const observer = new MutationObserver(sample);
+            observer.observe(document.body, {
+              subtree: true,
+              childList: true,
+              attributes: true,
+              attributeFilter: ["class"],
+            });
+            document.addEventListener(
+              "touchend",
+              () => queueMicrotask(sample),
+              { once: true, capture: true },
+            );
+          });
+        }, selected);
+        await session.send("Input.dispatchTouchEvent", {
+          type: "touchEnd",
+          touchPoints: [],
+        });
+        const cleanup = await page.evaluate(
+          () =>
+            (
+              window as unknown as {
+                __heldTouchCleanup: Promise<{
+                  ids: string[];
+                  opacities: number[];
+                  interactive: boolean[];
+                }>;
+              }
+            ).__heldTouchCleanup,
+        );
+        await testInfo.attach("held-touch-cleanup", {
+          body: JSON.stringify({ layout, ...cleanup }),
+          contentType: "application/json",
+        });
+        expect(cleanup.opacities).toEqual([1, 1, 1]);
+        expect(cleanup.interactive).toEqual([true, true, true]);
+        for (const id of selected)
+          await expect(
+            page.locator(rowSelector(id)).getByRole("checkbox"),
+          ).toBeChecked();
+        await expect(
+          page.getByTitle("範囲内のチェックを外す", { exact: true }),
+        ).toHaveCount(0);
+        expect((await stored(page, "executeModeItems"))[eventName]).toEqual(
+          before,
+        );
+      } finally {
+        await session
+          .send("Input.dispatchTouchEvent", {
+            type: "touchCancel",
+            touchPoints: [],
+          })
+          .catch(() => {});
+        await session.detach();
+      }
+    });
+});
 for (const count of [150, 500])
   for (const input of ["native", "touch"] as const)
     for (const grouped of [true, false])
@@ -2078,6 +2471,8 @@ for (const count of [150, 500])
         browserName,
       }, testInfo) => {
         test.setTimeout(240000);
+        const errors: string[] = [];
+        page.on("pageerror", (error) => errors.push(error.message));
         await installRenderProbe(page);
         await restore(page, performanceFixture(count));
         await grouping(page, grouped);
@@ -2221,7 +2616,11 @@ for (const count of [150, 500])
         const pointerIOBefore = await physicalIO();
         await start(page, input, "merge-a");
         await finish(page, input, false);
-        for (let sample = 0; sample < 20; sample++) {
+        for (
+          let sample = 0;
+          sample < performanceMeasurementSampleCount;
+          sample++
+        ) {
           await page.evaluate(async () => {
             window.scrollTo(0, 0);
             await new Promise(requestAnimationFrame);
@@ -2288,7 +2687,7 @@ for (const count of [150, 500])
             to: string;
           }> = [];
           let previousBoundary = initialHover.guides[0]?.edge;
-          for (let i = 0; i < 20; i++) {
+          for (let i = 0; i < performanceMeasurementSampleCount; i++) {
             if (scenario.name === "rejected") {
               const accepted = await hover(
                 page,
@@ -2437,7 +2836,9 @@ for (const count of [150, 500])
             }
           }
           if (scenario.name === "boundary-switch")
-            expect(boundarySwitches).toHaveLength(20);
+            expect(boundarySwitches).toHaveLength(
+              performanceMeasurementSampleCount,
+            );
           const render = await renderCounts(page);
           expect(
             render.known.filter((key) => key.startsWith("item:")).length,
@@ -2528,7 +2929,11 @@ for (const count of [150, 500])
             }
           ).__dragRenderProbe.setEnabled(false),
         );
-        for (let i = 0; i < (compareProbe ? 40 : 20); i++) {
+        for (
+          let i = 0;
+          i < performanceMeasurementSampleCount * (compareProbe ? 2 : 1);
+          i++
+        ) {
           await page.evaluate(async () => {
             window.scrollTo(0, 0);
             await new Promise(requestAnimationFrame);
@@ -2627,12 +3032,15 @@ for (const count of [150, 500])
             profile,
             intervals: cpuProfileIntervals,
             samplingIntervalUs: 250,
-            note: "Diagnostic only; restrict profile timeDeltas to the20 drop intervals and exclude idle samples.",
+            note: "Diagnostic only; restrict profile timeDeltas to the recorded drop intervals and exclude idle samples.",
           });
         }
         if (cdp) await cdp.detach();
         records.drop = summary(drops);
         await attach(testInfo, "shopping-drag-response", {
+          ...shoppingEvidenceIdentity("drag"),
+          errors,
+          environment: await shoppingBrowserEnvironment(page, testInfo.retry),
           build: "npm run build:app",
           fixture: {
             count,
@@ -2701,10 +3109,17 @@ for (const count of [150, 500])
             startEndComparison: "requires separately built 5bf82a3 run",
           },
         });
+        expect(errors).toEqual([]);
         for (const [operation, value] of Object.entries(records)) {
-          expect(value.samples.length, operation).toBeGreaterThanOrEqual(20);
-          expect(value.medianMs, operation).toBeLessThanOrEqual(55);
-          expect(value.p95Ms, operation).toBeLessThanOrEqual(100);
+          expect(value.samples.length, operation).toBe(
+            performanceMeasurementSampleCount,
+          );
+          expect(value.medianMs, operation).toBeLessThanOrEqual(
+            shoppingPerformanceThresholds.medianMs,
+          );
+          expect(value.p95Ms, operation).toBeLessThanOrEqual(
+            shoppingPerformanceThresholds.p95Ms,
+          );
         }
       });
 
@@ -2737,7 +3152,7 @@ for (const count of [150, 500])
         const ends: number[] = [];
         await start(page, input, "merge-a");
         await finish(page, input, false);
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < performanceMeasurementSampleCount; i++) {
           await page.evaluate(async () => {
             window.scrollTo(0, 0);
             await new Promise(requestAnimationFrame);

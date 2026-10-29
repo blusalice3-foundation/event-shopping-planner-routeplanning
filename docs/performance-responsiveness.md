@@ -1,5 +1,9 @@
 # 描画・レスポンス高速化の実装と検証
 
+2026-10-26の通常性能受入では、PR確認は各2回（`pr`）、実装完了判定は各10回（`completion`、既定）とする。`npm run test:browser:pr`／`npm run test:browser:completion`、または `ESP_PERFORMANCE_PROFILE` と通常runnerの `--profile` で選ぶ。shopping16・range20・drag8・transfer100の条件、全操作、時間基準、fixture、ウォームアップ、終了点、保存・整合性検証、retry 0は維持する。PR2回の成功を実装完了へ流用せず、変更前後比較も同じprofileで揃える。[現行の性能基準](dnd-selection-rendering-performance-criteria-20261024.md)を適用する。
+
+以下は2026-10-08時点の実装・検証履歴である。過去の測定回数・raw・当初合否は保持し、新しい回数の受入結果とは分ける。
+
 通常の品目編集を差分コマンドに切り替え、経路計算と保存の重い処理を専用Workerへ移した。画面外には高さと移動先を持つ軽い行を残し、カードの操作部品を解放する。
 
 - [品目編集](../src/app/state/useApplicationSnapshot.ts): `updateItemFields({ eventName, itemId, changes, baseline })`で変更項目を受け付ける。数量・限数購入の正規化と保護レベルの自動昇格を受付時と保存時に適用し、対象イベントの配列と対象品目だけをコピーする。未保存入力を保持し、他タブとの項目単位の競合は既存の確認画面で扱う。構造変更には従来の経路を残す。

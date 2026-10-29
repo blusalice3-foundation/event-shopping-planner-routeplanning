@@ -1,4 +1,12 @@
-import { PersistenceOutcomeUnknownError } from "../../app/ports/PersistenceCommandPort";
+import {
+  planShoppingMove,
+  shoppingMoveMatchesBaseline,
+  shoppingItemIds,
+} from "../../app/commands/shoppingMoveMutation";
+import {
+  PersistenceOutcomeUnknownError,
+  isPersistenceWriteStopReason,
+} from "../../app/ports/PersistenceCommandPort";
 import { recordEntry } from "../../utils/ownRecord";
 import { registerItemGuardGenerations } from "../../utils/itemContentGuard";
 import {
@@ -8,6 +16,7 @@ import {
 import type {
   ApplicationSnapshotRead,
   ApplicationDayMutation,
+  ApplicationShoppingMove,
   ApplicationDayScope,
   AtomicSnapshotOptions,
   ItemContentEdit,
@@ -17,6 +26,7 @@ import { MutationTargetMissingError } from "../../app/commands/applicationMutati
 import { planItemContentMutation } from "../../app/state/itemFieldMutation";
 import {
   validateSnapshotReferences,
+  validateSnapshot,
   validateSnapshotStructure,
 } from "../../utils/appBackup";
 import {
@@ -34,6 +44,18 @@ import {
 import { duplicateEventDays } from "../../features/consistency/domain/dayMerge";
 
 export interface PersistenceWorkerDelegate {
+  readCachedShoppingCommandSnapshot?(
+    target: ApplicationDayScope,
+  ): Promise<ApplicationSnapshotRead | undefined>;
+  readShoppingCommandSnapshot?(
+    target: ApplicationDayScope,
+    options?: { freshComplete?: boolean },
+  ): Promise<ApplicationSnapshotRead | undefined>;
+  commitShoppingCommandSnapshot?(
+    snapshot: PersistenceSnapshot,
+    expectedRoots: object,
+    target: ApplicationDayScope,
+  ): Promise<ApplicationSnapshotRead | void>;
   readDayCommandSnapshot?(
     target?: ApplicationDayScope,
   ): Promise<ApplicationSnapshotRead>;
@@ -62,6 +84,7 @@ export function createPersistenceWorkerServer(
     read: ApplicationSnapshotRead,
     retainObservation = true,
     dayEvent?: string,
+    forceFull = false,
   ): WorkerSnapshotRead => {
     const observationId = ++sequence;
     if (retainObservation) {
@@ -76,8 +99,9 @@ export function createPersistenceWorkerServer(
     const next = read.scopeTarget
       ? adoptScopedDaySnapshot(previous, read.snapshot, read.scopeTarget)
       : read.snapshot;
-    const delta =
-      read.scopeTarget && (!previous || retainObservation)
+    const delta = forceFull
+      ? { full: next }
+      : read.scopeTarget && (!previous || retainObservation)
         ? { scope: { target: read.scopeTarget, snapshot: read.snapshot } }
         : dayEvent || read.scopeTarget
           ? daySnapshotDelta(
@@ -109,6 +133,200 @@ export function createPersistenceWorkerServer(
           prepareScopedCommands: true,
         }),
       );
+    },
+    async readFull() {
+      // Never run scoped preparation writes while recovering a known commit.
+      const read = await delegate.readApplicationSnapshot({
+        shareVerified: true,
+        prepareScopedCommands: false,
+      });
+      if (read.consistencyMissing || read.scopeTarget)
+        throw new Error(
+          "Recovery requires verified complete persistent state.",
+        );
+      validate(read.snapshot);
+      return publish(read, true, undefined, true);
+    },
+    async shopping(
+      command: ApplicationShoppingMove,
+      operationId: string,
+      expectedGenerations: Readonly<Record<string, number>>,
+    ) {
+      if (!operationId) throw new Error("Missing operation sequence.");
+      if (
+        !previous ||
+        !delegate.readShoppingCommandSnapshot ||
+        !delegate.commitShoppingCommandSnapshot
+      )
+        return { status: "review-required" as const };
+      const target = { eventName: command.eventName, day: command.day };
+      const freshRead = async (complete: boolean) => {
+        try {
+          return complete
+            ? await delegate.readShoppingCommandSnapshot!(target, {
+                freshComplete: true,
+              })
+            : await delegate.readShoppingCommandSnapshot!(target);
+        } catch (error) {
+          if (
+            error instanceof Error &&
+            ["PersistenceConflict", "PersistenceConflictError"].includes(
+              error.name,
+            )
+          )
+            return undefined;
+          throw error;
+        }
+      };
+      let requireFreshComplete = false;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        let read: ApplicationSnapshotRead | undefined;
+        let usingCached = false;
+        if (attempt === 0 && delegate.readCachedShoppingCommandSnapshot) {
+          try {
+            read = await delegate.readCachedShoppingCommandSnapshot(target);
+            usingCached = !!read;
+          } catch (error) {
+            if (isPersistenceWriteStopReason(error)) throw error;
+            requireFreshComplete = true;
+          }
+        }
+        read ??= await freshRead(requireFreshComplete);
+        let plan: ReturnType<typeof planShoppingMove>;
+        for (;;) {
+          try {
+            if (
+              !read ||
+              (recordEntry(read.eventGenerations, command.eventName) ?? 0) !==
+                (recordEntry(expectedGenerations, command.eventName) ?? 0) ||
+              recordEntry(read.snapshot.eventConsistency, command.eventName)
+                ?.legacyPending.length ||
+              duplicateEventDays(read.snapshot, command.eventName).some((day) =>
+                matchesScopeDay(target, day),
+              ) ||
+              !shoppingMoveMatchesBaseline(read.snapshot, command)
+            ) {
+              if (!usingCached) return { status: "review-required" as const };
+            } else {
+              const candidate = planShoppingMove(read.snapshot, command);
+              if (candidate.confirmation) {
+                if (!usingCached) return { status: "review-required" as const };
+              } else {
+                const scoped = scopeDaySnapshot(
+                  candidate.snapshot,
+                  command.eventName,
+                  command.day,
+                );
+                const maps = new WeakSet<object>(
+                  Object.values(
+                    recordEntry(scoped.mapData, command.eventName) ?? {},
+                  ).filter(
+                    (value): value is object =>
+                      !!value && typeof value === "object",
+                  ),
+                );
+                const errors = validateSnapshot(scoped, maps);
+                if (errors.length) throw new Error(errors.join("\n"));
+                plan = candidate;
+                break;
+              }
+            }
+          } catch (error) {
+            if (!usingCached || isPersistenceWriteStopReason(error))
+              throw error;
+          }
+          // Cached state can propose a write, never decide a rejection on its own.
+          read = await freshRead(true);
+          usingCached = false;
+        }
+        // Non-retained publications still advance the client baseline (e.g. item edits).
+        // Scoped observations retain their complete backing snapshot separately.
+        // Fresh/conflict reads may contain content, other-day or other-event changes.
+        const requiresCompleteBaseline =
+          read!.snapshot !== previous &&
+          read!.snapshot !== observedSnapshots.get(sequence);
+        let committedReceipt: ApplicationSnapshotRead | void;
+        try {
+          committedReceipt = await delegate.commitShoppingCommandSnapshot(
+            plan.snapshot,
+            read!.expectedRoots,
+            target,
+          );
+        } catch (error) {
+          if (
+            error instanceof Error &&
+            ["PersistenceConflict", "PersistenceConflictError"].includes(
+              error.name,
+            )
+          ) {
+            requireFreshComplete = true;
+            continue;
+          }
+          throw error;
+        }
+        // The write is known durable. Delta construction may fail, but never resend it.
+        const base = previous;
+        const baseObservationId = sequence;
+        previous = plan.snapshot;
+        const observationId = ++sequence;
+        try {
+          const committedRead =
+            committedReceipt ??
+            (await delegate.readShoppingCommandSnapshot(target));
+          if (!committedRead)
+            throw new Error("Committed shopping roots unavailable.");
+          observations.set(observationId, committedRead.expectedRoots);
+          observedSnapshots.set(observationId, committedRead.snapshot);
+          previous = committedRead.snapshot;
+          while (observations.size > 8) {
+            const expired = observations.keys().next().value!;
+            observations.delete(expired);
+            observedSnapshots.delete(expired);
+          }
+          if (requiresCompleteBaseline)
+            throw new Error(
+              "Shopping retry requires a fresh complete client baseline.",
+            );
+          const delta = daySnapshotDelta(
+            base,
+            { ...plan.snapshot, eventLists: base.eventLists },
+            command.eventName,
+          );
+          if (
+            Object.keys(delta.stores ?? {}).length ||
+            delta.full ||
+            delta.scope ||
+            delta.items?.length
+          )
+            throw new Error("Shopping order requires a new complete baseline.");
+          delta.shoppingOrder = {
+            version: 1,
+            eventName: command.eventName,
+            day: command.day,
+            baseObservationId,
+            baselineItemIds: shoppingItemIds(
+              recordEntry(base.eventLists, command.eventName) ?? [],
+            ),
+            itemIds: shoppingItemIds(
+              recordEntry(plan.snapshot.eventLists, command.eventName) ?? [],
+            ),
+          };
+          return {
+            status: "committed" as const,
+            read: {
+              delta,
+              observationId,
+              consistencyMissing: false,
+              eventGenerations: read!.eventGenerations,
+            },
+          };
+        } catch {
+          return { status: "committed" as const, deltaError: true as const };
+        }
+      }
+      const error = new Error("Shopping move conflicts exhausted.");
+      error.name = "MutationConflict";
+      throw error;
     },
     async readDay(target: ApplicationDayScope) {
       const read = await (delegate.readDayCommandSnapshot?.(target) ??

@@ -90,6 +90,7 @@ import {
   type ExecutionNavigationGuardFeedback,
 } from "../features/space-navigation/hooks/useExecutionSpaceNavigator";
 import { acquireBodyScrollLock } from "../utils/bodyScrollLock";
+import { acquireShoppingTouchDragDefaultGuard } from "../features/shopping-list/drag/touchDragDefaultGuard";
 import { useModalFocusBoundary } from "../hooks/useModalFocusBoundary";
 import { buildQuantityOptions } from "./quantityOptions";
 import {
@@ -296,6 +297,7 @@ const EMPTY_DUPLICATE_CIRCLE_ITEM_IDS = new Set<string>();
 const DEFAULT_LIST_RENDERER_PREFERENCE_PORT =
   createLocalStorageListRendererPreferenceAdapter();
 const VIRTUAL_LIST_MINIMUM_ROW_COUNT = 80;
+const FLAT_RANGE_ANIMATION_ITEM_LIMIT = 80;
 const RETAINED_VIEWPORT_MINIMUM_ROW_COUNT = 32;
 const VIRTUAL_LIST_ESTIMATED_ROW_HEIGHT_PX = 136;
 const VIRTUAL_LIST_SUPPORTED_ZOOM_PERCENTS = [100] as const;
@@ -498,6 +500,9 @@ const getExecutionVisitIdForItem = (item: ShoppingItem): string =>
     priorityLevel: item.priorityLevel,
   });
 
+// Keep the retained strategy fixed across every grouping and empty state.
+const SHOPPING_LIST_GROUP_SLOT_MODE = "current-model" as const;
+
 const ShoppingList: React.FC<ShoppingListProps> = ({
   items,
   dragSourceItems = items,
@@ -557,9 +562,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 }) => {
   const onMoveItemUp = useStableOptionalCallback(onMoveItemUpProp);
   const onMoveItemDown = useStableOptionalCallback(onMoveItemDownProp);
-  const onToggleRangeSelection = useStableOptionalCallback(
-    onToggleRangeSelectionProp,
-  );
+
   const onToggleSpaceCollapse = useStableOptionalCallback(
     onToggleSpaceCollapseProp,
   );
@@ -690,6 +693,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   const touchDragSpaceGroupIds = useRef<string[] | null>(null);
   const touchDragSourceEl = useRef<HTMLElement | null>(null); // ドラッグ元要素（draggable復元用）
   const releaseTouchBodyScrollLock = useRef<(() => void) | null>(null);
+  const releaseTouchMoveDefaultGuard = useRef<(() => void) | null>(null);
   const activeDropTarget = useRef<{
     id: string;
     position: "top" | "bottom";
@@ -770,6 +774,12 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     containerRef,
     onGuardFeedback: handleExecutionNavigationGuardFeedback,
   });
+
+  const allowReorder = viewMode === "edit" && !isInspecting;
+  const allowReorderRef = useRef(allowReorder);
+  useLayoutEffect(() => {
+    allowReorderRef.current = allowReorder;
+  }, [allowReorder]);
 
   const markLimitedPurchaseQuantityDeferred = useCallback(
     (item: ShoppingItem) => {
@@ -1719,26 +1729,28 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   );
   const projectControllerRows = useMemo(createListRowsProjector, []);
   const projectDisplayRows = useMemo(createListRowsProjector, []);
-  const listControllerModel = useMemo(() => {
-    const visibleModel = projectControllerRows({
-      items,
-      groups: listRowGroups,
-      column: columnType,
+  const listVisibleModel = useMemo(
+    () =>
+      projectControllerRows({
+        items,
+        groups: listRowGroups,
+        column: columnType,
+        duplicateCircleItemIds,
+        highlightedItemId,
+      }),
+    [
+      columnType,
       duplicateCircleItemIds,
       highlightedItemId,
-    });
-    return {
-      ...visibleModel,
-      itemIds: stableItemIds(items),
-    };
-  }, [
-    columnType,
-    duplicateCircleItemIds,
-    highlightedItemId,
-    items,
-    listRowGroups,
-    projectControllerRows,
-  ]);
+      items,
+      listRowGroups,
+      projectControllerRows,
+    ],
+  );
+  const listControllerModel = useMemo(
+    () => ({ ...listVisibleModel, itemIds: stableItemIds(items) }),
+    [items, listVisibleModel],
+  );
   const listControllerModelMembershipKey = useMemo(
     () =>
       JSON.stringify([
@@ -1765,7 +1777,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         JSON.parse(controlledSelectedItemIdsSignature) as string[],
       ),
     );
-  }, [controlledSelectedItemIdsSignature]);
+  }, [controlledSelectedItemIdsSignature, listControllerModelMembershipKey]);
 
   useEffect(() => {
     dispatchListController(shoppingListCommand.reconcileModel());
@@ -1778,14 +1790,16 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
   const listReadModel = useMemo(
     () =>
-      projectDisplayRows({
-        items,
-        groups: listRowGroups,
-        column: columnType,
-        selectedItemIds,
-        duplicateCircleItemIds,
-        highlightedItemId,
-      }),
+      selectedItemIds.size === 0
+        ? listVisibleModel
+        : projectDisplayRows({
+            items,
+            groups: listRowGroups,
+            column: columnType,
+            selectedItemIds,
+            duplicateCircleItemIds,
+            highlightedItemId,
+          }),
     [
       columnType,
       duplicateCircleItemIds,
@@ -1794,7 +1808,19 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       listRowGroups,
       selectedItemIds,
       projectDisplayRows,
+      listVisibleModel,
     ],
+  );
+
+  const onToggleRangeSelection = useStableOptionalCallback(
+    onToggleRangeSelectionProp
+      ? (rangeItemIds: readonly string[]) => {
+          dispatchListController(
+            shoppingListCommand.toggleRangeSelection(rangeItemIds),
+          );
+          onToggleRangeSelectionProp(rangeItemIds);
+        }
+      : undefined,
   );
 
   const onSelectItem = useStableCallback(
@@ -2022,7 +2048,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       });
     }
 
-    if (showHallGroups) {
+    if (shouldShowHallGroups) {
       const groups = hallGroups.map((group) => ({
         key: group.groupId,
         itemIds: group.items.map((item) => item.id),
@@ -2060,7 +2086,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     hallGroups,
     items,
     rangeScopeId,
-    showHallGroups,
+    shouldShowHallGroups,
     showSpaceGroups,
     spaceGroups,
     viewMode,
@@ -2323,10 +2349,12 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     onSelectItem(itemId, columnType, rangePresentation);
   }, []);
   const handleCardMoveUp = useCallback((itemId: string) => {
+    if (!allowReorderRef.current) return;
     const { columnType, onMoveItemUp } = cardActionContextRef.current;
     onMoveItemUp?.(itemId, columnType);
   }, []);
   const handleCardMoveDown = useCallback((itemId: string) => {
+    if (!allowReorderRef.current) return;
     const { columnType, onMoveItemDown } = cardActionContextRef.current;
     onMoveItemDown?.(itemId, columnType);
   }, []);
@@ -2349,7 +2377,11 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     }),
     [showSpaceGroups, showHallGroups, hallDefinitions, hallOrder, mapData],
   );
-  const handleDragMove = useStableCallback(onMoveItem);
+  const handleDragMove = useStableCallback(
+    (...args: Parameters<typeof onMoveItem>) => {
+      if (allowReorderRef.current) onMoveItem(...args);
+    },
+  );
   const dragDisplayOrder = useStableCallback(() =>
     listRowGroups
       ? listRowGroups.flatMap((group) =>
@@ -2362,7 +2394,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       : listReadModel.itemRows.map((row) => row.itemId),
   );
   useLayoutEffect(() => {
-    if (!columnType || !dragWorkspace || viewMode !== "edit") return;
+    if (!columnType || !dragWorkspace || !allowReorder) return;
     return dragWorkspace.register(columnType, {
       items,
       sourceItems: dragSourceItems,
@@ -2376,7 +2408,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   }, [
     columnType,
     dragWorkspace,
-    viewMode,
+    allowReorder,
     items,
     dragPresentation,
     dragSourceItems,
@@ -2391,7 +2423,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     dragWorkspace?.refresh();
   }, [dragWorkspace, listReadModel]);
   useLayoutEffect(() => {
-    if (containerRef.current && columnType) {
+    if (containerRef.current && (!allowReorder || !columnType)) {
+      delete containerRef.current.dataset.shoppingDragColumn;
+      delete containerRef.current.dataset.shoppingDragScope;
+    } else if (containerRef.current && columnType) {
       containerRef.current.dataset.shoppingDragColumn = columnType;
       containerRef.current.dataset.shoppingDragScope = JSON.stringify([
         rangeScopeId,
@@ -2403,6 +2438,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     e: React.DragEvent<HTMLDivElement>,
     item: ShoppingItem,
   ) => {
+    if (!allowReorderRef.current) {
+      e.preventDefault();
+      return;
+    }
     setDragRuntimeActive(true);
     dragItem.current = item.id;
     dragSourceColumn.current = columnType || null;
@@ -2421,7 +2460,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     }
     const target = e.currentTarget;
     setTimeout(() => {
-      if (dragItem.current !== item.id) return;
+      if (!allowReorderRef.current || dragItem.current !== item.id) return;
       if (target) {
         markDragOpacity(target);
       }
@@ -2437,6 +2476,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     e: React.DragEvent<HTMLDivElement>,
     item: ShoppingItem,
   ) => {
+    if (!allowReorderRef.current) return;
     e.preventDefault();
     e.stopPropagation();
 
@@ -2480,6 +2520,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   };
 
   const handleContainerDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!allowReorderRef.current) return;
     e.preventDefault();
     e.stopPropagation();
     if (columnType)
@@ -2494,6 +2535,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     setActiveDropTarget(null);
   };
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!allowReorderRef.current) {
+      cleanUp();
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
 
@@ -2624,12 +2669,17 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       clearInterval(touchScrollInterval.current);
       touchScrollInterval.current = null;
     }
+    releaseTouchMoveDefaultGuard.current?.();
+    releaseTouchMoveDefaultGuard.current = null;
     if (touchDragClone.current) {
       touchDragClone.current.remove();
       touchDragClone.current = null;
     }
     if (touchDragSourceEl.current) {
-      touchDragSourceEl.current.setAttribute("draggable", "true");
+      touchDragSourceEl.current.setAttribute(
+        "draggable",
+        String(allowReorderRef.current),
+      );
       touchDragSourceEl.current.classList.remove("opacity-40");
       touchDragSourceEl.current = null;
     }
@@ -2643,7 +2693,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     cleanUp();
   }, [cleanUp, onSetSpaceGroupDragItemIds]);
 
-  // クリーンアップ: コンポーネントアンマウント時
+  // Run after the committed mode ref updates; abandoned renders cannot change it.
+  useLayoutEffect(() => {
+    touchCleanUp();
+  }, [allowReorder, columnType, currentDay, rangeScopeId, touchCleanUp]);
   useEffect(() => () => touchCleanUp(), [touchCleanUp]);
   useLayoutEffect(
     () =>
@@ -2679,8 +2732,13 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       sourceEl: HTMLElement,
       touchX: number,
       touchY: number,
+      touchIdentifier: number,
       spaceGroupItemIds?: string[],
     ) => {
+      if (!allowReorderRef.current) {
+        touchCleanUp();
+        return;
+      }
       setDragRuntimeActive(true);
       touchDragActive.current = true;
       dragItem.current = itemId;
@@ -2720,6 +2778,9 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
       // ドラッグクローン作成
       touchDragClone.current = createDragClone(sourceEl, touchX, touchY);
+      releaseTouchMoveDefaultGuard.current?.();
+      releaseTouchMoveDefaultGuard.current =
+        acquireShoppingTouchDragDefaultGuard(sourceEl, touchIdentifier);
 
       // スクロール防止
       releaseTouchBodyScrollLock.current?.();
@@ -2735,11 +2796,13 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       onSetSpaceGroupDragItemIds,
       dragWorkspace,
       markDragOpacity,
+      touchCleanUp,
     ],
   );
 
   const handleItemTouchStart = useCallback(
     (e: React.TouchEvent<HTMLDivElement>, item: ShoppingItem) => {
+      if (!allowReorderRef.current) return;
       const target = e.target as HTMLElement;
       if (target.closest("[data-no-long-press]")) return;
 
@@ -2749,7 +2812,13 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
       const el = e.currentTarget;
       touchLongPressTimer.current = setTimeout(() => {
-        handleTouchDragStart(item.id, el, touch.clientX, touch.clientY);
+        handleTouchDragStart(
+          item.id,
+          el,
+          touch.clientX,
+          touch.clientY,
+          touch.identifier,
+        );
       }, TOUCH_LONG_PRESS_MS);
     },
     [handleTouchDragStart],
@@ -2757,6 +2826,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
   const handleItemTouchMove = useCallback(
     (e: React.TouchEvent<HTMLDivElement>) => {
+      if (!allowReorderRef.current) {
+        touchCleanUp();
+        return;
+      }
       const touch = e.touches[0];
 
       if (!touchDragActive.current) {
@@ -2771,7 +2844,8 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         return;
       }
 
-      e.preventDefault(); // ドラッグ中はスクロール防止
+      if (e.nativeEvent.cancelable && !e.nativeEvent.defaultPrevented)
+        e.preventDefault(); // ドラッグ中はスクロール防止
 
       if (touchDragClone.current) {
         touchDragClone.current.dataset.layoutTop = `${touch.clientY - 20}px`;
@@ -2864,10 +2938,14 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         }
       }
     },
-    [dragWorkspace, setActiveDropTarget],
+    [dragWorkspace, setActiveDropTarget, touchCleanUp],
   );
 
   const handleItemTouchEnd = useCallback(() => {
+    if (!allowReorderRef.current) {
+      touchCleanUp();
+      return;
+    }
     // ロングプレスタイマーをクリア
     if (touchLongPressTimer.current) {
       clearTimeout(touchLongPressTimer.current);
@@ -3003,6 +3081,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   if (items.length === 0) {
     return (
       <GroupedListRenderer
+        groupSlotMode={SHOPPING_LIST_GROUP_SLOT_MODE}
         defer={useRetainedViewport}
         zoomPercent={viewportZoomPercent}
         pinnedRowKeys={
@@ -3035,9 +3114,9 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           className:
             "text-center text-slate-500 dark:text-slate-400 py-12 min-h-[200px] border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg relative",
           onBlurCapture: handleFullListBlurCapture,
-          onDragOver: !isInspecting ? handleContainerDragOver : undefined,
-          onDrop: !isInspecting ? handleDrop : undefined,
-          onDragLeave: handleContainerDragLeave,
+          onDragOver: allowReorder ? handleContainerDragOver : undefined,
+          onDrop: allowReorder ? handleDrop : undefined,
+          onDragLeave: allowReorder ? handleContainerDragLeave : undefined,
           onFocusCapture: handleFullListFocusCapture,
         }}
         beforeContent={limitedPurchaseOverlays}
@@ -3064,6 +3143,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       e: React.DragEvent<HTMLDivElement>,
       group: SpaceGroup,
     ) => {
+      if (!allowReorderRef.current) {
+        e.preventDefault();
+        return;
+      }
       const firstItemId = group.items[0]?.id;
       if (!firstItemId) return;
       setDragRuntimeActive(true);
@@ -3086,7 +3169,12 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       }
       const target = e.currentTarget;
       setTimeout(() => {
-        if (dragItem.current === firstItemId && target) markDragOpacity(target);
+        if (
+          allowReorderRef.current &&
+          dragItem.current === firstItemId &&
+          target
+        )
+          markDragOpacity(target);
       }, 0);
     };
 
@@ -3218,7 +3306,8 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
       const handleSpaceGroupMoveUp = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!canMoveGroupUp || !onMoveItemUp) return;
+        if (!allowReorderRef.current || !canMoveGroupUp || !onMoveItemUp)
+          return;
         const effectiveIds = getEffectiveDragIds(group);
         if (onSetSpaceGroupDragItemIds) {
           onSetSpaceGroupDragItemIds(effectiveIds);
@@ -3231,7 +3320,8 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
       const handleSpaceGroupMoveDown = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!canMoveGroupDown || !onMoveItemDown) return;
+        if (!allowReorderRef.current || !canMoveGroupDown || !onMoveItemDown)
+          return;
         const effectiveIds = getEffectiveDragIds(group);
         if (onSetSpaceGroupDragItemIds) {
           onSetSpaceGroupDragItemIds(effectiveIds);
@@ -3262,12 +3352,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
             {/* スペースグループヘッダー */}
             <div
-              className={`sticky top-0 z-20 rounded-lg border-l-4 border-l-[#9CA3AF] select-none cursor-pointer ${
+              className={`esp-shopping-drag-header-opacity sticky top-0 z-20 rounded-lg border-l-4 border-l-[#9CA3AF] select-none cursor-pointer ${
                 blockColor?.light || "bg-slate-100 dark:bg-slate-800"
               } hover:brightness-95 dark:hover:brightness-110 transition-all ${
-                layoutMode === "smartphone" &&
-                group.isCollapsed &&
-                viewMode !== "execute"
+                layoutMode === "smartphone" && group.isCollapsed && allowReorder
                   ? "flex flex-col"
                   : "flex items-center"
               }`}
@@ -3281,15 +3369,16 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                   : undefined
               }
               data-space-navigation-anchor="heading"
-              draggable={viewMode !== "execute" && group.isCollapsed}
+              draggable={allowReorder && group.isCollapsed}
               onDragStart={
-                viewMode !== "execute" && group.isCollapsed
+                allowReorder && group.isCollapsed
                   ? (e) => handleSpaceGroupDragStart(e, group)
                   : undefined
               }
               onDragOver={
-                viewMode !== "execute"
+                allowReorder
                   ? (e) => {
+                      if (!allowReorderRef.current) return;
                       e.preventDefault();
                       e.stopPropagation();
                       const firstItem = group.items[0];
@@ -3313,15 +3402,16 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                     }
                   : undefined
               }
-              onDrop={viewMode !== "execute" ? handleDrop : undefined}
+              onDrop={allowReorder ? handleDrop : undefined}
               onDragEnd={
-                viewMode !== "execute" && group.isCollapsed
+                allowReorder && group.isCollapsed
                   ? handleSpaceGroupDragEnd
                   : undefined
               }
               onTouchStart={
-                viewMode !== "execute" && group.isCollapsed
+                allowReorder && group.isCollapsed
                   ? (e: React.TouchEvent<HTMLDivElement>) => {
+                      if (!allowReorderRef.current) return;
                       const target = e.target as HTMLElement;
                       if (target.closest("[data-no-long-press]")) return;
                       const touch = e.touches[0];
@@ -3337,6 +3427,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                           el,
                           touch.clientX,
                           touch.clientY,
+                          touch.identifier,
                           effectiveIds,
                         );
                       }, TOUCH_LONG_PRESS_MS);
@@ -3344,23 +3435,23 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                   : undefined
               }
               onTouchMove={
-                viewMode !== "execute" && group.isCollapsed
+                allowReorder && group.isCollapsed
                   ? handleItemTouchMove
                   : undefined
               }
               onTouchEnd={
-                viewMode !== "execute" && group.isCollapsed
+                allowReorder && group.isCollapsed
                   ? handleItemTouchEnd
                   : undefined
               }
               onTouchCancel={
-                viewMode !== "execute" && group.isCollapsed
+                allowReorder && group.isCollapsed
                   ? handleItemTouchCancel
                   : undefined
               }
             >
               {/* 折りたたみ時：編集モード＝チェックボックス+ドラッグハンドル+上下ボタン / 実行モード＝なし（サマリーはメインエリア右側に表示） */}
-              {group.isCollapsed && viewMode !== "execute" && (
+              {group.isCollapsed && allowReorder && (
                 <div
                   data-drag-handle
                   className={`flex flex-row items-center cursor-grab text-slate-400 dark:text-slate-500 ${
@@ -4039,34 +4130,32 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                         item,
                       )}
                       data-space-navigation-anchor="item"
-                      draggable={!isInspecting}
+                      draggable={allowReorder}
                       onDragStart={
-                        !isInspecting
+                        allowReorder
                           ? (e) => handleDragStart(e, item)
                           : undefined
                       }
                       onDragOver={
-                        !isInspecting
+                        allowReorder
                           ? (e) => handleDragOver(e, item)
                           : undefined
                       }
-                      onDrop={!isInspecting ? handleDrop : undefined}
-                      onDragEnd={!isInspecting ? cleanUp : undefined}
+                      onDrop={allowReorder ? handleDrop : undefined}
+                      onDragEnd={allowReorder ? cleanUp : undefined}
                       onTouchStart={
-                        !isInspecting
+                        allowReorder
                           ? (e) => handleItemTouchStart(e, item)
                           : undefined
                       }
                       onTouchMove={
-                        !isInspecting ? handleItemTouchMove : undefined
+                        allowReorder ? handleItemTouchMove : undefined
                       }
-                      onTouchEnd={
-                        !isInspecting ? handleItemTouchEnd : undefined
-                      }
+                      onTouchEnd={allowReorder ? handleItemTouchEnd : undefined}
                       onTouchCancel={
-                        !isInspecting ? handleItemTouchCancel : undefined
+                        allowReorder ? handleItemTouchCancel : undefined
                       }
-                      className="transition-opacity duration-200 relative"
+                      className="transition-opacity duration-200 esp-shopping-drag-item-opacity relative"
                       data-is-selected={selectedItemIds.has(item.id)}
                     >
                       <ShoppingItemCard
@@ -4341,6 +4430,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
     return (
       <GroupedListRenderer
+        groupSlotMode={SHOPPING_LIST_GROUP_SLOT_MODE}
         defer={useRetainedViewport}
         zoomPercent={viewportZoomPercent}
         pinnedRowKeys={
@@ -4372,9 +4462,9 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         rootProps={{
           className: "relative space-y-1 pb-[var(--footer-height,96px)]",
           onBlurCapture: handleFullListBlurCapture,
-          onDragOver: !isInspecting ? handleContainerDragOver : undefined,
-          onDrop: !isInspecting ? handleDrop : undefined,
-          onDragLeave: handleContainerDragLeave,
+          onDragOver: allowReorder ? handleContainerDragOver : undefined,
+          onDrop: allowReorder ? handleDrop : undefined,
+          onDragLeave: allowReorder ? handleContainerDragLeave : undefined,
           onFocusCapture: handleFullListFocusCapture,
         }}
         beforeContent={
@@ -4852,26 +4942,26 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                     item,
                   )}
                   data-space-navigation-anchor="item"
-                  draggable={!isInspecting}
+                  draggable={allowReorder}
                   onDragStart={
-                    !isInspecting ? (e) => handleDragStart(e, item) : undefined
+                    allowReorder ? (e) => handleDragStart(e, item) : undefined
                   }
                   onDragOver={
-                    !isInspecting ? (e) => handleDragOver(e, item) : undefined
+                    allowReorder ? (e) => handleDragOver(e, item) : undefined
                   }
-                  onDrop={!isInspecting ? handleDrop : undefined}
-                  onDragEnd={!isInspecting ? cleanUp : undefined}
+                  onDrop={allowReorder ? handleDrop : undefined}
+                  onDragEnd={allowReorder ? cleanUp : undefined}
                   onTouchStart={
-                    !isInspecting
+                    allowReorder
                       ? (e) => handleItemTouchStart(e, item)
                       : undefined
                   }
-                  onTouchMove={!isInspecting ? handleItemTouchMove : undefined}
-                  onTouchEnd={!isInspecting ? handleItemTouchEnd : undefined}
+                  onTouchMove={allowReorder ? handleItemTouchMove : undefined}
+                  onTouchEnd={allowReorder ? handleItemTouchEnd : undefined}
                   onTouchCancel={
-                    !isInspecting ? handleItemTouchCancel : undefined
+                    allowReorder ? handleItemTouchCancel : undefined
                   }
-                  className={`transition-opacity duration-200 relative ${
+                  className={`transition-opacity duration-200 esp-shopping-drag-item-opacity relative ${
                     group.priority === "highest"
                       ? "bg-red-50/30 dark:bg-red-950/20"
                       : group.priority === "priority"
@@ -5078,6 +5168,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
     return (
       <GroupedListRenderer
+        groupSlotMode={SHOPPING_LIST_GROUP_SLOT_MODE}
         defer={useRetainedViewport}
         zoomPercent={viewportZoomPercent}
         pinnedRowKeys={
@@ -5109,9 +5200,9 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         rootProps={{
           className: "relative space-y-2 pb-[var(--footer-height,96px)]",
           onBlurCapture: handleFullListBlurCapture,
-          onDragOver: !isInspecting ? handleContainerDragOver : undefined,
-          onDrop: !isInspecting ? handleDrop : undefined,
-          onDragLeave: handleContainerDragLeave,
+          onDragOver: allowReorder ? handleContainerDragOver : undefined,
+          onDrop: allowReorder ? handleDrop : undefined,
+          onDragLeave: allowReorder ? handleContainerDragLeave : undefined,
           onFocusCapture: handleFullListFocusCapture,
         }}
         renderDependencies={[
@@ -5171,6 +5262,11 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     const isEnd = rangeInfo && index === rangeInfo.endIndex;
     const isMiddle =
       rangeInfo && index > rangeInfo.startIndex && index < rangeInfo.endIndex;
+    const rangeAppearanceClassName =
+      rangeInfo &&
+      rangeInfo.rangeItems.length >= FLAT_RANGE_ANIMATION_ITEM_LIMIT
+        ? "esp-flat-range-chain-large"
+        : "transition-opacity";
 
     return (
       <div
@@ -5178,20 +5274,18 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         data-item-id={item.id}
         data-space-navigation-visit-id={getExecutionVisitIdForItem(item)}
         data-space-navigation-anchor="item"
-        draggable={!isInspecting}
-        onDragStart={
-          !isInspecting ? (e) => handleDragStart(e, item) : undefined
-        }
-        onDragOver={!isInspecting ? (e) => handleDragOver(e, item) : undefined}
-        onDrop={!isInspecting ? handleDrop : undefined}
-        onDragEnd={!isInspecting ? cleanUp : undefined}
+        draggable={allowReorder}
+        onDragStart={allowReorder ? (e) => handleDragStart(e, item) : undefined}
+        onDragOver={allowReorder ? (e) => handleDragOver(e, item) : undefined}
+        onDrop={allowReorder ? handleDrop : undefined}
+        onDragEnd={allowReorder ? cleanUp : undefined}
         onTouchStart={
-          !isInspecting ? (e) => handleItemTouchStart(e, item) : undefined
+          allowReorder ? (e) => handleItemTouchStart(e, item) : undefined
         }
-        onTouchMove={!isInspecting ? handleItemTouchMove : undefined}
-        onTouchEnd={!isInspecting ? handleItemTouchEnd : undefined}
-        onTouchCancel={!isInspecting ? handleItemTouchCancel : undefined}
-        className="transition-opacity duration-200 relative"
+        onTouchMove={allowReorder ? handleItemTouchMove : undefined}
+        onTouchEnd={allowReorder ? handleItemTouchEnd : undefined}
+        onTouchCancel={allowReorder ? handleItemTouchCancel : undefined}
+        className="transition-opacity duration-200 esp-shopping-drag-item-opacity relative"
         data-is-selected={selectedItemIds.has(item.id)}
       >
         <ShoppingItemCard
@@ -5242,7 +5336,17 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                   rangeInfo.rangeItems.map((rangeItem) => rangeItem.id),
                 );
               }}
-              className={`pointer-events-auto absolute h-full w-full transition-opacity ${
+              className={`esp-flat-range-chain ${
+                isStart
+                  ? "esp-flat-range-chain-start"
+                  : isEnd
+                    ? "esp-flat-range-chain-end"
+                    : ""
+              } ${
+                columnType === "candidate"
+                  ? "esp-flat-range-chain-candidate"
+                  : ""
+              } pointer-events-auto absolute h-full w-full ${rangeAppearanceClassName} ${
                 rangeInfo.onlyStartEndSelected
                   ? "opacity-50 hover:opacity-100"
                   : "opacity-100"
@@ -5255,126 +5359,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                   : "範囲内のチェックを入れる"
               }
               data-no-long-press
-            >
-              <svg
-                width="40"
-                height="100%"
-                preserveAspectRatio="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-full h-full"
-              >
-                <defs>
-                  <linearGradient
-                    id={`chainMetal-${item.id}`}
-                    x1="0%"
-                    y1="0%"
-                    x2="100%"
-                    y2="0%"
-                  >
-                    <stop offset="0%" stopColor="#9CA3AF" />
-                    <stop offset="30%" stopColor="#F3F4F6" />
-                    <stop offset="50%" stopColor="#D1D5DB" />
-                    <stop offset="70%" stopColor="#9CA3AF" />
-                    <stop offset="100%" stopColor="#6B7280" />
-                  </linearGradient>
-                  <pattern
-                    id={`chainPattern-${item.id}`}
-                    x="0"
-                    y="0"
-                    width="40"
-                    height="20"
-                    patternUnits="userSpaceOnUse"
-                  >
-                    <rect
-                      x="14"
-                      y="-2"
-                      width="12"
-                      height="18"
-                      rx="6"
-                      fill="none"
-                      stroke={`url(#chainMetal-${item.id})`}
-                      strokeWidth="3"
-                    />
-                    <rect
-                      x="17"
-                      y="13"
-                      width="6"
-                      height="8"
-                      rx="2"
-                      fill={`url(#chainMetal-${item.id})`}
-                      stroke="#4B5563"
-                      strokeWidth="0.5"
-                    />
-                  </pattern>
-                </defs>
-
-                {/* チェーンの描画範囲を制御 */}
-                {isStart && (
-                  // 起点: 中央から下まで
-                  <rect
-                    x="0"
-                    y="50%"
-                    width="40"
-                    height="50%"
-                    fill={`url(#chainPattern-${item.id})`}
-                  />
-                )}
-                {isEnd && (
-                  // 終点: 上から中央まで
-                  <rect
-                    x="0"
-                    y="0"
-                    width="40"
-                    height="50%"
-                    fill={`url(#chainPattern-${item.id})`}
-                  />
-                )}
-                {isMiddle && (
-                  <rect
-                    x="0"
-                    y="0"
-                    width="40"
-                    height="100%"
-                    fill={`url(#chainPattern-${item.id})`}
-                  />
-                )}
-
-                {/* フック（アイテムと鎖を繋ぐ金具） - 全ての範囲内アイテムに表示 */}
-                <g transform="translate(0, 50)">
-                  {columnType === "candidate" ? (
-                    <path
-                      d="M 40 0 L 20 0"
-                      stroke={`url(#chainMetal-${item.id})`}
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      fill="none"
-                    />
-                  ) : (
-                    <path
-                      d="M 0 0 L 20 0"
-                      stroke={`url(#chainMetal-${item.id})`}
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      fill="none"
-                    />
-                  )}
-                  <circle
-                    cx="20"
-                    cy="0"
-                    r="4"
-                    fill={`url(#chainMetal-${item.id})`}
-                    stroke="#4B5563"
-                    strokeWidth="0.5"
-                  />
-                  <circle
-                    cx={columnType === "candidate" ? 38 : 2}
-                    cy="0"
-                    r="3"
-                    fill="#9CA3AF"
-                  />
-                </g>
-              </svg>
-            </button>
+            ></button>
           </div>
         )}
 
@@ -5397,7 +5382,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                     rangeInfo.rangeItems.map((rangeItem) => rangeItem.id),
                   );
                 }}
-                className={`pointer-events-auto absolute w-full h-full transition-opacity ${
+                className={`esp-flat-range-chain-gap pointer-events-auto absolute w-full h-full ${rangeAppearanceClassName} ${
                   rangeInfo.onlyStartEndSelected
                     ? "opacity-50 hover:opacity-100"
                     : "opacity-100"
@@ -5408,67 +5393,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                     : "範囲内のチェックを入れる"
                 }
                 data-no-long-press
-              >
-                <svg
-                  width="40"
-                  height="16"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-full h-full"
-                >
-                  {/* パターン定義を再利用するためにdefsを定義（本当はuseタグを使いたいが、IDスコープが面倒なので再定義） */}
-                  <defs>
-                    <linearGradient
-                      id={`chainMetal-gap-${item.id}`}
-                      x1="0%"
-                      y1="0%"
-                      x2="100%"
-                      y2="0%"
-                    >
-                      <stop offset="0%" stopColor="#9CA3AF" />
-                      <stop offset="30%" stopColor="#F3F4F6" />
-                      <stop offset="50%" stopColor="#D1D5DB" />
-                      <stop offset="70%" stopColor="#9CA3AF" />
-                      <stop offset="100%" stopColor="#6B7280" />
-                    </linearGradient>
-                    <pattern
-                      id={`chainPattern-gap-${item.id}`}
-                      x="0"
-                      y="0"
-                      width="40"
-                      height="20"
-                      patternUnits="userSpaceOnUse"
-                    >
-                      <rect
-                        x="14"
-                        y="-2"
-                        width="12"
-                        height="18"
-                        rx="6"
-                        fill="none"
-                        stroke={`url(#chainMetal-gap-${item.id})`}
-                        strokeWidth="3"
-                      />
-                      <rect
-                        x="17"
-                        y="13"
-                        width="6"
-                        height="8"
-                        rx="2"
-                        fill={`url(#chainMetal-gap-${item.id})`}
-                        stroke="#4B5563"
-                        strokeWidth="0.5"
-                      />
-                    </pattern>
-                  </defs>
-                  <rect
-                    x="0"
-                    y="0"
-                    width="40"
-                    height="100%"
-                    fill={`url(#chainPattern-gap-${item.id})`}
-                  />
-                </svg>
-              </button>
+              ></button>
             </div>
           )}
       </div>
@@ -5478,6 +5403,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   if (useRetainedViewportStructure) {
     return (
       <RetainedViewportListRenderer
+        groupSlotMode={SHOPPING_LIST_GROUP_SLOT_MODE}
         defer={useRetainedViewport}
         zoomPercent={viewportZoomPercent}
         pinnedRowKeys={
@@ -5510,9 +5436,9 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           className: "relative space-y-4 pb-[var(--footer-height,96px)]",
           onBlurCapture: handleFullListBlurCapture,
           onFocusCapture: handleFullListFocusCapture,
-          onDragOver: !isInspecting ? handleContainerDragOver : undefined,
-          onDrop: !isInspecting ? handleDrop : undefined,
-          onDragLeave: handleContainerDragLeave,
+          onDragOver: allowReorder ? handleContainerDragOver : undefined,
+          onDrop: allowReorder ? handleDrop : undefined,
+          onDragLeave: allowReorder ? handleContainerDragLeave : undefined,
         }}
         beforeContent={limitedPurchaseOverlays}
         renderRow={(row, index) =>
@@ -5539,10 +5465,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         className="pb-[var(--footer-height,96px)]"
         beforeContent={limitedPurchaseOverlays}
         rootRef={containerRef}
-        onDragLeave={handleContainerDragLeave}
+        onDragLeave={allowReorder ? handleContainerDragLeave : undefined}
         rootProps={{
-          onDragOver: !isInspecting ? handleContainerDragOver : undefined,
-          onDrop: !isInspecting ? handleDrop : undefined,
+          onDragOver: allowReorder ? handleContainerDragOver : undefined,
+          onDrop: allowReorder ? handleDrop : undefined,
         }}
         renderRow={(row, index) =>
           row.kind === "item" ? renderUngroupedItemRow(row, index) : null
@@ -5563,9 +5489,9 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           layoutMode === "smartphone" ? "space-y-2" : "space-y-4"
         } pb-[var(--footer-height,96px)]`,
         onBlurCapture: handleFullListBlurCapture,
-        onDragOver: !isInspecting ? handleContainerDragOver : undefined,
-        onDrop: !isInspecting ? handleDrop : undefined,
-        onDragLeave: handleContainerDragLeave,
+        onDragOver: allowReorder ? handleContainerDragOver : undefined,
+        onDrop: allowReorder ? handleDrop : undefined,
+        onDragLeave: allowReorder ? handleContainerDragLeave : undefined,
         onFocusCapture: handleFullListFocusCapture,
       }}
       beforeContent={limitedPurchaseOverlays}

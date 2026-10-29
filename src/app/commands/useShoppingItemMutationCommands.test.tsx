@@ -8,7 +8,16 @@ import { projectItemsToExecutionVisits } from "../../utils/visitProjection";
 
 import { emptyApplicationSnapshot as emptyApplicationSnapshotForImport } from "../state/useApplicationSnapshot";
 import { rememberItemUpdateBaseline } from "../../utils/itemUpdateBaseline";
-import { act, renderHook } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+} from "@testing-library/react";
+import { Suspense, startTransition, useState } from "react";
+import ShoppingList from "../../components/ShoppingList";
+import { useListInteractionState } from "../../features/lists/hooks/useListInteractionState";
 import { describe, expect, it, vi } from "vitest";
 import type {
   DayModeState,
@@ -192,6 +201,30 @@ const createHarness = (options: HarnessOptions = {}) => {
   const showImport = vi.fn();
   const clearRangeSelection = vi.fn();
   const clearSelection = vi.fn();
+  const removeSelectedItemIds = vi.fn();
+  const queueShoppingMovePatch = vi.fn<
+    ShoppingItemMutationActionPort["queueShoppingMovePatch"]
+  >((input) => {
+    if (input.eventListItems) {
+      stores.eventLists = {
+        ...stores.eventLists,
+        [input.eventName]: [...input.eventListItems],
+      };
+      eventListsRef.current = stores.eventLists;
+    }
+    if (input.executeModeItems) {
+      stores.executeModeItems = {
+        ...stores.executeModeItems,
+        [input.eventName]: input.executeModeItems,
+      };
+      executeModeItemsRef.current = stores.executeModeItems;
+    }
+    return {
+      status: "accepted",
+      operationId: "operation",
+      moveId: "operation:move:1",
+    };
+  });
   const setSortState = vi.fn();
   const setBlockSortDirection = vi.fn((value: "asc" | "desc" | null) => {
     stores.blockSortDirection = value;
@@ -217,6 +250,8 @@ const createHarness = (options: HarnessOptions = {}) => {
     openDuplicateEvent,
     clearRangeSelection,
     clearSelection,
+    removeSelectedItemIds,
+    queueShoppingMovePatch,
     setSortState,
     setBlockSortDirection,
     setCandidateNumberSortDirection,
@@ -280,6 +315,8 @@ const createHarness = (options: HarnessOptions = {}) => {
       showImport,
       clearRangeSelection,
       clearSelection,
+      removeSelectedItemIds,
+      queueShoppingMovePatch,
       setSortState,
       setBlockSortDirection,
       setCandidateNumberSortDirection,
@@ -291,7 +328,672 @@ const createHarness = (options: HarnessOptions = {}) => {
   };
 };
 
+const frozenDrag = (
+  sourceColumn: "execute" | "candidate",
+  targetColumn: "execute" | "candidate",
+  requestedIds: readonly string[],
+  effectiveIds: readonly string[],
+  sourceItems: ShoppingItem[],
+): ShoppingDragMoveContext => ({
+  token: Symbol(),
+  eventName: EVENT,
+  day: DAY,
+  generation: 0,
+  sourceColumn,
+  targetColumn,
+  requestedIds,
+  effectiveIds,
+  sourceVisits: projectItemsToExecutionVisits(sourceItems).map((visit) => ({
+    key: visit.key,
+    ids: visit.itemIds,
+  })),
+  operation: "selection",
+  isCurrent: () => true,
+});
+
 describe("useShoppingItemMutationCommands", () => {
+  it.each(["execute", "focus"] as const)(
+    "rejects new drag and vertical moves in %s mode without queue, selection, or sort effects",
+    (mode) => {
+      const items = [item("a", { number: "1" }), item("b", { number: "2" })];
+      const harness = createHarness({
+        eventLists: { [EVENT]: items },
+        items,
+        dayModes: { [EVENT]: { [DAY]: mode } },
+        executeModeItems: { [EVENT]: { [DAY]: ["a", "b"] } },
+        selectedItemIds: new Set(["a"]),
+        spaceGroupDragItemIds: ["a"],
+        blockSortDirection: "asc",
+      });
+      const before = structuredClone(harness.stores);
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(harness.ports),
+      );
+      act(() => {
+        result.current.moveItem("a", "b", "execute", "execute");
+        result.current.moveItem(
+          "a",
+          "b",
+          "execute",
+          "execute",
+          frozenDrag("execute", "execute", ["a"], ["a"], items),
+        );
+        result.current.moveItemUp("b", "execute");
+        result.current.moveItemDown("a", "execute");
+      });
+      expect(harness.stores).toEqual(before);
+      expect(harness.refs.spaceGroupDragItemIdsRef.current).toEqual(["a"]);
+      for (const spy of Object.values(harness.spies))
+        expect(spy).not.toHaveBeenCalled();
+      expect(
+        harness.ports.persistence.commitApplicationSnapshotPatch,
+      ).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["execute", "focus"] as const)(
+    "rejects callbacks and gestures captured in edit mode after changing to %s",
+    (mode) => {
+      const items = [item("a", { number: "1" }), item("b", { number: "2" })];
+      const harness = createHarness({
+        eventLists: { [EVENT]: items },
+        items,
+        executeModeItems: { [EVENT]: { [DAY]: ["a", "b"] } },
+      });
+      const { result, rerender } = renderHook(
+        ({ dayModes }) =>
+          useShoppingItemMutationCommands({
+            ...harness.ports,
+            state: { ...harness.ports.state, dayModes },
+          }),
+        { initialProps: { dayModes: harness.stores.dayModes } },
+      );
+      const captured = result.current;
+      const drag = frozenDrag("execute", "execute", ["a"], ["a"], items);
+      const before = structuredClone(harness.stores);
+      rerender({ dayModes: { [EVENT]: { [DAY]: mode } } });
+      act(() => {
+        captured.moveItem("a", "b", "execute", "execute", drag);
+        captured.moveItem("a", "b", "execute", "execute");
+        captured.moveItemUp("b", "execute");
+        captured.moveItemDown("a", "execute");
+        result.current.moveItemDown("a", "execute");
+      });
+      expect(harness.stores).toEqual(before);
+      for (const spy of Object.values(harness.spies))
+        expect(spy).not.toHaveBeenCalled();
+      expect(
+        harness.ports.persistence.commitApplicationSnapshotPatch,
+      ).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["execute", "focus"] as const)(
+    "keeps committed %s mode guarded when an edit render is abandoned",
+    (mode) => {
+      const items = [item("a", { number: "1" }), item("b", { number: "2" })];
+      const harness = createHarness({
+        eventLists: { [EVENT]: items },
+        items,
+        executeModeItems: { [EVENT]: { [DAY]: ["a", "b"] } },
+      });
+      const suspendedRender = vi.fn();
+      const pending = new Promise<void>(() => {});
+      const { result, rerender } = renderHook(
+        ({ dayModes, suspended }) => {
+          const commands = useShoppingItemMutationCommands({
+            ...harness.ports,
+            state: { ...harness.ports.state, dayModes },
+          });
+          if (suspended) {
+            suspendedRender();
+            throw pending;
+          }
+          return commands;
+        },
+        {
+          initialProps: { dayModes: harness.stores.dayModes, suspended: false },
+          wrapper: ({ children }) => (
+            <Suspense fallback={null}>{children}</Suspense>
+          ),
+        },
+      );
+      const captured = result.current;
+      rerender({ dayModes: { [EVENT]: { [DAY]: mode } }, suspended: false });
+      const committed = result.current;
+      const before = structuredClone(harness.stores);
+      act(() => {
+        startTransition(() =>
+          rerender({ dayModes: harness.stores.dayModes, suspended: true }),
+        );
+      });
+      expect(suspendedRender).toHaveBeenCalled();
+      expect(result.current).toBe(committed);
+      act(() => {
+        captured.moveItem(
+          "a",
+          "b",
+          "execute",
+          "execute",
+          frozenDrag("execute", "execute", ["a"], ["a"], items),
+        );
+        captured.moveItem("a", "b", "execute", "execute");
+        captured.moveItemUp("b", "execute");
+        captured.moveItemDown("a", "execute");
+      });
+      expect(harness.stores).toEqual(before);
+      for (const spy of Object.values(harness.spies))
+        expect(spy).not.toHaveBeenCalled();
+      expect(
+        harness.ports.persistence.commitApplicationSnapshotPatch,
+      ).not.toHaveBeenCalled();
+    },
+  );
+
+  it("keeps committed edit moves available when an execute render is abandoned", () => {
+    const items = [item("a", { number: "1" }), item("b", { number: "2" })];
+    const harness = createHarness({ eventLists: { [EVENT]: items }, items });
+    const suspendedRender = vi.fn();
+    const pending = new Promise<void>(() => {});
+    const { result, rerender } = renderHook(
+      ({ dayModes, suspended }) => {
+        const commands = useShoppingItemMutationCommands({
+          ...harness.ports,
+          state: { ...harness.ports.state, dayModes },
+        });
+        if (suspended) {
+          suspendedRender();
+          throw pending;
+        }
+        return commands;
+      },
+      {
+        initialProps: { dayModes: harness.stores.dayModes, suspended: false },
+        wrapper: ({ children }) => (
+          <Suspense fallback={null}>{children}</Suspense>
+        ),
+      },
+    );
+    const committed = result.current;
+    act(() => {
+      startTransition(() =>
+        rerender({
+          dayModes: { [EVENT]: { [DAY]: "execute" } },
+          suspended: true,
+        }),
+      );
+    });
+    expect(suspendedRender).toHaveBeenCalled();
+    expect(result.current).toBe(committed);
+    act(() => committed.moveItemDown("a", "candidate"));
+    expect(harness.stores.eventLists[EVENT].map(({ id }) => id)).toEqual([
+      "b",
+      "a",
+    ]);
+    expect(harness.spies.setEventLists).toHaveBeenCalledOnce();
+  });
+
+  it.each(["event", "day"] as const)(
+    "rejects move callbacks retained from a different active %s",
+    (changedScope) => {
+      const items = [item("a", { number: "1" }), item("b", { number: "2" })];
+      const harness = createHarness({ eventLists: { [EVENT]: items }, items });
+      const { result, rerender } = renderHook(
+        ({ state }) =>
+          useShoppingItemMutationCommands({ ...harness.ports, state }),
+        { initialProps: { state: harness.ports.state } },
+      );
+      const captured = result.current;
+      const before = structuredClone(harness.stores);
+      rerender({
+        state: {
+          ...harness.ports.state,
+          ...(changedScope === "event"
+            ? { activeEventName: "other-event" }
+            : { activeEventDate: "other-day" }),
+        },
+      });
+      act(() => {
+        captured.moveItem("b", "a", "candidate", "candidate");
+        captured.moveItemUp("b", "candidate");
+        captured.moveItemDown("a", "candidate");
+      });
+      expect(harness.stores).toEqual(before);
+      for (const spy of Object.values(harness.spies))
+        expect(spy).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["event", "day"] as const)(
+    "uses the displayed edit default when the %s mode bucket is missing",
+    (missingBucket) => {
+      for (const operation of ["drag", "up", "down"] as const) {
+        const items = [item("a", { number: "1" }), item("b", { number: "2" })];
+        const harness = createHarness({
+          eventLists: { [EVENT]: items },
+          items,
+          dayModes: missingBucket === "event" ? {} : { [EVENT]: {} },
+        });
+        const { result, unmount } = renderHook(() =>
+          useShoppingItemMutationCommands(harness.ports),
+        );
+        act(() => {
+          if (operation === "drag")
+            result.current.moveItem("b", "a", "candidate", "candidate");
+          else if (operation === "up")
+            result.current.moveItemUp("b", "candidate");
+          else result.current.moveItemDown("a", "candidate");
+        });
+        expect(harness.stores.eventLists[EVENT].map(({ id }) => id)).toEqual([
+          "b",
+          "a",
+        ]);
+        expect(harness.spies.setEventLists).toHaveBeenCalledOnce();
+        unmount();
+      }
+    },
+  );
+
+  it.each(["candidate", "execute"] as const)(
+    "supplies the accepted baseline for a second %s move before the screen rerenders",
+    (sourceColumn) => {
+      const x = item("x", { number: "1" });
+      const y = item("y", { number: "2" });
+      const z = item("z", { number: "3" });
+      const target = item("target", { number: "4" });
+      const targetColumn =
+        sourceColumn === "candidate" ? "execute" : "candidate";
+      const harness = createHarness({
+        eventLists: { [EVENT]: [x, y, z, target] },
+        executeModeItems: {
+          [EVENT]: {
+            [DAY]: sourceColumn === "execute" ? ["x", "y", "z"] : ["target"],
+          },
+        },
+      });
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(harness.ports),
+      );
+      act(() => {
+        result.current.moveItem(
+          "x",
+          "__END_OF_LIST__",
+          targetColumn,
+          sourceColumn,
+          frozenDrag(sourceColumn, targetColumn, ["x"], ["x"], [x]),
+        );
+      });
+      const afterFirstOrder = harness.refs.eventListsRef.current[EVENT].map(
+        (entry) => entry.id,
+      );
+      const afterFirstExecute = [
+        ...harness.refs.executeModeItemsRef.current[EVENT][DAY],
+      ];
+      // The render's eventLists/dayModes are deliberately unchanged. Both compute
+      // inputs and their queue proof must use the synchronously accepted refs.
+      act(() => {
+        result.current.moveItem(
+          "y",
+          "__END_OF_LIST__",
+          sourceColumn,
+          sourceColumn,
+          frozenDrag(sourceColumn, sourceColumn, ["y"], ["y"], [y]),
+        );
+      });
+      expect(harness.spies.queueShoppingMovePatch).toHaveBeenCalledTimes(2);
+      expect(
+        harness.spies.queueShoppingMovePatch.mock.calls[1][0],
+      ).toMatchObject({
+        baselineItemIds: afterFirstOrder,
+        baselineExecuteIds: afterFirstExecute,
+      });
+      expect(
+        harness.refs.executeModeItemsRef.current[EVENT][DAY].includes("x"),
+      ).toBe(sourceColumn === "candidate");
+    },
+  );
+
+  it.each(["candidate", "execute"] as const)(
+    "keeps both column controllers and later checks consistent while an accepted %s transfer saves",
+    (sourceColumn) => {
+      const moving = ["m1", "m2", "m3"].map((id, index) =>
+        item(id, { number: String(index + 1) }),
+      );
+      const target = item("target", { number: "9" });
+      const targetColumn =
+        sourceColumn === "candidate" ? "execute" : "candidate";
+      const context = frozenDrag(
+        sourceColumn,
+        targetColumn,
+        ["m1", "m2", "m3"],
+        ["m1", "m2", "m3"],
+        moving,
+      );
+      const harness = createHarness({
+        eventLists: { [EVENT]: [...moving, target] },
+        executeModeItems: {
+          [EVENT]: {
+            [DAY]:
+              sourceColumn === "execute"
+                ? moving.map((entry) => entry.id)
+                : ["target"],
+          },
+        },
+      });
+      let completeSave!: () => void;
+      function TransferHarness() {
+        const selection = useListInteractionState();
+        const [, refresh] = useState(0);
+        harness.spies.queueShoppingMovePatch.mockImplementation((input) => {
+          completeSave = () => {
+            if (input.eventListItems) {
+              harness.stores.eventLists = {
+                [EVENT]: [...input.eventListItems],
+              };
+              harness.refs.eventListsRef.current = harness.stores.eventLists;
+            }
+            if (input.executeModeItems) {
+              harness.stores.executeModeItems = {
+                [EVENT]: input.executeModeItems,
+              };
+              harness.refs.executeModeItemsRef.current =
+                harness.stores.executeModeItems;
+            }
+            refresh((value) => value + 1);
+          };
+          return {
+            status: "accepted",
+            operationId: "save",
+            moveId: "save:move:1",
+          };
+        });
+        const commands = useShoppingItemMutationCommands({
+          ...harness.ports,
+          state: {
+            ...harness.ports.state,
+            eventLists: harness.stores.eventLists,
+            selectedItemIds: selection.selectedItemIds,
+          },
+          actions: {
+            ...harness.ports.actions,
+            removeSelectedItemIds: selection.removeSelectedItemIds,
+            clearRangeSelection: selection.clearRangeSelection,
+          },
+        });
+        const executeIds = new Set(harness.stores.executeModeItems[EVENT][DAY]);
+        return (
+          <>
+            <output data-testid="selection-state">
+              {JSON.stringify({
+                selected: [...selection.selectedItemIds].sort(),
+                start: selection.rangeStart,
+                end: selection.rangeEnd,
+              })}
+            </output>
+            <button
+              onClick={() =>
+                commands.moveItem(
+                  "m1",
+                  "__END_OF_LIST__",
+                  targetColumn,
+                  sourceColumn,
+                  context,
+                )
+              }
+            >
+              Move frozen range
+            </button>
+            {(["candidate", "execute"] as const).map((column) => (
+              <ShoppingList
+                key={column}
+                items={harness.stores.eventLists[EVENT].filter(
+                  (entry) =>
+                    executeIds.has(entry.id) === (column === "execute"),
+                )}
+                onUpdateItem={vi.fn()}
+                onMoveItem={commands.moveItem}
+                onEditRequest={vi.fn()}
+                onDeleteRequest={vi.fn()}
+                selectedItemIds={selection.selectedItemIds}
+                onSelectItem={(id, _column, presentation) =>
+                  selection.selectItemForRange(id, presentation)
+                }
+                rangeStart={selection.rangeStart}
+                rangeEnd={selection.rangeEnd}
+                onToggleRangeSelection={selection.toggleRangeItemIdsSelection}
+                columnType={column}
+                currentDay={DAY}
+                viewMode="edit"
+                layoutMode="pc"
+                showSpaceGroups={false}
+                showHallGroups={false}
+                forceFullListRenderer
+                skipLimitedPurchaseForSingleQuantity
+              />
+            ))}
+          </>
+        );
+      }
+      render(<TransferHarness />);
+      const checkbox = (id: string) =>
+        screen.getByRole("checkbox", {
+          name: `Select item circle-${id} - title-${id}`,
+        });
+      const readSelection = () =>
+        JSON.parse(screen.getByTestId("selection-state").textContent!) as {
+          selected: string[];
+          start: { itemId: string } | null;
+          end: unknown;
+        };
+      fireEvent.click(checkbox("target"));
+      fireEvent.click(checkbox("m1"));
+      fireEvent.click(checkbox("m3"));
+      fireEvent.click(screen.getAllByTitle("範囲内のチェックを入れる")[0]);
+      expect(readSelection().selected).toEqual(["m1", "m2", "m3", "target"]);
+      for (const entry of moving) expect(checkbox(entry.id)).toBeChecked();
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Move frozen range" }),
+      );
+      expect(readSelection()).toEqual({
+        selected: ["target"],
+        start: null,
+        end: null,
+      });
+      for (const entry of moving) expect(checkbox(entry.id)).not.toBeChecked();
+      expect(checkbox("target")).toBeChecked();
+      expect(
+        screen.queryByTitle("範囲内のチェックを外す"),
+      ).not.toBeInTheDocument();
+
+      // The next check is accepted before persistence updates either column.
+      fireEvent.click(checkbox("m1"));
+      expect(checkbox("m1")).toBeChecked();
+      expect(readSelection().selected).toEqual(["m1", "target"]);
+      const laterStart = readSelection().start;
+      act(() => completeSave());
+      expect(checkbox("m1")).toBeChecked();
+      expect(checkbox("m2")).not.toBeChecked();
+      expect(checkbox("m3")).not.toBeChecked();
+      expect(checkbox("target")).toBeChecked();
+      expect(readSelection()).toEqual({
+        selected: ["m1", "target"],
+        start: laterStart,
+        end: null,
+      });
+    },
+  );
+
+  it.each(["candidate", "execute"] as const)(
+    "consumes only accepted %s transfers including expanded visit members",
+    (sourceColumn) => {
+      const x = item("x", { number: "2a" });
+      const peer = item("peer", { number: "2a2" });
+      const other = item("other", { number: "3a" });
+      const targetColumn =
+        sourceColumn === "candidate" ? "execute" : "candidate";
+      const harness = createHarness({
+        eventLists: { [EVENT]: [x, peer, other] },
+        selectedItemIds: new Set(["x", "peer", "other"]),
+        executeModeItems: {
+          [EVENT]: { [DAY]: sourceColumn === "execute" ? ["x", "peer"] : [] },
+        },
+      });
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(harness.ports),
+      );
+      const context = frozenDrag(
+        sourceColumn,
+        targetColumn,
+        ["x"],
+        ["x", "peer"],
+        [x, peer],
+      );
+      act(() =>
+        result.current.moveItem(
+          "x",
+          "__END_OF_LIST__",
+          targetColumn,
+          sourceColumn,
+          context,
+        ),
+      );
+
+      expect(
+        harness.spies.removeSelectedItemIds,
+      ).toHaveBeenCalledExactlyOnceWith(["x", "peer"]);
+      expect(harness.spies.clearRangeSelection).toHaveBeenCalledTimes(1);
+      expect(harness.spies.clearSelection).not.toHaveBeenCalled();
+      expect(harness.spies.setSortState).toHaveBeenCalledExactlyOnceWith(
+        "Manual",
+      );
+      expect(
+        harness.spies.setBlockSortDirection,
+      ).toHaveBeenCalledExactlyOnceWith(null);
+      expect(
+        harness.spies.setCandidateNumberSortDirection,
+      ).not.toHaveBeenCalled();
+      expect(harness.spies.setEventLists).not.toHaveBeenCalled();
+      expect(harness.spies.updateExecuteModeItems).not.toHaveBeenCalled();
+      expect(harness.spies.queueShoppingMovePatch).toHaveBeenCalledTimes(1);
+      expect(
+        harness.spies.queueShoppingMovePatch.mock.calls[0][0],
+      ).toMatchObject({
+        eventName: EVENT,
+        day: DAY,
+        eventGeneration: 0,
+        sourceColumn,
+        targetColumn,
+        requestedIds: ["x"],
+        effectiveIds: ["x", "peer"],
+      });
+    },
+  );
+
+  it.each(["candidate", "execute"] as const)(
+    "retains checks and performs existing UI cleanup once for a same-order %s drop",
+    (column) => {
+      const a = item("a", { number: "1" });
+      const b = item("b", { number: "2" });
+      const c = item("c", { number: "3" });
+      const harness = createHarness({
+        eventLists: { [EVENT]: [a, b, c] },
+        selectedItemIds: new Set(["b", "c"]),
+        executeModeItems: {
+          [EVENT]: { [DAY]: column === "execute" ? ["a", "b", "c"] : [] },
+        },
+        spaceGroupDragItemIds: ["b", "c"],
+        candidateNumberSortDirection: "desc",
+      });
+      harness.spies.queueShoppingMovePatch.mockReturnValue({
+        status: "noop",
+        reason: "same-order",
+      });
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(harness.ports),
+      );
+      const context = frozenDrag(
+        column,
+        column,
+        ["b", "c"],
+        ["b", "c"],
+        [b, c],
+      );
+      act(() =>
+        result.current.moveItem(
+          "b",
+          "__END_OF_LIST__",
+          column,
+          column,
+          context,
+        ),
+      );
+
+      expect(harness.spies.queueShoppingMovePatch).toHaveBeenCalledTimes(1);
+      expect(harness.spies.removeSelectedItemIds).not.toHaveBeenCalled();
+      expect(harness.spies.clearSelection).not.toHaveBeenCalled();
+      expect(harness.spies.clearRangeSelection).toHaveBeenCalledTimes(1);
+      expect(harness.spies.setSortState).toHaveBeenCalledExactlyOnceWith(
+        "Manual",
+      );
+      expect(
+        harness.spies.setBlockSortDirection,
+      ).toHaveBeenCalledExactlyOnceWith(null);
+      expect(
+        harness.spies.setCandidateNumberSortDirection,
+      ).not.toHaveBeenCalled();
+      expect(harness.stores.candidateNumberSortDirection).toBe("desc");
+      expect(harness.refs.spaceGroupDragItemIdsRef.current).toBeNull();
+      expect(harness.spies.notify).not.toHaveBeenCalled();
+      expect(harness.spies.setEventLists).not.toHaveBeenCalled();
+      expect(harness.spies.updateExecuteModeItems).not.toHaveBeenCalled();
+      expect(harness.stores.eventLists[EVENT]).toEqual([a, b, c]);
+    },
+  );
+
+  it.each(["candidate", "execute"] as const)(
+    "preserves selection, endpoints and sort when the queue blocks a %s drop",
+    (targetColumn) => {
+      const a = item("a", { number: "1" });
+      const harness = createHarness({
+        eventLists: { [EVENT]: [a] },
+        selectedItemIds: new Set(["a"]),
+        spaceGroupDragItemIds: ["a"],
+      });
+      harness.spies.queueShoppingMovePatch.mockReturnValue({
+        status: "blocked",
+        reason: "write-stop",
+      });
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(harness.ports),
+      );
+      const context = frozenDrag("candidate", targetColumn, ["a"], ["a"], [a]);
+      act(() =>
+        result.current.moveItem(
+          "a",
+          "__END_OF_LIST__",
+          targetColumn,
+          "candidate",
+          context,
+        ),
+      );
+
+      expect(harness.spies.queueShoppingMovePatch).toHaveBeenCalledTimes(1);
+      expect(harness.spies.removeSelectedItemIds).not.toHaveBeenCalled();
+      expect(harness.spies.clearRangeSelection).not.toHaveBeenCalled();
+      expect(harness.spies.clearSelection).not.toHaveBeenCalled();
+      expect(harness.spies.setSortState).not.toHaveBeenCalled();
+      expect(harness.spies.setBlockSortDirection).not.toHaveBeenCalled();
+      expect(
+        harness.spies.setCandidateNumberSortDirection,
+      ).not.toHaveBeenCalled();
+      expect(harness.spies.notify).not.toHaveBeenCalled();
+      expect(harness.refs.spaceGroupDragItemIdsRef.current).toEqual(["a"]);
+      expect(harness.spies.setEventLists).not.toHaveBeenCalled();
+      expect(harness.spies.updateExecuteModeItems).not.toHaveBeenCalled();
+    },
+  );
+
   it("freezes an exact same-column candidate selection without expanding its peers", () => {
     const a = item("a", { number: "1a" }),
       x1 = item("x1", { number: "2a" }),

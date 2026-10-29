@@ -3,12 +3,13 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { IDBFactory } from "fake-indexeddb";
+import { IDBFactory, IDBDatabase, IDBObjectStore } from "fake-indexeddb";
 import { fileURLToPath } from "node:url";
 import {
   buildCanonicalItems,
   buildCanonicalEventWorkbookBytes,
   canonicalEventItemsSemanticSha256,
+  canonicalPersistencePayloadBytes,
   sha256Bytes,
 } from "./canonicalPublicFixtures.mjs";
 import {
@@ -16,6 +17,7 @@ import {
   publicXlsxScenarioAdapters,
   resolveSourceBoundWorkerAsset,
   stageCanonicalExportEventLists,
+  readCommittedEventListsReceipt,
 } from "./publicXlsxScenarioAdapters.mjs";
 
 const root = path.resolve(
@@ -753,5 +755,482 @@ test("stages initialized empty DB 9/10/11 roots while preserving their parent re
   } finally {
     if (originalIndexedDb === undefined) delete globalThis.indexedDB;
     else globalThis.indexedDB = originalIndexedDb;
+  }
+});
+
+// Persistence canonicalization omits own undefined fields, while the IDB fixture
+// retains them. Normalize a private hash input only, never the stored test values.
+const receiptPayloadBytes = (value) =>
+  canonicalPersistencePayloadBytes(JSON.parse(JSON.stringify(value)));
+const receiptStores = [
+  "dayModes",
+  "eventConsistency",
+  "eventLists",
+  "eventMetadata",
+  "executeModeItems",
+  "hallDefinitions",
+  "hallRouteSettings",
+  "mapData",
+  "mapRotationSettings",
+  "mapViewportSettings",
+  "routeSettings",
+  "syncQueue",
+];
+const receiptMetadataKey = (store) =>
+  "__esp_internal__:meta:v1:" + store + ":data";
+const receiptCheckpointKey = (store) =>
+  "__esp_internal__:checkpoint:v1:" + store + ":data";
+const receiptRecordKey = (eventName) =>
+  "__esp_internal__:day-record:v1:" + JSON.stringify([eventName, []]);
+const receiptHead = (rows) => ({
+  kind: "event-shopping-planner-day-records",
+  version: 1,
+  storeName: "eventLists",
+  count: rows.length,
+  checksum: (
+    rows.reduce((sum, [, row]) => sum + BigInt("0x" + row.digest.value), 0n) %
+    (1n << 256n)
+  )
+    .toString(16)
+    .padStart(64, "0"),
+  authenticatedRoots: true,
+});
+const receiptRecord = (eventName, items) => {
+  const key = receiptRecordKey(eventName);
+  return [
+    key,
+    {
+      kind: "event-shopping-planner-day-record",
+      version: 1,
+      eventName,
+      path: [],
+      value: items,
+      children: [],
+      digest: {
+        algorithm: "SHA-256",
+        canonicalization: "esp-json-v1",
+        value: sha256Bytes(
+          receiptPayloadBytes({
+            store: "eventLists",
+            key,
+            value: items,
+            children: [],
+          }),
+        ),
+      },
+    },
+  ];
+};
+const receiptControls = (payload, storeName) => {
+  const bytes = receiptPayloadBytes(payload);
+  let hash = 0xcbf29ce484222325n;
+  for (const byte of bytes)
+    hash = BigInt.asUintN(64, (hash ^ BigInt(byte)) * 0x100000001b3n);
+  const metadata = {
+    kind: "event-shopping-planner-persistence-metadata",
+    version: 1,
+    storeName,
+    key: "data",
+    revision: "committed-" + storeName,
+    baseRevision:
+      payload?.kind === "event-shopping-planner-day-records"
+        ? "before-head-preparation"
+        : null,
+    payloadDigest: {
+      algorithm: "SHA-256",
+      canonicalization: "esp-json-v1",
+      value: sha256Bytes(bytes),
+    },
+    payloadFingerprint: {
+      algorithm: "FNV-1A-64",
+      canonicalization: "esp-json-v1",
+      canonicalLength: bytes.toString("utf8").length,
+      value: hash.toString(16).padStart(16, "0"),
+    },
+    writerId: "verified-application-startup",
+    committedAt: "2026-10-22T00:00:00.000Z",
+  };
+  return {
+    metadata,
+    checkpoint: {
+      kind: "event-shopping-planner-persistence-checkpoint",
+      version: 1,
+      storeName,
+      key: "data",
+      committedRoot: {
+        revision: metadata.revision,
+        baseRevision: metadata.baseRevision,
+        digest: structuredClone(metadata.payloadDigest),
+        writerId: metadata.writerId,
+        committedAt: metadata.committedAt,
+      },
+      absorbedCandidates: [],
+      updatedAt: metadata.committedAt,
+    },
+  };
+};
+const receiptRequest = (request) =>
+  new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+const receiptFinished = (tx) =>
+  new Promise((resolve, reject) => {
+    tx.oncomplete = resolve;
+    tx.onabort = () => reject(tx.error);
+  });
+const receiptSnapshot = async (database) => {
+  const tx = database.transaction(receiptStores, "readonly");
+  const finished = receiptFinished(tx);
+  const contents = await Promise.all(
+    receiptStores.map(async (name) => {
+      const store = tx.objectStore(name);
+      return [
+        name,
+        await Promise.all([
+          receiptRequest(store.getAllKeys()),
+          receiptRequest(store.getAll()),
+        ]),
+      ];
+    }),
+  );
+  await finished;
+  return contents;
+};
+const withReceiptDatabase = async (callback) => {
+  const originalIndexedDb = globalThis.indexedDB;
+  globalThis.indexedDB = new IDBFactory();
+  const database = await new Promise((resolve, reject) => {
+    const request = globalThis.indexedDB.open("EventShoppingPlannerDB", 11);
+    request.onupgradeneeded = () => {
+      for (const store of receiptStores)
+        request.result.createObjectStore(store);
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  try {
+    await callback(database);
+  } finally {
+    database.close();
+    if (originalIndexedDb === undefined) delete globalThis.indexedDB;
+    else globalThis.indexedDB = originalIndexedDb;
+  }
+};
+const seedReceipt = async (
+  database,
+  payload,
+  rows,
+  controls = receiptControls(payload, "eventLists"),
+) => {
+  const tx = database.transaction(receiptStores, "readwrite");
+  const finished = receiptFinished(tx);
+  const queue = tx.objectStore("syncQueue");
+  for (const storeName of receiptStores.filter(
+    (name) => name !== "syncQueue",
+  )) {
+    const data = storeName === "eventLists" ? payload : {};
+    const root =
+      storeName === "eventLists" ? controls : receiptControls(data, storeName);
+    tx.objectStore(storeName).put(data, "data");
+    queue.put(root.metadata, receiptMetadataKey(storeName));
+    queue.put(root.checkpoint, receiptCheckpointKey(storeName));
+  }
+  for (const [key, row] of rows) tx.objectStore("eventLists").put(row, key);
+  queue.put(
+    { event: 7, optional: { keep: true } },
+    "__esp_internal__:unchanged-control",
+  );
+  await finished;
+};
+const observeReceiptCalls = async (callback) => {
+  const puts = [];
+  const transactions = [];
+  const put = IDBObjectStore.prototype.put;
+  const transaction = IDBDatabase.prototype.transaction;
+  IDBObjectStore.prototype.put = function (...args) {
+    puts.push({ store: this.name, key: args[1] });
+    return Reflect.apply(put, this, args);
+  };
+  IDBDatabase.prototype.transaction = function (...args) {
+    transactions.push({ stores: [...args[0]], mode: args[1] });
+    return Reflect.apply(transaction, this, args);
+  };
+  try {
+    return await callback({ puts, transactions });
+  } finally {
+    IDBObjectStore.prototype.put = put;
+    IDBDatabase.prototype.transaction = transaction;
+  }
+};
+
+test("authenticates legacy and event-head receipts without changing any persisted field", async (t) => {
+  for (const mutation of [
+    "legacy",
+    "head",
+    "head-other-event",
+    "head-prototype-event",
+    "legacy-digest",
+    "legacy-array",
+    "head-array",
+    "head-record-array",
+    "head-authentication",
+    "head-count",
+    "head-checksum",
+    "head-record-digest",
+    "head-record-key",
+    "head-record-path",
+    "head-record-children",
+    "head-record-unknown-drift",
+    "head-extra-record",
+    "head-missing-record",
+    "head-payload-digest",
+    "head-fingerprint",
+    "head-checkpoint",
+    "head-cardinality",
+    "head-semantic",
+  ]) {
+    await t.test(mutation, async () =>
+      withReceiptDatabase(async (database) => {
+        const eventName =
+          mutation === "head-prototype-event" ? "__proto__" : "receipt-event";
+        const items = buildCanonicalItems({ rowCount: 2, seed: 1967 });
+        items[0].url = undefined;
+        items[0].assignedTo = undefined;
+        items[0].customOptional = { nested: ["retained", { keep: true }] };
+        let rows = [receiptRecord(eventName, items)];
+        if (mutation === "head-other-event")
+          rows.push(
+            receiptRecord("other-event", [{ ...items[1], id: "other" }]),
+          );
+        if (mutation === "head-record-key") rows[0][0] += "-wrong-key";
+        if (mutation === "head-record-path") rows[0][1].path = ["unexpected"];
+        if (mutation === "head-record-children")
+          rows[0][1].children = [{ path: ["child"] }];
+        if (mutation === "head-record-digest")
+          rows[0][1].digest.value = "0".repeat(64);
+        if (mutation === "head-record-unknown-drift")
+          rows[0][1].value[0].customOptional.nested[1].keep = false;
+        if (mutation === "head-record-array")
+          rows[0][1] = Object.assign([], rows[0][1]);
+        const isLegacy = mutation.startsWith("legacy");
+        let payload = isLegacy
+          ? Object.fromEntries([[eventName, items]])
+          : receiptHead(rows);
+        if (mutation === "legacy-array" || mutation === "head-array")
+          payload = Object.assign([], payload);
+        if (mutation === "head-authentication")
+          payload.authenticatedRoots = false;
+        if (mutation === "head-count") payload.count++;
+        if (mutation === "head-checksum") payload.checksum = "1".repeat(64);
+        if (isLegacy) rows = [];
+        if (mutation === "head-extra-record")
+          rows.push(receiptRecord("unlisted-event", []));
+        if (mutation === "head-missing-record") rows = [];
+        const controls = receiptControls(payload, "eventLists");
+        if (mutation === "legacy-digest" || mutation === "head-payload-digest")
+          controls.metadata.payloadDigest.value = "0".repeat(64);
+        if (mutation === "head-fingerprint")
+          controls.metadata.payloadFingerprint.value = "0".repeat(16);
+        if (mutation === "head-checkpoint")
+          controls.checkpoint.committedRoot.revision = "uncommitted-revision";
+        await seedReceipt(database, payload, rows, controls);
+        const before = await receiptSnapshot(database);
+        await observeReceiptCalls(async ({ puts, transactions }) => {
+          const read = () =>
+            readCommittedEventListsReceipt({
+              eventName,
+              expectedItemCount: mutation === "head-cardinality" ? 3 : 2,
+              expectedSemanticSha256:
+                mutation === "head-semantic"
+                  ? "0".repeat(64)
+                  : canonicalEventItemsSemanticSha256(eventName, items),
+              page: { evaluate: (callback, input) => callback(input) },
+            });
+          if (
+            [
+              "legacy",
+              "head",
+              "head-other-event",
+              "head-prototype-event",
+            ].includes(mutation)
+          ) {
+            const receipt = await read();
+            assert.equal(receipt.itemCount, 2);
+            assert.equal(
+              receipt.payloadSha256,
+              sha256Bytes(receiptPayloadBytes(payload)),
+            );
+            assert.equal(
+              receipt.semanticSha256,
+              canonicalEventItemsSemanticSha256(eventName, items),
+            );
+          } else {
+            await assert.rejects(read(), /Committed event/);
+          }
+          assert.deepEqual(puts, []);
+          assert.deepEqual(transactions, [
+            { stores: ["eventLists", "syncQueue"], mode: "readonly" },
+          ]);
+        });
+        assert.deepEqual(await receiptSnapshot(database), before);
+      }),
+    );
+  }
+});
+
+test("stages only truly empty authenticated item heads and preserves every unrelated root", async (t) => {
+  for (const mutation of [
+    "empty-head",
+    "empty-head-and-consistency",
+    "nonempty-head",
+    "forged-head",
+    "wrong-store",
+    "wrong-count",
+    "wrong-checksum",
+    "extra-record",
+    "extra-unrecognized-record",
+    "missing-data-with-extra-record",
+    "metadata-digest",
+    "metadata-fingerprint",
+    "checkpoint",
+  ]) {
+    await t.test(mutation, async () =>
+      withReceiptDatabase(async (database) => {
+        const rows =
+          mutation === "nonempty-head"
+            ? [receiptRecord("existing-event", [])]
+            : [];
+        const payload = receiptHead(rows);
+        if (mutation === "forged-head") payload.authenticatedRoots = false;
+        if (mutation === "wrong-store") payload.storeName = "eventMetadata";
+        if (mutation === "wrong-count") payload.count = 1;
+        if (mutation === "wrong-checksum") payload.checksum = "1".repeat(64);
+        const controls = receiptControls(payload, "eventLists");
+        if (mutation === "metadata-digest")
+          controls.metadata.payloadDigest.value = "0".repeat(64);
+        if (mutation === "metadata-fingerprint")
+          controls.metadata.payloadFingerprint.value = "0".repeat(16);
+        if (mutation === "checkpoint")
+          controls.checkpoint.committedRoot.revision = "stale-root";
+        if (mutation === "extra-record")
+          rows.push(receiptRecord("unlisted-event", []));
+        if (
+          mutation === "extra-unrecognized-record" ||
+          mutation === "missing-data-with-extra-record"
+        )
+          rows.push(["unrecognized-record", { keep: true }]);
+        await seedReceipt(database, payload, rows, controls);
+        if (
+          mutation === "empty-head-and-consistency" ||
+          mutation === "missing-data-with-extra-record"
+        ) {
+          const tx = database.transaction(
+            ["eventLists", "eventConsistency", "syncQueue"],
+            "readwrite",
+          );
+          const finished = receiptFinished(tx);
+          if (mutation === "missing-data-with-extra-record")
+            tx.objectStore("eventLists").delete("data");
+          else {
+            const head = { ...receiptHead([]), storeName: "eventConsistency" };
+            const root = receiptControls(head, "eventConsistency");
+            tx.objectStore("eventConsistency").put(head, "data");
+            tx.objectStore("syncQueue").put(
+              root.metadata,
+              receiptMetadataKey("eventConsistency"),
+            );
+            tx.objectStore("syncQueue").put(
+              root.checkpoint,
+              receiptCheckpointKey("eventConsistency"),
+            );
+          }
+          await finished;
+        }
+        const before = await receiptSnapshot(database);
+        const eventName = "staged-head-event";
+        const items = buildCanonicalItems({ rowCount: 2, seed: 1967 });
+        items[0].customOptional = { keep: ["all", "fields"] };
+        const eventLists = { [eventName]: items };
+        const accepted = mutation.startsWith("empty-head");
+        await observeReceiptCalls(async ({ puts }) => {
+          const stage = () =>
+            stageCanonicalExportEventLists({
+              eventName,
+              eventLists,
+              expectedSemanticSha256: canonicalEventItemsSemanticSha256(
+                eventName,
+                items,
+              ),
+              page: { evaluate: (callback, input) => callback(input) },
+            });
+          if (accepted) {
+            await stage();
+            assert.equal(puts.length, 6);
+            assert.deepEqual(
+              puts.map(({ store }) => store),
+              [
+                "eventLists",
+                "syncQueue",
+                "syncQueue",
+                "eventConsistency",
+                "syncQueue",
+                "syncQueue",
+              ],
+            );
+          } else {
+            await assert.rejects(
+              stage(),
+              /requires an empty fresh-context root/,
+            );
+            assert.deepEqual(puts, []);
+          }
+        });
+        const after = await receiptSnapshot(database);
+        if (!accepted) {
+          assert.deepEqual(after, before);
+          return;
+        }
+        const afterMap = new Map(after);
+        const [, eventValues] = afterMap.get("eventLists");
+        assert.deepEqual(eventValues, [eventLists]);
+        const [queueKeys, queueValues] = afterMap.get("syncQueue");
+        const queue = new Map(
+          queueKeys.map((key, index) => [key, queueValues[index]]),
+        );
+        assert.equal(
+          queue.get(receiptMetadataKey("eventLists")).baseRevision,
+          controls.metadata.revision,
+        );
+        assert.equal(
+          queue.get(receiptCheckpointKey("eventLists")).committedRoot
+            .baseRevision,
+          controls.metadata.revision,
+        );
+        const untouched = (snapshot) =>
+          snapshot
+            .map(([store, [keys, values]]) =>
+              store === "syncQueue"
+                ? [
+                    store,
+                    keys
+                      .map((key, index) => [key, values[index]])
+                      .filter(
+                        ([key]) =>
+                          !["eventLists", "eventConsistency"].some(
+                            (name) =>
+                              key === receiptMetadataKey(name) ||
+                              key === receiptCheckpointKey(name),
+                          ),
+                      ),
+                  ]
+                : [store, keys, values],
+            )
+            .filter(
+              ([store]) => !["eventLists", "eventConsistency"].includes(store),
+            );
+        assert.deepEqual(untouched(after), untouched(before));
+      }),
+    );
   }
 });

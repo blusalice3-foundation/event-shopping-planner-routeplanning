@@ -5,6 +5,7 @@ import type { ShoppingItem } from "../types/item";
 
 type MockShoppingItemCardProps = {
   item: ShoppingItem;
+  viewMode?: "edit" | "execute" | "focus";
   getLatestItemById?: (itemId: string) => ShoppingItem | undefined;
   onDeleteRequest: (item: ShoppingItem) => void;
   onEditRequest: (item: ShoppingItem) => void;
@@ -62,127 +63,136 @@ describe("ShoppingList item card memoization", () => {
     cardRenderSpy.mockReset();
   });
 
-  it("rerenders only the changed card while stable callbacks read the latest values", () => {
-    const initialItems = [item(1), item(2), item(3)];
-    const selectedItemIds = new Set<string>();
-    const duplicateCircleItemIds = new Set<string>();
-    const onUpdateItem = vi.fn<ShoppingListProps["onUpdateItem"]>();
-    const onEditRequest = vi.fn<ShoppingListProps["onEditRequest"]>();
-    const onDeleteRequest = vi.fn<ShoppingListProps["onDeleteRequest"]>();
-    const onSelectItem = vi.fn<ShoppingListProps["onSelectItem"]>();
-    const onMoveItemUp =
-      vi.fn<NonNullable<ShoppingListProps["onMoveItemUp"]>>();
-    const onMoveItemDown =
-      vi.fn<NonNullable<ShoppingListProps["onMoveItemDown"]>>();
-    const baseProps = {
-      onUpdateItem,
-      onMoveItem: vi.fn<ShoppingListProps["onMoveItem"]>(),
-      onEditRequest,
-      onDeleteRequest,
-      selectedItemIds,
-      onSelectItem,
-      onMoveItemUp,
-      onMoveItemDown,
-      duplicateCircleItemIds,
-      columnType: "execute",
-      viewMode: "execute",
-      forceFullListRenderer: true,
-      skipLimitedPurchaseForSingleQuantity: false,
-    } satisfies Omit<ShoppingListProps, "items">;
+  it.each(["edit", "execute"] as const)(
+    "rerenders only the changed card while stable callbacks read the latest values in %s mode",
+    (viewMode) => {
+      const initialItems = [item(1), item(2), item(3)];
+      const selectedItemIds = new Set<string>();
+      const duplicateCircleItemIds = new Set<string>();
+      const onUpdateItem = vi.fn<ShoppingListProps["onUpdateItem"]>();
+      const onEditRequest = vi.fn<ShoppingListProps["onEditRequest"]>();
+      const onDeleteRequest = vi.fn<ShoppingListProps["onDeleteRequest"]>();
+      const onSelectItem = vi.fn<ShoppingListProps["onSelectItem"]>();
+      const onMoveItemUp =
+        vi.fn<NonNullable<ShoppingListProps["onMoveItemUp"]>>();
+      const onMoveItemDown =
+        vi.fn<NonNullable<ShoppingListProps["onMoveItemDown"]>>();
+      const baseProps = {
+        onUpdateItem,
+        onMoveItem: vi.fn<ShoppingListProps["onMoveItem"]>(),
+        onEditRequest,
+        onDeleteRequest,
+        selectedItemIds,
+        onSelectItem,
+        onMoveItemUp,
+        onMoveItemDown,
+        duplicateCircleItemIds,
+        columnType: "execute",
+        viewMode,
+        forceFullListRenderer: true,
+        skipLimitedPurchaseForSingleQuantity: false,
+      } satisfies Omit<ShoppingListProps, "items">;
 
-    const view = render(<ShoppingList {...baseProps} items={initialItems} />);
+      const view = render(<ShoppingList {...baseProps} items={initialItems} />);
 
-    expect(cardRenderSpy).toHaveBeenCalledTimes(initialItems.length);
-    const initialChangedCardProps = findRenderedCardProps("item-2");
-    expect(initialChangedCardProps).toBeDefined();
+      expect(cardRenderSpy).toHaveBeenCalledTimes(initialItems.length);
+      const initialChangedCardProps = findRenderedCardProps("item-2");
+      expect(initialChangedCardProps).toBeDefined();
 
-    cardRenderSpy.mockClear();
-    const updatedItems = initialItems.map((currentItem) =>
-      currentItem.id === "item-2"
-        ? { ...currentItem, title: "更新された新刊" }
-        : currentItem,
-    );
-    view.rerender(<ShoppingList {...baseProps} items={updatedItems} />);
+      cardRenderSpy.mockClear();
+      const updatedItems = initialItems.map((currentItem) =>
+        currentItem.id === "item-2"
+          ? { ...currentItem, title: "更新された新刊" }
+          : currentItem,
+      );
+      view.rerender(<ShoppingList {...baseProps} items={updatedItems} />);
 
-    expect(cardRenderSpy).toHaveBeenCalledTimes(1);
-    const updatedChangedCardProps = findRenderedCardProps("item-2");
-    expect(updatedChangedCardProps).toBeDefined();
-    expect(updatedChangedCardProps?.onSelectItem).toBe(
-      initialChangedCardProps?.onSelectItem,
-    );
-    expect(updatedChangedCardProps?.onUpdate).toBe(
-      initialChangedCardProps?.onUpdate,
-    );
-    expect(updatedChangedCardProps?.onEditRequest).toBe(
-      initialChangedCardProps?.onEditRequest,
-    );
-    expect(updatedChangedCardProps?.onDeleteRequest).toBe(
-      initialChangedCardProps?.onDeleteRequest,
-    );
-    expect(updatedChangedCardProps?.onMoveUp).toBe(
-      initialChangedCardProps?.onMoveUp,
-    );
-    expect(updatedChangedCardProps?.onMoveDown).toBe(
-      initialChangedCardProps?.onMoveDown,
-    );
-    expect(updatedChangedCardProps?.getLatestItemById).toBe(
-      initialChangedCardProps?.getLatestItemById,
-    );
-    expect(updatedChangedCardProps?.onPostEventDistributionCheckRequest).toBe(
-      initialChangedCardProps?.onPostEventDistributionCheckRequest,
-    );
-    expect(initialChangedCardProps?.getLatestItemById?.("item-2")).toBe(
-      updatedItems[1],
-    );
+      expect(cardRenderSpy).toHaveBeenCalledTimes(1);
+      const updatedChangedCardProps = findRenderedCardProps("item-2");
+      expect(updatedChangedCardProps).toBeDefined();
+      expect(updatedChangedCardProps?.onSelectItem).toBe(
+        initialChangedCardProps?.onSelectItem,
+      );
+      expect(updatedChangedCardProps?.onUpdate).toBe(
+        initialChangedCardProps?.onUpdate,
+      );
+      expect(updatedChangedCardProps?.onEditRequest).toBe(
+        initialChangedCardProps?.onEditRequest,
+      );
+      expect(updatedChangedCardProps?.onDeleteRequest).toBe(
+        initialChangedCardProps?.onDeleteRequest,
+      );
+      expect(updatedChangedCardProps?.onMoveUp).toBe(
+        initialChangedCardProps?.onMoveUp,
+      );
+      expect(updatedChangedCardProps?.onMoveDown).toBe(
+        initialChangedCardProps?.onMoveDown,
+      );
+      expect(updatedChangedCardProps?.getLatestItemById).toBe(
+        initialChangedCardProps?.getLatestItemById,
+      );
+      expect(updatedChangedCardProps?.onPostEventDistributionCheckRequest).toBe(
+        initialChangedCardProps?.onPostEventDistributionCheckRequest,
+      );
+      expect(initialChangedCardProps?.getLatestItemById?.("item-2")).toBe(
+        updatedItems[1],
+      );
 
-    const latestOnSelectItem = vi.fn<ShoppingListProps["onSelectItem"]>();
-    const latestOnUpdateItem = vi.fn<ShoppingListProps["onUpdateItem"]>();
-    const latestOnEditRequest = vi.fn<ShoppingListProps["onEditRequest"]>();
-    const latestOnDeleteRequest = vi.fn<ShoppingListProps["onDeleteRequest"]>();
-    const latestOnMoveItemUp =
-      vi.fn<NonNullable<ShoppingListProps["onMoveItemUp"]>>();
-    const latestOnMoveItemDown =
-      vi.fn<NonNullable<ShoppingListProps["onMoveItemDown"]>>();
-    cardRenderSpy.mockClear();
-    view.rerender(
-      <ShoppingList
-        {...baseProps}
-        items={updatedItems}
-        onUpdateItem={latestOnUpdateItem}
-        onEditRequest={latestOnEditRequest}
-        onDeleteRequest={latestOnDeleteRequest}
-        onSelectItem={latestOnSelectItem}
-        onMoveItemUp={latestOnMoveItemUp}
-        onMoveItemDown={latestOnMoveItemDown}
-      />,
-    );
+      const latestOnSelectItem = vi.fn<ShoppingListProps["onSelectItem"]>();
+      const latestOnUpdateItem = vi.fn<ShoppingListProps["onUpdateItem"]>();
+      const latestOnEditRequest = vi.fn<ShoppingListProps["onEditRequest"]>();
+      const latestOnDeleteRequest =
+        vi.fn<ShoppingListProps["onDeleteRequest"]>();
+      const latestOnMoveItemUp =
+        vi.fn<NonNullable<ShoppingListProps["onMoveItemUp"]>>();
+      const latestOnMoveItemDown =
+        vi.fn<NonNullable<ShoppingListProps["onMoveItemDown"]>>();
+      cardRenderSpy.mockClear();
+      view.rerender(
+        <ShoppingList
+          {...baseProps}
+          items={updatedItems}
+          onUpdateItem={latestOnUpdateItem}
+          onEditRequest={latestOnEditRequest}
+          onDeleteRequest={latestOnDeleteRequest}
+          onSelectItem={latestOnSelectItem}
+          onMoveItemUp={latestOnMoveItemUp}
+          onMoveItemDown={latestOnMoveItemDown}
+        />,
+      );
 
-    expect(cardRenderSpy).not.toHaveBeenCalled();
-    act(() => {
-      initialChangedCardProps?.onUpdate(updatedItems[1]);
-      initialChangedCardProps?.onEditRequest(updatedItems[1]);
-      initialChangedCardProps?.onDeleteRequest(updatedItems[1]);
-      initialChangedCardProps?.onSelectItem("item-2");
-      initialChangedCardProps?.onMoveUp?.("item-2");
-      initialChangedCardProps?.onMoveDown?.("item-2");
-    });
-    expect(latestOnSelectItem).toHaveBeenCalledWith(
-      "item-2",
-      "execute",
-      expect.objectContaining({ grouping: "flat" }),
-    );
-    expect(latestOnUpdateItem).toHaveBeenCalledWith(updatedItems[1]);
-    expect(latestOnEditRequest).toHaveBeenCalledWith(updatedItems[1]);
-    expect(latestOnDeleteRequest).toHaveBeenCalledWith(updatedItems[1]);
-    expect(latestOnMoveItemUp).toHaveBeenCalledWith("item-2", "execute");
-    expect(latestOnMoveItemDown).toHaveBeenCalledWith("item-2", "execute");
-    expect(onSelectItem).not.toHaveBeenCalled();
-    expect(onUpdateItem).not.toHaveBeenCalled();
-    expect(onEditRequest).not.toHaveBeenCalled();
-    expect(onDeleteRequest).not.toHaveBeenCalled();
-    expect(onMoveItemUp).not.toHaveBeenCalled();
-    expect(onMoveItemDown).not.toHaveBeenCalled();
-  });
+      expect(cardRenderSpy).not.toHaveBeenCalled();
+      act(() => {
+        initialChangedCardProps?.onUpdate(updatedItems[1]);
+        initialChangedCardProps?.onEditRequest(updatedItems[1]);
+        initialChangedCardProps?.onDeleteRequest(updatedItems[1]);
+        initialChangedCardProps?.onSelectItem("item-2");
+        initialChangedCardProps?.onMoveUp?.("item-2");
+        initialChangedCardProps?.onMoveDown?.("item-2");
+      });
+      expect(latestOnSelectItem).toHaveBeenCalledWith(
+        "item-2",
+        "execute",
+        expect.objectContaining({ grouping: "flat" }),
+      );
+      expect(latestOnUpdateItem).toHaveBeenCalledWith(updatedItems[1]);
+      expect(latestOnEditRequest).toHaveBeenCalledWith(updatedItems[1]);
+      expect(latestOnDeleteRequest).toHaveBeenCalledWith(updatedItems[1]);
+      if (viewMode === "edit") {
+        expect(latestOnMoveItemUp).toHaveBeenCalledWith("item-2", "execute");
+        expect(latestOnMoveItemDown).toHaveBeenCalledWith("item-2", "execute");
+      } else {
+        expect(latestOnMoveItemUp).not.toHaveBeenCalled();
+        expect(latestOnMoveItemDown).not.toHaveBeenCalled();
+      }
+      expect(onSelectItem).not.toHaveBeenCalled();
+      expect(onUpdateItem).not.toHaveBeenCalled();
+      expect(onEditRequest).not.toHaveBeenCalled();
+      expect(onDeleteRequest).not.toHaveBeenCalled();
+      expect(onMoveItemUp).not.toHaveBeenCalled();
+      expect(onMoveItemDown).not.toHaveBeenCalled();
+    },
+  );
 
   it("keeps committed callback targets when a concurrent render is abandoned", () => {
     const currentItem = item(1);
@@ -236,5 +246,60 @@ describe("ShoppingList item card memoization", () => {
     );
     expect(pendingUpdate).not.toHaveBeenCalled();
     expect(pendingSelect).not.toHaveBeenCalled();
+  });
+  it("keeps committed execution movement blocked when an edit render is abandoned", () => {
+    const currentItem = item(1);
+    const onMoveItemUp =
+      vi.fn<NonNullable<ShoppingListProps["onMoveItemUp"]>>();
+    const onMoveItemDown =
+      vi.fn<NonNullable<ShoppingListProps["onMoveItemDown"]>>();
+    const suspended = new Promise<void>(() => undefined);
+    const SuspendAfterList = ({ active }: { active: boolean }) => {
+      if (active) throw suspended;
+      return null;
+    };
+    const props = {
+      items: [currentItem],
+      onUpdateItem: vi.fn(),
+      onMoveItem: vi.fn(),
+      onMoveItemUp,
+      onMoveItemDown,
+      onEditRequest: vi.fn(),
+      onDeleteRequest: vi.fn(),
+      selectedItemIds: new Set<string>(),
+      onSelectItem: vi.fn(),
+      columnType: "execute",
+      forceFullListRenderer: true,
+      skipLimitedPurchaseForSingleQuantity: false,
+    } satisfies Omit<ShoppingListProps, "viewMode">;
+    const renderTree = (active: boolean, viewMode: "edit" | "execute") => (
+      <React.Suspense fallback={<div>pending edit render</div>}>
+        <ShoppingList {...props} viewMode={viewMode} />
+        <SuspendAfterList active={active} />
+      </React.Suspense>
+    );
+    const view = render(renderTree(false, "execute"));
+    const committedCardProps = findRenderedCardProps(currentItem.id);
+    expect(committedCardProps?.onMoveUp).toBeDefined();
+    expect(committedCardProps?.onMoveDown).toBeDefined();
+
+    act(() => {
+      React.startTransition(() => {
+        view.rerender(renderTree(true, "edit"));
+      });
+    });
+    expect(view.container).not.toHaveTextContent("pending edit render");
+    expect(
+      cardRenderSpy.mock.calls.some(
+        ([props]) => (props as MockShoppingItemCardProps).viewMode === "edit",
+      ),
+    ).toBe(true);
+    act(() => {
+      committedCardProps?.onMoveUp?.(currentItem.id);
+      committedCardProps?.onMoveDown?.(currentItem.id);
+    });
+    expect(onMoveItemUp).not.toHaveBeenCalled();
+    expect(onMoveItemDown).not.toHaveBeenCalled();
+    view.rerender(renderTree(false, "execute"));
   });
 });

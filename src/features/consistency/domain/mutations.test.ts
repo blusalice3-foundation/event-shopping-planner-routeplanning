@@ -1,5 +1,8 @@
-import { describe, expect, it } from "vitest";
-import type { PersistenceSnapshot } from "../../../app/ports/PersistenceCommandPort";
+import { describe, expect, it, vi } from "vitest";
+import type {
+  ApplicationShoppingMove,
+  PersistenceSnapshot,
+} from "../../../app/ports/PersistenceCommandPort";
 import type { ShoppingItem } from "../../../types/item";
 import type { DayMapData } from "../../../types/map";
 import {
@@ -11,8 +14,16 @@ import {
   applyChangedFields,
   changedFieldConflicts,
   planProjectedMutation,
+  planShoppingOrderMutation,
 } from "./mutations";
 import { createApplicationMutationCoordinator } from "../../../app/commands/applicationMutationCoordinator";
+import * as mutationPlanners from "./mutations";
+import {
+  planShoppingMove,
+  shoppingMoveVisitBaseline,
+  shoppingExecuteIds,
+  shoppingItemIds,
+} from "../../../app/commands/shoppingMoveMutation";
 import { planDayModeToggle } from "./dayMode";
 import { planItemEdit, previewItemEdit } from "./itemEdit";
 import { decodeHallRef, projectConsistencySnapshot } from "./projection";
@@ -1902,4 +1913,274 @@ it("reuses immutable maps only for plans which do not change them", () => {
   expect(actual.snapshot.mapData).not.toBe(source.mapData);
   expect(actual.snapshot.mapData).not.toBe(changedMap);
   expect(source).toEqual(original);
+});
+
+function freezeShoppingPlanInput(value: unknown): void {
+  if (!value || typeof value !== "object" || Object.isFrozen(value)) return;
+  for (const child of Object.values(value)) freezeShoppingPlanInput(child);
+  Object.freeze(value);
+}
+function shoppingPlanSnapshot(count = 4): PersistenceSnapshot {
+  const source = snapshot();
+  const optional = {
+    catalogPrice: 1200,
+    limitedPurchasedQuantity: 2,
+    purchaseStatus: "LimitedPurchase" as const,
+    sheetRemarks: "最新のシート備考",
+    sheetIdentityVerified: true,
+    url: "https://example.test/current",
+    priorityLevel: "highest" as const,
+    protectionLevel: "full" as const,
+    source: "spreadsheet" as const,
+    assignedTo: "担当者",
+    lastSyncedAt: "2026-10-21T13:00:00Z",
+    orderIndex: 9,
+    postponed: true,
+    manualHallId: "legacy-hall",
+    customField: { optional: undefined, nested: ["保全", { current: true }] },
+  };
+  source.eventLists.event = [
+    ...Array.from({ length: count }, (_, index) =>
+      item(String(index + 1), {
+        ...optional,
+        quantity: index + 3,
+        remarks: "最新メモ" + index,
+      }),
+    ),
+    item("later", { eventDate: "2日目" }),
+  ];
+  source.eventLists.history = [item("history", { ...optional, quantity: 3 })];
+  source.executeModeItems = {
+    event: { " 1日目　": ["1", "2"], "2日目": ["later"] },
+    history: { "1日目": ["history"] },
+  };
+  source.eventConsistency.event.days[
+    " 1日目　"
+  ].mapless!.hallVisitLists[0].itemIds = ["1", "2"];
+  source.eventConsistency.event.days["2日目"] = createDayConsistency();
+  source.eventConsistency.history = createEventConsistency();
+  source.mapData.event = {
+    "1日目マップ": {
+      maxRow: 1,
+      maxCol: 1,
+      cells: [],
+      blocks: [],
+      mergedCells: [],
+    },
+  };
+  source.hallDefinitions.history = {
+    "__mapless__:1日目": [
+      { id: "legacy-hall", name: "過去の館", vertices: [], blockNames: ["A"] },
+    ],
+  };
+  source.hallDefinitions.event = {
+    "1日目マップ": [
+      { id: "legacy-hall", name: "現在の館", vertices: [], blockNames: ["A"] },
+    ],
+    "__mapless__:2日目": [
+      { id: "later", name: "別日の館", vertices: [], blockNames: ["B"] },
+    ],
+  };
+  return source;
+}
+function shoppingPlanCommand(
+  source: PersistenceSnapshot,
+  direction: "forward" | "reverse" | "execute" | "candidate" = "reverse",
+): ApplicationShoppingMove {
+  const baselineItemIds = shoppingItemIds(source.eventLists.event);
+  const sourceColumn =
+    direction === "forward" || direction === "candidate"
+      ? "candidate"
+      : "execute";
+  const targetColumn =
+    direction === "reverse" || direction === "candidate"
+      ? "candidate"
+      : "execute";
+  const id = sourceColumn === "candidate" ? "3" : "1";
+  const order = baselineItemIds.filter((value) => value !== id);
+  order.splice(direction === "reverse" ? 2 : 0, 0, id);
+  const baselineExecuteIds = shoppingExecuteIds(source, "event", "1日目");
+  return {
+    version: 1,
+    eventName: "event",
+    day: "1日目",
+    sourceColumn,
+    targetColumn,
+    requestedIds: [id],
+    effectiveIds: [id],
+    hoverId: sourceColumn === "candidate" ? "1" : "3",
+    baselineItemIds,
+    itemIds: order,
+    baselineExecuteIds,
+    executeIds:
+      direction === "forward"
+        ? [...baselineExecuteIds, id]
+        : direction === "reverse"
+          ? baselineExecuteIds.filter((value) => value !== id)
+          : [...baselineExecuteIds],
+    baselineVisits: shoppingMoveVisitBaseline(source, "event", "1日目"),
+  };
+}
+function withGeneralShoppingRepair<T>(operation: () => T): T {
+  const general = vi
+    .spyOn(mutationPlanners, "planShoppingOrderMutation")
+    .mockImplementation((source, patch, input, choices, projected) =>
+      planProjectedMutation(source, patch, input, choices, projected, true),
+    );
+  try {
+    return operation();
+  } finally {
+    general.mockRestore();
+  }
+}
+function recordShoppingSnapshotClones<T>(count: number, operation: () => T) {
+  const clone = globalThis.structuredClone;
+  let snapshotClones = 0;
+  const observer = vi
+    .spyOn(globalThis, "structuredClone")
+    .mockImplementation((value, options) => {
+      if (value && typeof value === "object" && "eventLists" in value) {
+        const lists = (value as PersistenceSnapshot).eventLists;
+        if (Array.isArray(lists?.event) && lists.event.length === count)
+          snapshotClones++;
+      }
+      return clone(value, options);
+    });
+  try {
+    return { result: operation(), snapshotClones };
+  } finally {
+    observer.mockRestore();
+  }
+}
+
+describe("owned shopping repair inputs", () => {
+  it.each(["forward", "reverse", "execute", "candidate"] as const)(
+    "keeps source, current optional fields, other dates and events intact for %s moves",
+    (direction) => {
+      const source = shoppingPlanSnapshot();
+      const original = structuredClone(source);
+      const command = shoppingPlanCommand(source, direction);
+      freezeShoppingPlanInput(source);
+      freezeShoppingPlanInput(command);
+      const expected = withGeneralShoppingRepair(() =>
+        planShoppingMove(source, command),
+      );
+      const actual = planShoppingMove(source, command);
+      expect(actual).toEqual(expected);
+      expect(source).toEqual(original);
+      expect(actual.snapshot.mapData).toBe(source.mapData);
+      expect(actual.snapshot.hallDefinitions).toBe(source.hallDefinitions);
+      expect(actual.snapshot.eventLists.history).toBe(
+        source.eventLists.history,
+      );
+      expect(actual.snapshot.eventConsistency.event.days["2日目"]).toBe(
+        source.eventConsistency.event.days["2日目"],
+      );
+      for (const entry of actual.snapshot.eventLists.event as ShoppingItem[]) {
+        const previous = (source.eventLists.event as ShoppingItem[]).find(
+          (value) => value.id === entry.id,
+        )!;
+        expect(entry).toBe(previous);
+        expect(entry).toEqual(previous);
+      }
+      valid(actual.snapshot);
+    },
+  );
+
+  it("omits complete scoped-item planner clones while retaining identical repaired results", () => {
+    const source = shoppingPlanSnapshot(500);
+    const command = shoppingPlanCommand(source);
+    freezeShoppingPlanInput(source);
+    const expected = recordShoppingSnapshotClones(500, () =>
+      withGeneralShoppingRepair(() => planShoppingMove(source, command)),
+    );
+    const actual = recordShoppingSnapshotClones(500, () =>
+      planShoppingMove(source, command),
+    );
+    expect(expected.snapshotClones).toBe(2);
+    expect(actual.snapshotClones).toBe(0);
+    expect(actual.result).toEqual(expected.result);
+  });
+
+  it.each([false, true])(
+    "keeps repair writes private with invalid execution references (share=%s)",
+    (share) => {
+      const source = snapshot();
+      source.executeModeItems.event[" 1日目　"].push("deleted");
+      const original = structuredClone(source);
+      freezeShoppingPlanInput(source);
+      const projected = projectConsistencySnapshot(source, "event", "1日目");
+      freezeShoppingPlanInput(projected);
+      const patch = {
+        eventLists: { event: [...projected.eventLists.event].reverse() },
+        executeModeItems: projected.executeModeItems,
+      };
+      freezeShoppingPlanInput(patch);
+      const input = { eventName: "event", day: "1日目" };
+      const expected = planProjectedMutation(
+        source,
+        patch,
+        input,
+        {},
+        projected,
+        true,
+      );
+      const actual = planShoppingOrderMutation(
+        source,
+        patch,
+        input,
+        {},
+        projected,
+        share,
+      );
+      expect(actual).toEqual(expected);
+      expect(actual.snapshot.executeModeItems.event[" 1日目　"]).not.toContain(
+        "deleted",
+      );
+      actual.snapshot.executeModeItems.event[" 1日目　"].push("local-only");
+      actual.snapshot.eventConsistency.event.days[
+        " 1日目　"
+      ].mapless!.hallOrder.push({ hall: null, priority: "priority" });
+      expect(source).toEqual(original);
+      expect(projected.executeModeItems.event["1日目"]).toContain("deleted");
+    },
+  );
+
+  it("uses the general clone path for day merging and keeps its review intact", () => {
+    const source = shoppingPlanSnapshot();
+    source.dayModes.event["1日目"] = "focus";
+    const original = structuredClone(source);
+    const command = shoppingPlanCommand(source);
+    freezeShoppingPlanInput(source);
+    const expected = recordShoppingSnapshotClones(4, () =>
+      withGeneralShoppingRepair(() => planShoppingMove(source, command)),
+    );
+    const actual = recordShoppingSnapshotClones(4, () =>
+      planShoppingMove(source, command),
+    );
+    expect(actual.result).toEqual(expected.result);
+    expect(actual.snapshotClones).toBe(expected.snapshotClones);
+    expect(
+      actual.result.confirmation?.choices?.some((choice) =>
+        choice.id.startsWith("dayMerge:"),
+      ),
+    ).toBe(true);
+    expect(source).toEqual(original);
+    valid(actual.result.snapshot);
+  });
+
+  it("keeps other store patches on the general public planner", () => {
+    const source = snapshot();
+    const projected = projectConsistencySnapshot(source, "event", "1日目");
+    const patch = { dayModes: { event: { "1日目": "focus" as const } } };
+    const input = { eventName: "event", day: "1日目" };
+    expect(() =>
+      planShoppingOrderMutation(source, patch, input, {}, projected),
+    ).toThrow("Shopping order patches cannot change other stores.");
+    expect(
+      planProjectedMutation(source, patch, input).snapshot.dayModes.event[
+        " 1日目　"
+      ],
+    ).toBe("focus");
+  });
 });

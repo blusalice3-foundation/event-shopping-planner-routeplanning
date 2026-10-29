@@ -21,11 +21,11 @@ test("performance summaries use the two middle samples and nearest-rank p95", ()
   });
 });
 
-test("performance summaries cannot hide an even-sample median above 55 ms", () => {
+test("performance summaries cannot hide an even-sample median above 65 ms", () => {
   const samples = [
-    ...Array<number>(10).fill(54),
-    ...Array<number>(10).fill(58),
+    ...Array<number>(10).fill(64),
+    ...Array<number>(10).fill(68),
   ];
-  expect(summarizePerformanceSamples(samples).medianMs).toBe(56);
+  expect(summarizePerformanceSamples(samples).medianMs).toBe(66);
   expect(() => summarizePerformanceSamples([])).toThrow(RangeError);
 });

@@ -33,3 +33,28 @@ export interface ApplicationSnapshotCommitPort {
     assertCurrent?: ApplicationSnapshotGuard,
   ): Promise<void>;
 }
+
+/** Synchronous acceptance of a frozen drag; saving remains on the normal queue. */
+export interface ShoppingMovePatch {
+  /** Orders used by the UI calculation, checked against the accepted preview. */
+  baselineItemIds: readonly string[];
+  baselineExecuteIds: readonly string[];
+  eventName: string;
+  day: string;
+  eventGeneration?: number;
+  eventListItems?: readonly import("../../types/item").ShoppingItem[];
+  executeModeItems?: import("../../types/item").ExecuteModeItems;
+  sourceColumn: "execute" | "candidate";
+  targetColumn: "execute" | "candidate";
+  requestedIds: readonly string[];
+  effectiveIds: readonly string[];
+  hoverId: string;
+  candidateSortMode?: string;
+}
+export type ShoppingMoveReceipt =
+  | { status: "accepted"; operationId: string; moveId: string }
+  | { status: "noop"; reason: "same-order" }
+  | { status: "blocked"; reason: string };
+export type QueueShoppingMovePatch = (
+  input: ShoppingMovePatch,
+) => ShoppingMoveReceipt;

@@ -14,6 +14,9 @@ import { STORES } from "../db/constants";
 import {
   readApplicationSnapshot,
   readDayCommandSnapshot,
+  readShoppingCommandSnapshot,
+  readCachedShoppingCommandSnapshot,
+  commitShoppingCommandSnapshot,
   commitDayCommandSnapshot,
   commitApplicationSnapshotAtomically,
   restoreAppDataAtomically,
@@ -68,6 +71,9 @@ export const db = {
   STORES,
   readApplicationSnapshot,
   readDayCommandSnapshot,
+  readShoppingCommandSnapshot,
+  readCachedShoppingCommandSnapshot,
+  commitShoppingCommandSnapshot,
   commitDayCommandSnapshot,
   saveEventConsistency(data: AppData["eventConsistency"]): Promise<void> {
     assertEventConsistency(data);

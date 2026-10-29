@@ -1,10 +1,74 @@
 import { writeFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import { summarizePerformanceSamples } from "./performance-summary";
+import { readBrowserEventLists } from "./shopping-transfer-persisted-store";
+import {
+  measureShoppingResponse,
+  prepareShoppingResponse,
+  acknowledgeShoppingResponse,
+  performanceMeasurementSampleCount,
+  performanceMeasurementProfile,
+  shoppingEvidenceIdentity,
+  shoppingPerformanceThresholds,
+  shoppingBrowserEnvironment,
+  type ShoppingUiExpectation,
+} from "./shopping-performance-evidence";
+import {
+  shoppingCollectionMetadataForCount,
+  shoppingLargeListDiagnosticTag,
+  shoppingPerformanceTestTag,
+} from "../../scripts/shopping-performance-evidence-contract.mjs";
 
+import { shoppingOperationSamplingPlan } from "./shopping-operation-sampling";
+
+const shoppingOperationEvidenceIdentity = (count: number) => ({
+  ...shoppingEvidenceIdentity("shopping"),
+  ...shoppingCollectionMetadataForCount(count, performanceMeasurementProfile),
+});
 // Keep response timings free from video and trace capture on every attempt.
 test.use({ video: "off", trace: "off" });
 
+const incompleteShoppingEvidence = new Map<
+  string,
+  () => Record<string, unknown>
+>();
+test.afterEach(async ({ page }, testInfo) => {
+  const snapshot = incompleteShoppingEvidence.get(testInfo.testId);
+  incompleteShoppingEvidence.delete(testInfo.testId);
+  if (
+    !snapshot ||
+    testInfo.status === "passed" ||
+    testInfo.attachments.some(
+      (attachment) => attachment.name === "shopping-operation-timings",
+    )
+  )
+    return;
+  const incomplete = snapshot();
+  const body = JSON.stringify(
+    {
+      ...incomplete,
+      ...shoppingOperationEvidenceIdentity(Number(incomplete.count)),
+      acceptanceMeasurement: false,
+      completed: false,
+      failureStatus: testInfo.status,
+      failureReasons: testInfo.errors.map(
+        (error) => error.message ?? String(error),
+      ),
+      pageClosed: page.isClosed(),
+    },
+    null,
+    2,
+  );
+  await writeFile(
+    testInfo.outputPath("shopping-operation-incomplete.json"),
+    body,
+    "utf8",
+  );
+  await testInfo.attach("shopping-operation-incomplete", {
+    body,
+    contentType: "application/json",
+  });
+});
 const eventName = "応答速度検証";
 const makeBackup = (
   count: number,
@@ -171,31 +235,10 @@ async function restore(
   }
   await expect
     .poll(
-      () =>
-        page.evaluate(async () => {
-          const db = await new Promise<IDBDatabase>((resolve, reject) => {
-            const request = indexedDB.open("EventShoppingPlannerDB");
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-          });
-          try {
-            return await new Promise<number>((resolve, reject) => {
-              const request = db
-                .transaction("eventLists")
-                .objectStore("eventLists")
-                .get("data");
-              request.onsuccess = () =>
-                resolve(
-                  Object.entries(request.result as Record<string, unknown[]>)
-                    .filter(([name]) => name.startsWith("過去イベント"))
-                    .reduce((sum, [, items]) => sum + items.length, 0),
-                );
-              request.onerror = () => reject(request.error);
-            });
-          } finally {
-            db.close();
-          }
-        }),
+      async () =>
+        Object.entries(await readBrowserEventLists(page))
+          .filter(([name]) => name.startsWith("過去イベント"))
+          .reduce((sum, [, items]) => sum + items.length, 0),
       { timeout: 60000 },
     )
     .toBe(historicalCount);
@@ -204,36 +247,13 @@ async function restore(
   await expect(page.locator('[data-item-id="perf-0"]')).toBeVisible();
 }
 async function durableItem(page: Page, id: string) {
-  return page.evaluate(
-    async ({ eventName, id }) => {
-      const db = await new Promise<IDBDatabase>((resolve, reject) => {
-        const request = indexedDB.open("EventShoppingPlannerDB");
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
-      try {
-        return await new Promise<Record<string, unknown>>((resolve, reject) => {
-          const request = db
-            .transaction("eventLists", "readonly")
-            .objectStore("eventLists")
-            .get("data");
-          request.onsuccess = () =>
-            resolve(
-              request.result[eventName].find(
-                (item: { id: string }) => item.id === id,
-              ),
-            );
-          request.onerror = () => reject(request.error);
-        });
-      } finally {
-        db.close();
-      }
-    },
-    { eventName, id },
-  );
+  const lists = await readBrowserEventLists(page);
+  const item = lists[eventName]?.find((item) => item.id === id);
+  if (!item) throw new Error(`Missing durable item ${id}`);
+  return item;
 }
 for (const count of [150, 500, 1500]) {
-  test(`bounded DOM and response timings: ${count} items, 40000 cells, 10000 historical items`, async ({
+  test(`bounded DOM and response timings: ${count} items, 40000 cells, 10000 historical items${count === 1500 ? ` ${shoppingLargeListDiagnosticTag}` : ""}`, async ({
     page,
   }, testInfo) => {
     test.setTimeout(240000);
@@ -539,6 +559,12 @@ for (const count of [150, 500, 1500]) {
       body: JSON.stringify(
         {
           count,
+          ...(count === 1500
+            ? shoppingCollectionMetadataForCount(
+                count,
+                performanceMeasurementProfile,
+              )
+            : {}),
           cells: 40000,
           historicalItems: 10000,
           cards,
@@ -657,7 +683,7 @@ const shoppingProfiles = [false, true].flatMap((concentrated) =>
 );
 for (const count of [150, 500, 1500])
   for (const { concentrated, mapVisible, layout } of shoppingProfiles) {
-    test(`local shopping operations: ${count} items, concentrated=${concentrated}, mapVisible=${mapVisible}, layout=${layout} @shopping-performance`, async ({
+    test(`local shopping operations: ${count} items, concentrated=${concentrated}, mapVisible=${mapVisible}, layout=${layout} ${shoppingPerformanceTestTag(count)}`, async ({
       page,
     }, testInfo) => {
       test.setTimeout(360000);
@@ -694,6 +720,46 @@ for (const count of [150, 500, 1500])
         }, action);
       await diagnostics("enable");
       await diagnostics("reset");
+      const samplingPlan = shoppingOperationSamplingPlan(
+        performanceMeasurementSampleCount,
+        concentrated,
+      );
+      const inputJournal: Array<{
+        order: number;
+        operation: string;
+        targetId: string;
+        expected: ShoppingUiExpectation;
+        measured: boolean;
+        reason: string;
+        verified: boolean;
+        context?: string;
+        inputKind: "dom-click" | "touch-sequence" | "playwright-trusted";
+      }> = [];
+      const declareInput = (
+        operation: string,
+        expected: ShoppingUiExpectation,
+        measured: boolean,
+        reason: string,
+        context?: string,
+        inputKind:
+          | "dom-click"
+          | "touch-sequence"
+          | "playwright-trusted" = "dom-click",
+      ) => {
+        const input = {
+          order: inputJournal.length,
+          operation,
+          targetId: expected.targetId,
+          expected,
+          measured,
+          reason,
+          verified: false,
+          context,
+          inputKind,
+        };
+        inputJournal.push(input);
+        return input;
+      };
       const timings: Record<string, number[]> = {
         execute: [],
         executeRecord: [],
@@ -719,58 +785,208 @@ for (const count of [150, 500, 1500])
           )
           .toBe(true);
       };
+      const uiTimings: Record<string, number[]> = Object.fromEntries(
+        Object.keys(timings).map((key) => [key, []]),
+      );
+      const uiSamples: Record<
+        string,
+        Array<{
+          sampleId: string;
+          targetId: string;
+          expected: ShoppingUiExpectation;
+          legacyMs: number;
+          uiMs: number;
+          matched: boolean;
+          reason?: string;
+        }>
+      > = Object.fromEntries(Object.keys(timings).map((key) => [key, []]));
+      // Keep a failure-only snapshot of collected samples if later preparation
+      // fails before the ordinary evidence artifact is emitted.
+      incompleteShoppingEvidence.set(testInfo.testId, () => ({
+        count,
+        concentrated,
+        mapVisible,
+        layout,
+        timings,
+        uiTimings,
+        uiSamples,
+        samplingPlan,
+        inputJournal,
+      }));
+      const recordResponse = (
+        group: string,
+        result: Awaited<ReturnType<typeof measureShoppingResponse>>,
+      ) => {
+        timings[group].push(result.legacyMs);
+        uiTimings[group].push(result.uiMs);
+        uiSamples[group].push({
+          sampleId: `${group}:${uiSamples[group].length}`,
+          ...result,
+        });
+        expect
+          .soft(result.matched, result.reason ?? `${group}: ${result.targetId}`)
+          .toBe(true);
+      };
+      let focusVisitIndex = 0;
+      let recordTarget = "perf-19";
       const clickResponse = async (
         locator: ReturnType<Page["locator"]>,
         button: string,
         group: string,
+        expected?: ShoppingUiExpectation,
+        record = true,
+        reason = record
+          ? "profile-selected measurement"
+          : "preserve original fixed-ID state before later operations",
+        context?: string,
       ) => {
         await locator.scrollIntoViewIfNeeded();
-        const duration = await locator.evaluate(async (root, selector) => {
-          const button = root.matches(selector)
-            ? (root as HTMLButtonElement)
-            : root.querySelector<HTMLButtonElement>(selector)!;
-          const start = performance.now();
-          button.click();
-          await new Promise(requestAnimationFrame);
-          await new Promise((resolve) => setTimeout(resolve, 0));
-          return performance.now() - start;
-        }, button);
-        timings[group].push(duration);
+        if (!expected) {
+          if (group === "record" || group === "executeRecord") {
+            expected = {
+              targetId: recordTarget,
+              status: "売切",
+              dialog: "hidden",
+            };
+          } else {
+            const before = await locator.evaluate((root) => ({
+              id: (root as HTMLElement).dataset.itemId!,
+              status: root
+                .querySelector('button[aria-label^="Current status:"]')
+                ?.getAttribute("aria-label"),
+            }));
+            const soldOut = before.status?.includes("購入済") ?? false;
+            expected = {
+              targetId: before.id,
+              status: soldOut ? "売切" : "購入済",
+              ...(soldOut ? { dialog: "visible" as const } : {}),
+            };
+          }
+        }
+        const declared = declareInput(group, expected, record, reason, context);
+        if (record) {
+          const result = await measureShoppingResponse(
+            locator,
+            button,
+            expected,
+          );
+          declared.verified = result.matched;
+          recordResponse(group, result);
+        } else {
+          const result = await prepareShoppingResponse(
+            locator,
+            button,
+            expected,
+          );
+          expect(result.matched, result.reason).toBe(true);
+          declared.verified = true;
+        }
       };
       const navigateResponse = async (
         direction: "next" | "back",
         record = true,
+        context:
+          | "initial-visit-setup"
+          | "after-focus-purchase"
+          | "after-record"
+          | "return-after-back"
+          | "back" = direction === "back" ? "back" : "after-record",
+        reason = "profile-selected navigation measurement",
       ) => {
+        const nextIndex = focusVisitIndex + (direction === "next" ? 1 : -1);
+        const itemIndex =
+          concentrated && nextIndex > 0 ? count - 11 + nextIndex : nextIndex;
+        const expected: ShoppingUiExpectation = {
+          targetId: `perf-${itemIndex}`,
+          ...(concentrated && nextIndex === 0
+            ? {
+                visitItemIds: Array.from(
+                  { length: count - 10 },
+                  (_, index) => `perf-${index}`,
+                ),
+              }
+            : {}),
+          visitNumber: String(
+            concentrated && nextIndex === 0 ? 1 : itemIndex + 1,
+          ),
+        };
+        const setup = !record
+          ? declareInput(
+              direction,
+              expected,
+              false,
+              reason,
+              context,
+              layout === "smartphone"
+                ? "touch-sequence"
+                : context === "initial-visit-setup"
+                  ? "playwright-trusted"
+                  : "dom-click",
+            )
+          : undefined;
         if (layout === "pc") {
           const button = page.getByTitle(
             direction === "next" ? "次の訪問先" : "前の訪問先",
             { exact: true },
           );
-          if (record) await clickResponse(button, "button", direction);
-          else await button.click();
-          return;
+          if (record)
+            await clickResponse(
+              button,
+              "button",
+              direction,
+              expected,
+              true,
+              reason,
+              context,
+            );
+          else {
+            // Only this original record=false route used Playwright's trusted click.
+            // New sampling-only setup keeps the original measured DOM click input.
+            let result;
+            if (context === "initial-visit-setup") {
+              await button.click();
+              result = await acknowledgeShoppingResponse(
+                button,
+                "button",
+                expected,
+              );
+            } else
+              result = await prepareShoppingResponse(
+                button,
+                "button",
+                expected,
+              );
+            expect(result.matched, result.reason).toBe(true);
+          }
+        } else if (record) {
+          const declared = declareInput(
+            direction,
+            expected,
+            true,
+            reason,
+            context,
+            "touch-sequence",
+          );
+          const result = await measureShoppingResponse(
+            page.getByTestId("focus-mode-scroll-region"),
+            "div",
+            expected,
+            direction,
+          );
+          declared.verified = result.matched;
+          recordResponse(direction, result);
+        } else {
+          const result = await prepareShoppingResponse(
+            page.getByTestId("focus-mode-scroll-region"),
+            "div",
+            expected,
+            direction,
+          );
+          expect(result.matched, result.reason).toBe(true);
         }
-        const duration = await page
-          .getByTestId("focus-mode-scroll-region")
-          .evaluate(async (root, direction) => {
-            const emit = (type: string, x: number) => {
-              const point = { clientX: x, clientY: 200 };
-              const event = new Event(type, { bubbles: true });
-              Object.defineProperties(event, {
-                touches: { value: type === "touchend" ? [] : [point] },
-                changedTouches: { value: [point] },
-              });
-              root.dispatchEvent(event);
-            };
-            const start = performance.now();
-            emit("touchstart", 200);
-            emit("touchmove", direction === "next" ? 80 : 320);
-            emit("touchend", direction === "next" ? 80 : 320);
-            await new Promise(requestAnimationFrame);
-            await new Promise((resolve) => setTimeout(resolve, 0));
-            return performance.now() - start;
-          }, direction);
-        if (record) timings[direction].push(duration);
+        if (setup) setup.verified = true;
+
+        focusVisitIndex = nextIndex;
       };
       // Scroll across the complete list before measuring, so old cards must be released.
       const visitedIds = await page.evaluate(async () => {
@@ -814,13 +1030,15 @@ for (const count of [150, 500, 1500])
         : undefined;
       await profiler?.send("Profiler.enable");
       await profiler?.send("Profiler.start");
-      for (let index = 0; index < 20; index++) {
-        const row = page.locator(`[data-item-id="perf-${index}"]`);
-        await prepareItem(`item:"perf-${index}"`, `perf-${index}`);
+      for (const planned of samplingPlan.execute) {
+        const row = page.locator(`[data-item-id="${planned.targetId}"]`);
+        await prepareItem(`item:"${planned.targetId}"`, planned.targetId);
         await clickResponse(
           row,
           'button[aria-label^="Current status:"]',
           "execute",
+          undefined,
+          planned.measured,
         );
       }
       await expect
@@ -848,7 +1066,11 @@ for (const count of [150, 500, 1500])
         name: "事後通販･頒布可否確認",
       });
       await expect(executionDialog).toBeVisible();
-      for (let sample = 0; sample < 20; sample++) {
+      for (
+        let sample = 0;
+        sample < performanceMeasurementSampleCount;
+        sample++
+      ) {
         if (sample > 0) {
           await executionRow.evaluate(async (root) => {
             const button = root.querySelector<HTMLButtonElement>(
@@ -862,7 +1084,7 @@ for (const count of [150, 500, 1500])
         }
         await executionDialog
           .getByRole("combobox", { name: "回答内容", exact: true })
-          .selectOption({ index: 1 + (sample % 2) });
+          .selectOption({ index: samplingPlan.recordAnswers[sample] });
         await clickResponse(
           executionDialog.getByRole("button", {
             name: "記録",
@@ -887,23 +1109,37 @@ for (const count of [150, 500, 1500])
       await page.getByTitle("集中モード", { exact: true }).click();
       if (!concentrated)
         for (let index = 0; index < 20; index++)
-          await navigateResponse("next", false);
+          await navigateResponse(
+            "next",
+            false,
+            "initial-visit-setup",
+            "preserve original trusted PC visit setup",
+          );
       if (mapVisible)
         await page.getByTitle("マップを表示", { exact: true }).click();
       await diagnostics("reset");
-      for (let index = 20; index < 40; index++) {
-        const row = page.locator(`[data-item-id="perf-${index}"]`);
+      for (const planned of samplingPlan.focus) {
+        const row = page.locator(`[data-item-id="${planned.targetId}"]`);
         if (concentrated)
-          await prepareItem(`focus:perf-${index}`, `perf-${index}`);
+          await prepareItem(`focus:${planned.targetId}`, planned.targetId);
         await expect(row).toBeVisible();
         await clickResponse(
           row,
           'button[aria-label^="Current status:"]',
           "focus",
+          undefined,
+          planned.measured,
         );
-        if (!concentrated) await navigateResponse("next");
+        if (!concentrated)
+          await navigateResponse(
+            "next",
+            planned.nextMeasured,
+            planned.nextContext,
+            "next immediately after the original focus purchase",
+          );
       }
-      const target = concentrated ? "perf-39" : "perf-40";
+      const target = samplingPlan.focusSoldOut.targetId;
+      recordTarget = target;
       const row = page.locator(`[data-item-id="${target}"]`);
       if (!concentrated)
         await clickResponse(
@@ -920,7 +1156,11 @@ for (const count of [150, 500, 1500])
         name: "事後通販･頒布可否確認",
       });
       await expect(dialog).toBeVisible();
-      for (let sample = 0; sample < 20; sample++) {
+      for (
+        let sample = 0;
+        sample < performanceMeasurementSampleCount;
+        sample++
+      ) {
         if (sample > 0) {
           // Exercise all six transitions before React renders; the final intent
           // equals the rendered status and must still be accepted in order.
@@ -936,7 +1176,7 @@ for (const count of [150, 500, 1500])
         }
         await dialog
           .getByRole("combobox", { name: "回答内容", exact: true })
-          .selectOption({ index: 1 + (sample % 2) });
+          .selectOption({ index: samplingPlan.recordAnswers[sample] });
         await clickResponse(
           dialog.getByRole("button", { name: "記録", exact: true }),
           "button",
@@ -947,7 +1187,12 @@ for (const count of [150, 500, 1500])
           row.getByRole("button", { name: /Current status: 売切/ }),
         ).toBeVisible();
       }
-      await navigateResponse("next");
+      await navigateResponse(
+        "next",
+        samplingPlan.postRecordNext.measured,
+        samplingPlan.postRecordNext.context,
+        "next immediately after the original record",
+      );
       await expect(dialog).toBeHidden();
       await expect
         .poll(async () => (await durableItem(page, target)).remarks, {
@@ -963,9 +1208,19 @@ for (const count of [150, 500, 1500])
       await backProfiler?.send("Profiler.enable");
       await backProfiler?.send("Profiler.start");
       // Returning to the large first space also exercises retained input state.
-      for (let sample = 0; sample < 20; sample++) {
-        await navigateResponse("back");
-        await navigateResponse("next");
+      for (const cycle of samplingPlan.returnCycles) {
+        await navigateResponse(
+          "back",
+          cycle.backMeasured,
+          "back",
+          "return to the original previous visit",
+        );
+        await navigateResponse(
+          "next",
+          cycle.nextMeasured,
+          cycle.nextContext,
+          cycle.nextReason,
+        );
       }
       if (backProfiler) {
         const profile = await backProfiler.send("Profiler.stop");
@@ -982,6 +1237,16 @@ for (const count of [150, 500, 1500])
           summarizePerformanceSamples(values),
         ]),
       );
+      const uiSummary = Object.fromEntries(
+        Object.entries(uiTimings).map(([operation, values]) => [
+          operation,
+          summarizePerformanceSamples(values),
+        ]),
+      );
+      const measuredEnvironment = await shoppingBrowserEnvironment(
+        page,
+        testInfo.retry,
+      );
       await writeFile(
         testInfo.outputPath("shopping-operation-timings.json"),
         JSON.stringify(
@@ -990,7 +1255,14 @@ for (const count of [150, 500, 1500])
             concentrated,
             mapVisible,
             layout,
+            ...shoppingOperationEvidenceIdentity(count),
+            environment: measuredEnvironment,
             visitedCount,
+            uiTimings,
+            uiSummary,
+            uiSamples,
+            samplingPlan,
+            inputJournal,
             timings,
             summary,
             diagnostic,
@@ -1010,7 +1282,14 @@ for (const count of [150, 500, 1500])
             concentrated,
             mapVisible,
             layout,
+            ...shoppingOperationEvidenceIdentity(count),
+            environment: measuredEnvironment,
             visitedCount,
+            uiTimings,
+            uiSummary,
+            uiSamples,
+            samplingPlan,
+            inputJournal,
             timings,
             summary,
             diagnostic,
@@ -1024,13 +1303,21 @@ for (const count of [150, 500, 1500])
         contentType: "application/json",
       });
       expect(errors).toEqual([]);
-      for (const [operation, result] of Object.entries(summary)) {
-        expect(
-          result.count,
-          operation + " sample count",
-        ).toBeGreaterThanOrEqual(20);
-        expect(result.medianMs, operation + " median").toBeLessThanOrEqual(55);
-        expect(result.p95Ms, operation + " p95").toBeLessThanOrEqual(100);
+      for (const [operation, result] of Object.entries({
+        ...summary,
+        ...Object.fromEntries(
+          Object.entries(uiSummary).map(([key, value]) => [`ui:${key}`, value]),
+        ),
+      })) {
+        expect(result.count, operation + " sample count").toBe(
+          performanceMeasurementSampleCount,
+        );
+        expect(result.medianMs, operation + " median").toBeLessThanOrEqual(
+          shoppingPerformanceThresholds.medianMs,
+        );
+        expect(result.p95Ms, operation + " p95").toBeLessThanOrEqual(
+          shoppingPerformanceThresholds.p95Ms,
+        );
       }
     });
   }

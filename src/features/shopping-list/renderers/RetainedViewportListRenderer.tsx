@@ -26,6 +26,8 @@ type Props = FullListRendererProps & {
   readonly pinnedRowKeys?: ReadonlySet<string>;
   readonly zoomPercent?: number | null;
   readonly renderDependencies?: readonly unknown[];
+  /** Internal strategy, fixed at the first render for the renderer lifetime. */
+  readonly groupSlotMode?: "current-model";
   readonly getGroupVisitId?: (groupKey: string) => string | undefined;
   readonly getGroupVersion?: (groupKey: string) => unknown;
   readonly getVisitId?: (
@@ -90,6 +92,7 @@ const itemPlaceholder = (
   row: ShoppingListItemRow,
   layoutMode: "pc" | "smartphone",
   getVisitId: Props["getVisitId"],
+  label?: React.ReactElement,
 ): React.ReactElement => (
   <div
     {...getShoppingListRowAccessibilityAttributes(row)}
@@ -104,14 +107,69 @@ const itemPlaceholder = (
         : "esp-viewport-placeholder esp-viewport-placeholder-phone"
     }
   >
-    <span className="esp-viewport-placeholder-label">
-      {[
-        row.accessibleName,
-        row.item.remarks,
-        row.item.price ?? "価格未定",
-        row.item.quantity,
-      ].join(" ")}
-    </span>
+    {label ?? (
+      <span className="esp-viewport-placeholder-label">
+        {[
+          row.accessibleName,
+          row.item.remarks,
+          row.item.price ?? "価格未定",
+          row.item.quantity,
+        ].join(" ")}
+      </span>
+    )}
+  </div>
+);
+
+type PlaceholderLabel = {
+  readonly rowKey: string;
+  readonly text: string;
+  readonly accessibleName: string;
+  readonly remarks: ShoppingListItemRow["item"]["remarks"];
+  readonly price: number | string;
+  readonly quantity: number;
+  readonly element: React.ReactElement;
+};
+type PlaceholderStaticParts = {
+  readonly headingName: string;
+  readonly headingVisitId: string | undefined;
+  readonly heading: React.ReactElement;
+  readonly labels: readonly PlaceholderLabel[];
+};
+const placeholderHeading = (name: string, visitId: string | undefined) => (
+  <div
+    className="esp-viewport-placeholder-heading"
+    data-space-navigation-visit-id={visitId}
+    data-space-navigation-anchor="heading"
+    tabIndex={0}
+    data-viewport-focus-sentinel
+    onFocus={(event) => focusPendingViewportContent(event.currentTarget)}
+  >
+    <span className="esp-viewport-placeholder-label">{name}</span>
+  </div>
+);
+const groupPlaceholder = (
+  row: ShoppingListGroupRow,
+  items: readonly FullListRenderedItemRow[],
+  layoutMode: "pc" | "smartphone",
+  visitIds: readonly (string | undefined)[],
+  getVisitId: Props["getVisitId"],
+  staticParts?: PlaceholderStaticParts,
+): React.ReactElement => (
+  <div {...getShoppingListRowAccessibilityAttributes(row)}>
+    {staticParts?.heading ??
+      placeholderHeading(row.accessibleName, visitIds[0])}
+    <div role="list" aria-label={row.label + "の項目"}>
+      {items.map(({ row: itemRow }, index) => (
+        <React.Fragment key={itemRow.rowKey}>
+          {itemPlaceholder(
+            itemRow,
+            layoutMode,
+            getVisitId,
+            staticParts?.labels[index].element,
+          )}
+        </React.Fragment>
+      ))}
+    </div>
   </div>
 );
 
@@ -148,31 +206,13 @@ const GroupViewport = React.memo(
         estimatedHeight={estimatedHeight}
         retain={retained.some(Boolean)}
         defer={defer}
-        placeholder={
-          <div {...getShoppingListRowAccessibilityAttributes(row)}>
-            <div
-              className="esp-viewport-placeholder-heading"
-              data-space-navigation-visit-id={visitIds[0]}
-              data-space-navigation-anchor="heading"
-              tabIndex={0}
-              data-viewport-focus-sentinel
-              onFocus={(event) =>
-                focusPendingViewportContent(event.currentTarget)
-              }
-            >
-              <span className="esp-viewport-placeholder-label">
-                {row.accessibleName}
-              </span>
-            </div>
-            <div role="list" aria-label={row.label + "の項目"}>
-              {items.map(({ row: itemRow }) => (
-                <React.Fragment key={itemRow.rowKey}>
-                  {itemPlaceholder(itemRow, layoutMode, getVisitId)}
-                </React.Fragment>
-              ))}
-            </div>
-          </div>
-        }
+        placeholder={groupPlaceholder(
+          row,
+          items,
+          layoutMode,
+          visitIds,
+          getVisitId,
+        )}
         render={() => (
           <GroupContent
             row={row}
@@ -195,6 +235,199 @@ const GroupViewport = React.memo(
     before.estimatedHeight === after.estimatedHeight &&
     before.visitIds.every((value, index) => value === after.visitIds[index]),
 );
+type GroupBodyModel = ReadonlyMap<string, GroupContentProps>;
+const CurrentGroupBodyContext = React.createContext<GroupBodyModel>(new Map());
+const CurrentGroupBody = ({ rowKey }: { rowKey: string }) => {
+  const body = React.useContext(CurrentGroupBodyContext).get(rowKey);
+  return body ? <GroupContent {...body} /> : null;
+};
+const CurrentGroupPlaceholder = ({
+  context,
+}: {
+  context: React.Context<React.ReactNode>;
+}) => <>{React.useContext(context)}</>;
+
+type GroupGateProps = {
+  rowKey: string;
+  layoutKey: string;
+  estimatedHeight: number;
+  defer: boolean | undefined;
+  retain: boolean;
+  context: React.Context<React.ReactNode>;
+};
+const CurrentGroupGate = ({ context, ...gate }: GroupGateProps) => {
+  recordShoppingRender("execution-viewport");
+  return (
+    <ViewportContent
+      {...gate}
+      placeholder={<CurrentGroupPlaceholder context={context} />}
+      render={() => <CurrentGroupBody rowKey={gate.rowKey} />}
+    />
+  );
+};
+type GroupSlot = {
+  readonly metadata: readonly unknown[];
+  readonly placeholder: React.ReactElement;
+  readonly staticParts: PlaceholderStaticParts;
+  readonly context: React.Context<React.ReactNode>;
+  readonly config: GroupGateProps;
+  readonly gate: React.ReactElement;
+};
+const currentPlaceholderStaticParts = (
+  previous: PlaceholderStaticParts | undefined,
+  props: GroupViewportProps,
+): PlaceholderStaticParts => {
+  const headingName = props.row.accessibleName;
+  const headingVisitId = props.visitIds[0];
+  const heading =
+    previous?.headingName === headingName &&
+    previous.headingVisitId === headingVisitId
+      ? previous.heading
+      : placeholderHeading(headingName, headingVisitId);
+  const sameOrder =
+    previous !== undefined &&
+    previous.labels.length === props.items.length &&
+    props.items.every(
+      ({ row }, index) => previous.labels[index].rowKey === row.rowKey,
+    );
+  // Copy only changed static parts; a reordered membership takes the linear rebuild path.
+  let changedLabels: PlaceholderLabel[] | undefined = sameOrder
+    ? undefined
+    : [];
+  props.items.forEach(({ row }, index) => {
+    const price = row.item.price ?? "価格未定";
+    const cached = sameOrder ? previous!.labels[index] : undefined;
+    if (
+      cached &&
+      Object.is(cached.accessibleName, row.accessibleName) &&
+      Object.is(cached.remarks, row.item.remarks) &&
+      Object.is(cached.price, price) &&
+      Object.is(cached.quantity, row.item.quantity)
+    ) {
+      changedLabels?.push(cached);
+      return;
+    }
+    const text = [
+      row.accessibleName,
+      row.item.remarks,
+      price,
+      row.item.quantity,
+    ].join(" ");
+    changedLabels ??= previous!.labels.slice(0, index);
+    changedLabels.push({
+      rowKey: row.rowKey,
+      text,
+      accessibleName: row.accessibleName,
+      remarks: row.item.remarks,
+      price,
+      quantity: row.item.quantity,
+      element:
+        cached?.text === text ? (
+          cached.element
+        ) : (
+          <span className="esp-viewport-placeholder-label">{text}</span>
+        ),
+    });
+  });
+  const labels = changedLabels ?? previous!.labels;
+  return previous && previous.heading === heading && previous.labels === labels
+    ? previous
+    : { headingName, headingVisitId, heading, labels };
+};
+const sameGroupMetadata = (
+  metadata: readonly unknown[],
+  props: GroupViewportProps,
+): boolean => {
+  if (
+    metadata.length !== 5 + props.items.length * 8 ||
+    !Object.is(metadata[0], props.layoutMode) ||
+    !Object.is(metadata[1], props.row.rowKey) ||
+    !Object.is(metadata[2], props.row.label) ||
+    !Object.is(metadata[3], props.row.accessibleName) ||
+    !Object.is(metadata[4], props.visitIds[0])
+  )
+    return false;
+  for (let index = 0; index < props.items.length; index++) {
+    const { row } = props.items[index];
+    const offset = 5 + index * 8;
+    if (
+      !Object.is(metadata[offset], row.rowKey) ||
+      !Object.is(metadata[offset + 1], row.accessibleName) ||
+      !Object.is(metadata[offset + 2], row.positionInSet) ||
+      !Object.is(metadata[offset + 3], row.setSize) ||
+      !Object.is(metadata[offset + 4], row.item.remarks) ||
+      !Object.is(metadata[offset + 5], row.item.price ?? "価格未定") ||
+      !Object.is(metadata[offset + 6], row.item.quantity) ||
+      !Object.is(metadata[offset + 7], props.visitIds[index + 1])
+    )
+      return false;
+  }
+  return true;
+};
+const currentGroupSlot = (
+  previous: GroupSlot | undefined,
+  props: GroupViewportProps,
+): GroupSlot => {
+  const sameMetadata =
+    previous !== undefined && sameGroupMetadata(previous.metadata, props);
+  const metadata: readonly unknown[] = sameMetadata
+    ? previous.metadata
+    : [
+        props.layoutMode,
+        props.row.rowKey,
+        props.row.label,
+        props.row.accessibleName,
+        props.visitIds[0],
+        ...props.items.flatMap(({ row }, index) => [
+          row.rowKey,
+          row.accessibleName,
+          row.positionInSet,
+          row.setSize,
+          row.item.remarks,
+          row.item.price ?? "価格未定",
+          row.item.quantity,
+          props.visitIds[index + 1],
+        ]),
+      ];
+  const context =
+    previous?.context ?? React.createContext<React.ReactNode>(null);
+  const config: GroupGateProps = {
+    rowKey: props.row.rowKey,
+    layoutKey: props.layoutKey,
+    estimatedHeight: props.estimatedHeight,
+    defer: props.defer,
+    retain: props.retained.some(Boolean),
+    context,
+  };
+  const sameGate =
+    previous !== undefined &&
+    previous.config.rowKey === config.rowKey &&
+    previous.config.layoutKey === config.layoutKey &&
+    previous.config.estimatedHeight === config.estimatedHeight &&
+    previous.config.defer === config.defer &&
+    previous.config.retain === config.retain;
+  const staticParts = sameMetadata
+    ? previous.staticParts
+    : currentPlaceholderStaticParts(previous?.staticParts, props);
+  return {
+    metadata: sameMetadata ? previous.metadata : metadata,
+    staticParts,
+    placeholder: sameMetadata
+      ? previous.placeholder
+      : groupPlaceholder(
+          props.row,
+          props.items,
+          props.layoutMode,
+          props.visitIds,
+          props.getVisitId,
+          staticParts,
+        ),
+    context,
+    config: sameGate ? previous.config : config,
+    gate: sameGate ? previous.gate : <CurrentGroupGate {...config} />,
+  };
+};
+
 /**
  * Keep controls near the viewport and retain rows for active focus, dialogs and drag.
  * Every pending row has a normal-flow accessible/navigation placeholder.
@@ -270,11 +503,26 @@ export const RetainedViewportListRenderer = (
     for (const id of rowStates.current.keys())
       if (!ids.has(id)) rowStates.current.delete(id);
   }, [props.model]);
+  // Only immutable metadata/JSX is cached. Current body callbacks stay in Context.
+  const currentModel = useRef(props.groupSlotMode === "current-model").current;
+  const committedSlots = useRef<ReadonlyMap<string, GroupSlot>>();
+  const nextSlots = currentModel ? new Map<string, GroupSlot>() : undefined;
+  const currentBodies = currentModel
+    ? new Map<string, GroupContentProps>()
+    : undefined;
+  // Adopt the fresh render-local Map after every commit. Reusing a Map during
+  // render could publish slots from an abandoned render; generic is a no-op.
+  useLayoutEffect(() => {
+    if (nextSlots) committedSlots.current = nextSlots;
+  });
   const rendered: React.ReactElement[] = [];
   for (let index = 0; index < props.model.rows.length; index += 1) {
     const row = props.model.rows[index];
     if (row.kind === "group" && renderGroup) {
       const itemRows: FullListRenderedItemRow[] = [];
+      // The active outer gate already owns visibility for a complete single-item visit.
+      const deferItems =
+        currentModel && row.itemCount === 1 ? false : props.defer;
       let cursor = index + 1;
       while (cursor < props.model.rows.length) {
         const itemRow = props.model.rows[cursor];
@@ -290,7 +538,7 @@ export const RetainedViewportListRenderer = (
               layoutKey={layoutKey}
               estimatedHeight={estimatedItemHeight}
               retain={props.pinnedRowKeys?.has(itemRow.rowKey)}
-              defer={props.defer}
+              defer={deferItems}
               placeholder={itemPlaceholder(
                 itemRow,
                 layoutMode,
@@ -307,35 +555,55 @@ export const RetainedViewportListRenderer = (
         cursor += 1;
       }
       const groupIndex = index;
-      rendered.push(
-        <GroupViewport
-          key={row.rowKey}
-          row={row}
-          items={itemRows}
-          index={groupIndex}
-          render={renderGroup}
-          dependencies={props.renderDependencies}
-          version={props.getGroupVersion?.(row.groupKey)}
-          layoutMode={layoutMode}
-          defer={props.defer}
-          retained={[
-            !!props.pinnedRowKeys?.has(row.rowKey),
-            ...itemRows.map(
-              ({ row: child }) => !!props.pinnedRowKeys?.has(child.rowKey),
-            ),
-          ]}
-          visitIds={[
-            props.getGroupVisitId?.(row.groupKey) ??
-              (itemRows[0] && props.getVisitId?.(itemRows[0].row.item)),
-            ...itemRows.map(({ row: child }) => props.getVisitId?.(child.item)),
-          ]}
-          getVisitId={props.getVisitId}
-          layoutKey={layoutKey}
-          estimatedHeight={
-            row.collapsed ? 44 : 44 + estimatedItemHeight * itemRows.length
-          }
-        />,
-      );
+      const groupProps: GroupViewportProps = {
+        row,
+        items: itemRows,
+        index: groupIndex,
+        render: renderGroup,
+        dependencies: props.renderDependencies,
+        version: props.getGroupVersion?.(row.groupKey),
+        layoutMode,
+        defer: props.defer,
+        retained: [
+          !!props.pinnedRowKeys?.has(row.rowKey),
+          ...itemRows.map(
+            ({ row: child }) => !!props.pinnedRowKeys?.has(child.rowKey),
+          ),
+        ],
+        visitIds: [
+          props.getGroupVisitId?.(row.groupKey) ??
+            (itemRows[0] && props.getVisitId?.(itemRows[0].row.item)),
+          ...itemRows.map(({ row: child }) => props.getVisitId?.(child.item)),
+        ],
+        getVisitId: props.getVisitId,
+        layoutKey,
+        estimatedHeight: row.collapsed
+          ? 44
+          : 44 + estimatedItemHeight * itemRows.length,
+      };
+      if (nextSlots && currentBodies) {
+        const slot = currentGroupSlot(
+          committedSlots.current?.get(row.rowKey),
+          groupProps,
+        );
+        nextSlots.set(row.rowKey, slot);
+        currentBodies.set(row.rowKey, {
+          row,
+          items: itemRows,
+          index: groupIndex,
+          render: renderGroup,
+          dependencies: groupProps.dependencies,
+          version: groupProps.version,
+          retained: groupProps.retained,
+        });
+        rendered.push(
+          <slot.context.Provider key={row.rowKey} value={slot.placeholder}>
+            {slot.gate}
+          </slot.context.Provider>,
+        );
+      } else {
+        rendered.push(<GroupViewport key={row.rowKey} {...groupProps} />);
+      }
       index = cursor - 1;
     } else if (row.kind === "item" && props.renderRow) {
       const itemIndex = index;
@@ -357,7 +625,7 @@ export const RetainedViewportListRenderer = (
       );
     }
   }
-  return (
+  const list = (
     <ViewportRowStateContext.Provider value={rowStates.current}>
       <div
         {...props.rootProps}
@@ -386,5 +654,12 @@ export const RetainedViewportListRenderer = (
         {props.afterContent}
       </div>
     </ViewportRowStateContext.Provider>
+  );
+  return currentBodies ? (
+    <CurrentGroupBodyContext.Provider value={currentBodies}>
+      {list}
+    </CurrentGroupBodyContext.Provider>
+  ) : (
+    list
   );
 };

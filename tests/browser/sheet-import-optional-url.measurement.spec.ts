@@ -1,3 +1,4 @@
+import { readBrowserEventLists } from "./shopping-transfer-persisted-store";
 import { readFile, writeFile } from "node:fs/promises";
 import { parseCsvRecords } from "../../src/utils/csvRecords";
 import { performance } from "node:perf_hooks";
@@ -256,6 +257,8 @@ async function stored(
   name: string,
   key = "data",
 ): Promise<unknown> {
+  if (name === "eventLists" && key === "data")
+    return readBrowserEventLists(page);
   return page.evaluate(
     async ({ name, key }) => {
       const database = await new Promise<IDBDatabase>((resolve, reject) => {

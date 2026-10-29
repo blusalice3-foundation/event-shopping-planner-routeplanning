@@ -471,6 +471,53 @@ export function planProjectedMutation(
   currentProjection?: PersistenceSnapshot,
   reuseUnchangedMapData = false,
 ): MutationPlan {
+  return planProjectedMutationWithOwnership(
+    source,
+    patch,
+    input,
+    choices,
+    currentProjection,
+    reuseUnchangedMapData,
+  );
+}
+
+/** Only order/membership proposals own the reference stores built before repair. */
+export function planShoppingOrderMutation(
+  source: PersistenceSnapshot,
+  patch: Partial<PersistenceSnapshot>,
+  input: Pick<MutationContext, "eventName" | "day">,
+  choices: MutationChoices,
+  currentProjection: PersistenceSnapshot,
+  reuseReadonlyItems = false,
+): MutationPlan {
+  if (
+    Object.keys(patch).some(
+      (key) => key !== "eventLists" && key !== "executeModeItems",
+    )
+  )
+    throw new Error("Shopping order patches cannot change other stores.");
+  return planProjectedMutationWithOwnership(
+    source,
+    patch,
+    input,
+    choices,
+    currentProjection,
+    true,
+    true,
+    reuseReadonlyItems,
+  );
+}
+
+function planProjectedMutationWithOwnership(
+  source: PersistenceSnapshot,
+  patch: Partial<PersistenceSnapshot>,
+  input: MutationContext,
+  choices: MutationChoices = {},
+  currentProjection?: PersistenceSnapshot,
+  reuseUnchangedMapData = false,
+  ownShoppingRepairInput = false,
+  reuseReadonlyItems = false,
+): MutationPlan {
   // All stages read the same unmodified source until a day merge replaces it.
   const projection =
     currentProjection ??
@@ -515,6 +562,8 @@ export function planProjectedMutation(
           input,
           projection,
           reuseUnchangedMapData,
+          ownShoppingRepairInput,
+          reuseReadonlyItems,
         );
       const before = remapProjectedHalls(projection, merged, remapHall);
       const after = projectConsistencySnapshot(
@@ -587,15 +636,22 @@ function planProjectedMutationAfterMerge(
     input.day,
   ),
   reuseUnchangedMapData = false,
+  ownShoppingRepairInput = false,
+  reuseReadonlyItems = false,
 ): MutationPlan {
   const proposed = { ...beforeProjection, ...patch };
   // The state layer owns immutable geometry. Map edits and public callers
   // retain the original copy isolation; other UI edits do not copy all cells.
   const keepMapData = reuseUnchangedMapData && patch.mapData === undefined;
+  const cloneSource = keepMapData ? { ...source, mapData: {} } : source;
+  // Only planShoppingMove discards these read-only planner items at its boundary.
+  // Public planners and the day-merge path retain their original copy isolation.
+  const shareItems = reuseReadonlyItems && ownShoppingRepairInput;
   const next = structuredClone(
-    keepMapData ? { ...source, mapData: {} } : source,
+    shareItems ? { ...cloneSource, eventLists: {} } : cloneSource,
   );
   if (keepMapData) next.mapData = source.mapData;
+  if (shareItems) next.eventLists = source.eventLists;
   const details: string[] = [];
   const comparisons: unknown[] = [];
   const affectedContexts: Array<{
@@ -620,12 +676,15 @@ function planProjectedMutationAfterMerge(
           Object.entries(patch[key]).map(([name, days]) => [
             name,
             equal(days, recordEntry(beforeProjection[key], name))
-              ? recordEntry(source[key], name)
+              ? recordEntry(
+                  ownShoppingRepairInput ? next[key] : source[key],
+                  name,
+                )
               : preserveDayBucketKeys(
                   recordEntry(source[key], name) as
                     | Record<string, unknown>
                     | undefined,
-                  days,
+                  ownShoppingRepairInput ? structuredClone(days) : days,
                 ),
           ]),
         ),
@@ -1344,9 +1403,12 @@ function planProjectedMutationAfterMerge(
       }
     }
   }
-  // Deep-copy the smaller reference-bearing stores before repair. Map geometry
-  // is already privately cloned above or explicitly shared as immutable data.
-  const referenceInput = structuredClone({ ...next, mapData: {} });
+  // General patches can retain caller-owned references. Shopping order patches
+  // own their writable consistency/execution stores; day merges use the general path.
+  // Repair reads item content, definitions and map geometry without modifying them.
+  const referenceInput = ownShoppingRepairInput
+    ? next
+    : structuredClone({ ...next, mapData: {} });
   referenceInput.mapData = next.mapData;
   const repaired = reconcileConsistencyReferences(referenceInput, false);
   // Compare source values and final repaired results across all affected days and maps.

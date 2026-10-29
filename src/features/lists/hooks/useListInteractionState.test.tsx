@@ -6,6 +6,38 @@ import { buildRangePresentation } from "../domain/rangeSelection";
 import { useListInteractionState } from "./useListInteractionState";
 
 describe("useListInteractionState range anchors", () => {
+  it("consumes only transferred IDs and retains the Set when none are selected", () => {
+    const { result } = renderHook(() => useListInteractionState());
+    act(() => result.current.toggleRangeItemIdsSelection(["a", "b", "other"]));
+    const before = result.current.selectedItemIds;
+    act(() => result.current.removeSelectedItemIds(["unselected"]));
+    expect(result.current.selectedItemIds).toBe(before);
+
+    act(() => {
+      result.current.toggleRangeItemIdsSelection(["later"]);
+      result.current.removeSelectedItemIds(["a", "b", "expanded-peer"]);
+    });
+    expect([...result.current.selectedItemIds]).toEqual(["other", "later"]);
+  });
+
+  it("leaves range endpoints to the explicit acceptance cleanup", () => {
+    const presentation = buildRangePresentation({
+      scopeKey: "event/day/candidate/flat",
+      grouping: "flat",
+      itemIds: ["a", "b", "c"],
+    });
+    const { result } = renderHook(() => useListInteractionState());
+    act(() => result.current.selectItemForRange("a", presentation));
+    act(() => result.current.selectItemForRange("c", presentation));
+    const { rangeStart, rangeEnd } = result.current;
+    act(() => result.current.removeSelectedItemIds(["a"]));
+    expect(result.current.rangeStart).toBe(rangeStart);
+    expect(result.current.rangeEnd).toBe(rangeEnd);
+    act(() => result.current.clearRangeSelection());
+    expect(result.current.rangeStart).toBeNull();
+    expect(result.current.rangeEnd).toBeNull();
+    expect([...result.current.selectedItemIds]).toEqual(["c"]);
+  });
   it("uses the rendered flat order and toggles exactly the supplied range IDs", () => {
     const presentation = buildRangePresentation({
       scopeKey: "event/day/candidate/flat",
