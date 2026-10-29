@@ -162,3 +162,143 @@ test("rejects a direct dependency with empty evidence", async () => {
     await rm(root, { recursive: true, force: true });
   }
 });
+
+const createPlaywrightFixture = async () => {
+  const root = await createFixture();
+  const packagePath = path.join(root, "package.json");
+  const packageJson = JSON.parse(await readFile(packagePath, "utf8"));
+  packageJson.scripts["test:browser"] =
+    "node scripts/run-shopping-browser-evidence.mjs";
+  packageJson.scripts["test:shopping-performance:run"] =
+    "node scripts/preflight.mjs && playwright test";
+  packageJson.devDependencies["@playwright/test"] = "1.0.0";
+  const policyPath = path.join(root, "config", "direct-dependency-usage.json");
+  const policy = JSON.parse(await readFile(policyPath, "utf8"));
+  policy.graphs.buildConfigRoots.push({
+    file: "playwright.config.ts",
+    loaderPackage: "@playwright/test",
+    loaderScript: "test:shopping-performance:run",
+    loaderBinary: "playwright",
+  });
+  policy.packages = {
+    "@playwright/test": {
+      scope: "devDependencies",
+      evidence: [
+        {
+          kind: "cli",
+          script: "test:shopping-performance:run",
+          binary: "playwright",
+        },
+      ],
+    },
+    ...policy.packages,
+  };
+  await mkdir(path.join(root, "scripts"), { recursive: true });
+  await mkdir(path.join(root, "node_modules", "@playwright", "test"), {
+    recursive: true,
+  });
+  await Promise.all([
+    writeJson(packagePath, packageJson),
+    writeJson(policyPath, policy),
+    writeJson(
+      path.join(root, "node_modules", "@playwright", "test", "package.json"),
+      {
+        name: "@playwright/test",
+        version: "1.0.0",
+        bin: { playwright: "cli.js" },
+      },
+    ),
+    writeFile(
+      path.join(root, "playwright.config.ts"),
+      "export default {};\n",
+      "utf8",
+    ),
+    writeFile(
+      path.join(root, "scripts", "run-shopping-browser-evidence.mjs"),
+      'import { spawnSync } from "node:child_process";\nspawnSync("npm", ["run", "test:shopping-performance:run"]);\n',
+      "utf8",
+    ),
+    writeFile(
+      path.join(root, "scripts", "preflight.mjs"),
+      "export {};\n",
+      "utf8",
+    ),
+  ]);
+  return root;
+};
+
+test("accepts the actual Playwright loader behind the browser wrapper", async () => {
+  const root = await createPlaywrightFixture();
+  try {
+    const result = runVerifier(root);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /3 known, 0 unknown, 0 unused/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects a delegated script that no longer invokes Playwright", async () => {
+  const root = await createPlaywrightFixture();
+  try {
+    const packagePath = path.join(root, "package.json");
+    const packageJson = JSON.parse(await readFile(packagePath, "utf8"));
+    packageJson.scripts["test:shopping-performance:run"] =
+      "node scripts/preflight.mjs";
+    packageJson.scripts["test:detached"] = "playwright test";
+    await writeJson(packagePath, packageJson);
+    const result = runVerifier(root);
+    assert.notEqual(result.status, 0);
+    assert.match(
+      result.stderr,
+      /buildConfigRoots\[0\].*test:shopping-performance:run does not invoke playwright/,
+    );
+    assert.match(
+      result.stderr,
+      /packages\["@playwright\/test"\].evidence\[0\].*does not invoke playwright/,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects a delegated Playwright loader owned by a different binary", async () => {
+  const root = await createPlaywrightFixture();
+  try {
+    await writeJson(
+      path.join(root, "node_modules", "@playwright", "test", "package.json"),
+      {
+        name: "@playwright/test",
+        version: "1.0.0",
+        bin: { other: "cli.js" },
+      },
+    );
+    const result = runVerifier(root);
+    assert.notEqual(result.status, 0);
+    assert.match(
+      result.stderr,
+      /@playwright\/test does not own CLI playwright/,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("keeps the loader policy bound to the canonical browser runner", async () => {
+  const { GROUPS } = await import("./run-shopping-browser-evidence.mjs");
+  const policy = JSON.parse(
+    await readFile(
+      path.join(repositoryRoot, "config", "direct-dependency-usage.json"),
+      "utf8",
+    ),
+  );
+  const shopping = GROUPS.find((entry) => entry.group === "shopping");
+  const loader = policy.graphs.buildConfigRoots.find(
+    (entry) => entry.file === "playwright.config.ts",
+  );
+  const cli = policy.packages["@playwright/test"].evidence.find(
+    (entry) => entry.kind === "cli",
+  );
+  assert.equal(loader.loaderScript, shopping.script);
+  assert.equal(cli.script, shopping.script);
+});
