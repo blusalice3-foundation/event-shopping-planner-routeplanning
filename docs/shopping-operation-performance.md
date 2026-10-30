@@ -1,10 +1,10 @@
 # 実行・集中モードの品目操作と差分描画
 
-## 現行の受入範囲（2026-10-26 ユーザー指定）
+## 現行の受入範囲（2026-10-30 ユーザー指定）
 
-通常の買い物6操作は150／500品目・16条件を対象とし、従来互換応答と期待UI応答をそれぞれ中央値65.0ms以下・95%点100ms以下で判定する。測定回数だけをPR確認では各2回（`pr`）、実装完了判定では各10回（`completion`）へ変更し、指定なしは `completion` とする。1,500品目は通常利用の範疇ではないため修正対象外とし、既存の買い物8条件とbounded DOM 1件は `npm run test:shopping-large-list-diagnostic:run` による任意診断へ分離する。通常runner／CIの必須判定や未完了判定へ含めず、150／500品目の一般機能・地図40,000セル・過去10,000品目の負荷・保存検証は維持する。
+通常の買い物6操作は150／500品目・16条件を対象とし、従来互換応答と期待UI応答をそれぞれ中央値65.0ms以下・95%点100ms以下で判定する。PRでは性能測定を実行しない。実装完了判定とmainへのpushは各10回（`completion`）、通常runnerの指定なしも `completion` とする。各2回の `pr` profileは過去・明示実行用に保持する。1,500品目は通常利用の範疇ではないため修正対象外とし、既存の買い物8条件とbounded DOM 1件は `npm run test:shopping-large-list-diagnostic:run` による任意診断へ分離する。通常runner／CIの必須判定や未完了判定へ含めず、150／500品目の一般機能・地図40,000セル・過去10,000品目の負荷・保存検証は維持する。
 
-通常一括実行は `npm run test:browser:pr`／`npm run test:browser:completion` を用いる。shopping群だけを実行する場合は、ビルド後に `ESP_PERFORMANCE_PROFILE=pr|completion` を設定して `npm run test:shopping-performance:run` を実行する。PR2回の成功を実装完了へ流用せず、前後比較も同じprofileで揃える。任意診断の記録は `diagnosticOnly: true`／`acceptanceMeasurement: false` とし、合格証拠へ混ぜない。詳細と基準識別子は[現行の性能基準](dnd-selection-rendering-performance-criteria-20261024.md)と[AGENTS.md](../AGENTS.md)を参照する。
+PR確認は性能を除外した `npm run test:browser:pr`、性能を含む通常一括実行は `npm run test:browser:completion` を用いる。PRの機能テスト成果物から性能用canonical `run-result.json` を生成せず、性能合格とは扱わない。shopping群だけを実行する場合は、ビルド後に `ESP_PERFORMANCE_PROFILE=pr|completion` を設定して `npm run test:shopping-performance:run` を実行する。PR2回の成功を実装完了へ流用せず、前後比較も同じprofileで揃える。任意診断の記録は `diagnosticOnly: true`／`acceptanceMeasurement: false` とし、合格証拠へ混ぜない。詳細と基準識別子は[現行の性能基準](dnd-selection-rendering-performance-criteria-20261024.md)と[AGENTS.md](../AGENTS.md)を参照する。
 
 以下に残す24条件や旧基準・過去の実測値・当初合否は、それぞれの記録時点の履歴であり、今回の対象変更によって書き換えない。現行の対象範囲・基準は本節を適用する。
 
