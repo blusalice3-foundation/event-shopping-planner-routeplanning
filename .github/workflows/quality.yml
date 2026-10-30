@@ -176,35 +176,19 @@ jobs:
           curl --silent --fail http://127.0.0.1:4173/ >/dev/null
           npm run test:release-a-browser
 
-      - name: Browser functional (PR)
-        if: github.event_name == 'pull_request'
-        env:
-          ESP_PERFORMANCE_PROFILE: pr
-        run: npm run test:browser:pr
-
       - name: Browser
-        if: github.event_name != 'pull_request'
         env:
-          ESP_PERFORMANCE_PROFILE: completion
-        run: npm run test:browser
+          ESP_PERFORMANCE_PROFILE: ${{ github.event_name == 'pull_request' && 'pr' || 'completion' }}
+        run: npm run test:browser:functional
 
-      - name: Upload PR browser functional results
-        if: always() && github.event_name == 'pull_request'
+      - name: Upload browser functional results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pr-browser-functional-${{ github.run_id }}-${{ github.run_attempt }}
+          name: browser-functional-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             artifacts/playwright/
             artifacts/playwright-report/
-          if-no-files-found: warn
-          overwrite: false
-
-      - name: Upload shopping browser evidence
-        if: always() && github.event_name != 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: shopping-browser-evidence-completion-${{ github.run_id }}-${{ github.run_attempt }}
-          path: artifacts/dnd-selection-rendering/
           if-no-files-found: warn
           overwrite: false
 

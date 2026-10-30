@@ -1,10 +1,12 @@
 # Performance evidence contract
 
-## 2026-10-30：PRは機能テストのみ
+## 2026-10-30：性能4群は必要時の手動測定
 
-PRでは性能4群 `shopping`／`range`／`drag`／`transfer` を実行せず、`npm run test:browser:pr` で既存の一般機能ブラウザテストを実行する。PR成果物は `pr-browser-functional-<run ID>-<attempt>` として保存し、性能用canonical `run-result.json` は生成しない。PR通過を性能測定や実装完了の合格へ読み替えない。
+PR・mainへのpushの通常CIは `npm run test:browser:functional` で既存の一般機能ブラウザテストを実行し、性能4群 `shopping`／`range`／`drag`／`transfer` は測定しない。通常CIの成果物は `browser-functional-<run ID>-<attempt>` として保存し、性能用canonical `run-result.json` は生成しない。quality sourceの `browser` チェックも機能確認を表し、性能合格へ読み替えない。
 
-mainへのpushと `npm run test:browser:completion` は全144ケース・各10回を維持する。以下の `pr` profileの各2回という定義は過去・明示実行用に保持し、PRでの実行要件だけを本節で上書きする。基準、全操作・終了点・fixture・保存整合性・retry 0と元artifactは変更しない。
+毎回の実装完了に性能測定を必須とはしない。必要時にActionsの `Shopping and D&D performance (manual)` または `npm run test:browser:completion` を手動実行する。測定時は既存の全5群・性能144ケース・各10回を使い、元のcanonical証拠を保存する。未測定は性能未確認とする。
+
+以下の `pr` profileの各2回という定義は過去・明示実行用に保持し、PR・main・毎回の実装完了での測定実行要件を本節で上書きする。測定時の基準、全操作・終了点・fixture・保存整合性・retry 0と元artifactは変更しない。
 
 ## 2026-10-28の現行基準：対象3群160ms／160ms
 
@@ -32,9 +34,9 @@ v3とv4は終了条件の意味が異なるため、旧v3のrawをv4の正式受
 
 ## 買い物ブラウザ性能のprofile定義（2026-10-26定義・2026-10-30実行対象改訂）
 
-`run-shopping-browser-evidence.mjs` が実行する4群は、過去・明示実行用の `pr` が各操作・指標2回、実装完了判定 `completion` が各操作・指標10回である。`ESP_PERFORMANCE_PROFILE` またはrunnerの `--profile` で選び、指定なしは `completion` とする。PR2回の `passed` は実装完了へ流用せず、完了の前後比較は同じ `completion` profileで採取する。
+`run-shopping-browser-evidence.mjs` が実行する4群は、過去・明示実行用の `pr` が各操作・指標2回、正式な手動測定用の `completion` が各操作・指標10回である。`ESP_PERFORMANCE_PROFILE` またはrunnerの `--profile` で選び、指定なしは `completion` とする。PR2回の `passed` は実装完了へ流用せず、完了の前後比較は同じ `completion` profileで採取する。
 
-必須条件shopping16（150／500品目・各6操作）・range20・drag8・transfer100、時間基準shopping65／100ms・対象3群160／160ms（2026-10-28改訂、旧150msは履歴）、全操作、fixture、ウォームアップ、入力・DOM・実フレーム・次操作の終了点、保存・再読込・整合性検証、retry 0は維持する。性能を含む通常一括実行は `npm run test:browser:completion` とし、mainへのpushも `completion` を指定する。各2回を明示実行する場合は、ビルド後に `node scripts/run-shopping-browser-evidence.mjs --phase after --profile pr` を使用する。PR eventは `npm run test:browser:pr` で機能テストだけを実行する。
+必須条件shopping16（150／500品目・各6操作）・range20・drag8・transfer100、時間基準shopping65／100ms・対象3群160／160ms（2026-10-28改訂、旧150msは履歴）、全操作、fixture、ウォームアップ、入力・DOM・実フレーム・次操作の終了点、保存・再読込・整合性検証、retry 0は維持する。必要時の手動一括測定は `npm run test:browser:completion` または専用のdispatch-only workflowを使用する。各2回を明示実行する場合は、ビルド後に `node scripts/run-shopping-browser-evidence.mjs --phase after --profile pr` を使用する。通常CIはPR・mainとも `npm run test:browser:functional` で機能テストだけを実行する。
 
 runとartifactには `samplingPolicyId: "performance-samples-2026-10-26"` と `samplingProfile`（`id`、`sampleCount`、`policyDate`、`completionEligible`）を保存し、時間基準のcriteria IDとは分けて識別する。異なるprofileを合算したり、過去20回のrawを切り詰めたりしない。旧raw・当初合否・元artifactと中断runは履歴として保持し、新回数のrunは独立して保存する。詳細は[現行の性能基準](dnd-selection-rendering-performance-criteria-20261024.md)と[AGENTS.md](../AGENTS.md)を参照する。
 

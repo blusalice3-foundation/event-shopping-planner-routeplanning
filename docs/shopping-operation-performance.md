@@ -2,9 +2,9 @@
 
 ## 現行の受入範囲（2026-10-30 ユーザー指定）
 
-通常の買い物6操作は150／500品目・16条件を対象とし、従来互換応答と期待UI応答をそれぞれ中央値65.0ms以下・95%点100ms以下で判定する。PRでは性能測定を実行しない。実装完了判定とmainへのpushは各10回（`completion`）、通常runnerの指定なしも `completion` とする。各2回の `pr` profileは過去・明示実行用に保持する。1,500品目は通常利用の範疇ではないため修正対象外とし、既存の買い物8条件とbounded DOM 1件は `npm run test:shopping-large-list-diagnostic:run` による任意診断へ分離する。通常runner／CIの必須判定や未完了判定へ含めず、150／500品目の一般機能・地図40,000セル・過去10,000品目の負荷・保存検証は維持する。
+通常の買い物6操作は150／500品目・16条件を対象とし、従来互換応答と期待UI応答をそれぞれ中央値65.0ms以下・95%点100ms以下で判定する。PR・mainの通常CIでは性能測定を実行せず、毎回の実装完了にも測定を必須とはしない。必要時に手動実行する場合は各10回（`completion`）を使用し、性能runnerの指定なしも `completion` とする。各2回の `pr` profileは過去・明示実行用に保持する。1,500品目は通常利用の範疇ではないため修正対象外とし、既存の買い物8条件とbounded DOM 1件は `npm run test:shopping-large-list-diagnostic:run` による任意診断へ分離する。通常runner／CIの必須判定や未完了判定へ含めず、150／500品目の一般機能・地図40,000セル・過去10,000品目の負荷・保存検証は維持する。
 
-PR確認は性能を除外した `npm run test:browser:pr`、性能を含む通常一括実行は `npm run test:browser:completion` を用いる。PRの機能テスト成果物から性能用canonical `run-result.json` を生成せず、性能合格とは扱わない。shopping群だけを実行する場合は、ビルド後に `ESP_PERFORMANCE_PROFILE=pr|completion` を設定して `npm run test:shopping-performance:run` を実行する。PR2回の成功を実装完了へ流用せず、前後比較も同じprofileで揃える。任意診断の記録は `diagnosticOnly: true`／`acceptanceMeasurement: false` とし、合格証拠へ混ぜない。詳細と基準識別子は[現行の性能基準](dnd-selection-rendering-performance-criteria-20261024.md)と[AGENTS.md](../AGENTS.md)を参照する。
+通常CI・日常の機能確認は `npm run test:browser:functional`（PR用の `test:browser:pr` も同じ対象）、必要時の手動測定はActionsの `Shopping and D&D performance (manual)` または `npm run test:browser:completion` を用いる。通常CIの機能テスト成果物から性能用canonical `run-result.json` を生成せず、未測定を性能合格とは扱わない。shopping群だけを実行する場合は、ビルド後に `ESP_PERFORMANCE_PROFILE=pr|completion` を設定して `npm run test:shopping-performance:run` を実行する。PR2回の成功を実装完了へ流用せず、前後比較も同じprofileで揃える。任意診断の記録は `diagnosticOnly: true`／`acceptanceMeasurement: false` とし、合格証拠へ混ぜない。詳細と基準識別子は[現行の性能基準](dnd-selection-rendering-performance-criteria-20261024.md)と[AGENTS.md](../AGENTS.md)を参照する。
 
 以下に残す24条件や旧基準・過去の実測値・当初合否は、それぞれの記録時点の履歴であり、今回の対象変更によって書き換えない。現行の対象範囲・基準は本節を適用する。
 
@@ -48,7 +48,7 @@ $env:ESP_PERFORMANCE_PROFILE = "completion"
 npm run test:shopping-performance:run
 ```
 
-JSONレポートの `shopping-operation-timings` 添付には、操作別のraw、中央値、95%点、保存時間、描画回数とsampling profileを含む。必要なら `PLAYWRIGHT_JSON_OUTPUT_NAME` に出力先を指定する。実行購入・実行記録・集中購入・集中記録・次へ・戻るの従来互換応答と期待UI応答を、PRでは各2回、実装完了判定では各10回、中央値65.0ms以下・95%点100ms以下で検査する。`ESP_PROFILE_SHOPPING=1` のCPU profileは独立した診断へ分け、通常受入の起動前検証で診断設定の混入を拒否する。
+JSONレポートの `shopping-operation-timings` 添付には、操作別のraw、中央値、95%点、保存時間、描画回数とsampling profileを含む。必要なら `PLAYWRIGHT_JSON_OUTPUT_NAME` に出力先を指定する。実行購入・実行記録・集中購入・集中記録・次へ・戻るの従来互換応答と期待UI応答を、必要時の正式な手動測定では各10回、中央値65.0ms以下・95%点100ms以下で検査する。各2回の `pr` は過去・明示実行用に保持し、通常CIではこの測定を実行しない。`ESP_PROFILE_SHOPPING=1` のCPU profileは独立した診断へ分け、通常受入の起動前検証で診断設定の混入を拒否する。
 
 ## 検証範囲
 

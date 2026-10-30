@@ -668,18 +668,20 @@ cleanなworktreeでpreviewを停止した後、`npm run test:release-a-rollback`
 
 | 性能試験群                    | 対象                                |      中央値 |       95%点 |             測定回数 |
 | ----------------------------- | ----------------------------------- | ----------: | ----------: | -------------------: |
-| `range` / `drag` / `transfer` | D&D・範囲選択・描画・移動後の次操作 | 160.0ms以下 | 160.0ms以下 | PR測定なし／完了各10 |
-| `shopping`                    | 通常の買い物6操作                   |  65.0ms以下 | 100.0ms以下 | PR測定なし／完了各10 |
+| `range` / `drag` / `transfer` | D&D・範囲選択・描画・移動後の次操作 | 160.0ms以下 | 160.0ms以下 | 必要時・各10（手動） |
+| `shopping`                    | 通常の買い物6操作                   |  65.0ms以下 | 100.0ms以下 | 必要時・各10（手動） |
 
 通常6操作など本プランの対象外の動作は、計画書に回帰確認として掲載されている場合も従来の65.0ms／100ms基準を維持します。保存完了時間は操作反応と分けた補助指標です。
 
-2026-10-30のユーザー指定により、PRでは性能4群を測定せず、一般機能のブラウザテストを実行します。mainへのpushと実装完了判定は、引き続き全条件・全操作を各10回で測定します。profileの `pr`（各2回）は過去の記録と明示実行用に保持し、`completion`（各10回）が通常runnerの既定です。環境変数は `ESP_PERFORMANCE_PROFILE`、通常runnerのCLIは `--profile pr|completion` です。
+2026-10-30の最新ユーザー指定により、PRとmainへのpushの通常CIでは性能4群を測定せず、一般機能のブラウザテストを実行します。毎回の実装完了に性能測定を必須とはせず、必要なときに手動で測定します。測定時は `completion` の全144ケース・各10回を使用します。各2回の `pr` profileは過去の記録と明示実行用に保持し、性能runnerの既定は引き続き `completion` です。
 
-- `npm run test:browser:pr`: PR向けの一般機能テスト。性能4群と1,500品目の任意診断を除外します。
-- `npm run test:browser:completion`: 実装完了判定。全条件・全操作を各10回で確認します。
-- `npm run test:browser`: 一般機能と性能4群を実行します。環境変数でprofileを選択し、未指定なら10回です。CIはPR eventで `test:browser:pr`、mainへのpushでこのコマンドと `completion` を使用します。
+- `npm run test:browser:functional`／`npm run test:browser:pr`: 日常・CIの一般機能テスト。性能4群と1,500品目の任意診断を除外します。
+- `npm run test:browser:completion`: 必要時の手動測定。一般機能と、性能4群・全144ケースの各10回測定を実行します。
+- `npm run test:browser`: 性能を含む手動実行用の互換コマンド。`ESP_PERFORMANCE_PROFILE` でprofileを選択し、未指定なら10回です。通常CIからは呼びません。
 
-PRの結果は `pr-browser-functional-<run ID>-<attempt>` として保存し、性能用canonical `run-result.json` は生成しません。PR通過は性能4群や実装完了の合格を意味しません。DOM走査停止の原因は未解消で、マージ後の性能検証では引き続き確認対象です。
+GitHubで測定する場合は、Actionsの `Shopping and D&D performance (manual)` から `Run workflow` を選択してください。手動workflowは `completion` 固定で、失敗時も採取済みのcanonical証拠を保存します。
+
+通常CIの結果は `browser-functional-<run ID>-<attempt>` として保存し、性能用canonical `run-result.json` は生成しません。未測定は性能未確認として扱い、通常CI通過を性能合格へ読み替えません。DOM走査停止の原因は未解消で、必要時の手動測定で引き続き確認できます。
 
 判定には[性能基準の共通定義](scripts/shopping-performance-evidence-contract.mjs)の `performanceAcceptanceCriteriaForGroup(group, profile)` を使います。`samplingPolicyId` と `samplingProfile` に用途・回数・完了判定へ利用可能かを記録し、前後比較も同じprofileで揃えてください。必須条件はshopping16・range20・drag8・transfer100、時間基準、入力・DOM反映・実フレーム・次操作の終了点、fixture、ウォームアップ、保存の原子性・整合性検証、retry 0を維持します。過去20回のraw・当初合否・中断runは保持し、新しい回数のrunは別記録にします。部分実行・診断・PR2回の通過を、実装完了の全条件合格へ流用しません。
 

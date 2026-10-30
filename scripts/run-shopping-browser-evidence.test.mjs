@@ -700,7 +700,7 @@ test("Windows lowercase profile resolves once, canonicalizes only child env and 
     assert.equal(call.env.esp_performance_profile, undefined);
   }
 });
-test("PR CI runs the existing functional selection and main keeps full completion evidence", async () => {
+test("ordinary PR and main CI retain the functional selection without performance acceptance", async () => {
   const pkg = JSON.parse(
     await readFile(path.join(repository, "package.json"), "utf8"),
   );
@@ -711,15 +711,19 @@ test("PR CI runs the existing functional selection and main keeps full completio
     groupRoot: path.join(repository, "artifacts/playwright"),
     env: {},
     phase: "after",
-    runId: "pr-selection-contract",
+    runId: "functional-selection-contract",
   });
   const exclusion =
     functional.args[functional.args.indexOf("--grep-invert") + 1];
   assert.equal(
-    pkg.scripts["test:browser:pr"],
+    pkg.scripts["test:browser:functional"],
     'npm run build:release-a && playwright test --grep-invert "' +
       exclusion +
       '"',
+  );
+  assert.equal(
+    pkg.scripts["test:browser:pr"],
+    pkg.scripts["test:browser:functional"],
   );
   assert.equal(
     pkg.scripts["test:browser:completion"],
@@ -733,42 +737,61 @@ test("PR CI runs the existing functional selection and main keeps full completio
     path.join(repository, ".github/workflows/quality.yml"),
     "utf8",
   );
-  const steps = ci.split(/^      - name: /m).slice(1);
+  const steps = ci.split(/^ {6}- name: /m).slice(1);
   const step = (name) => {
     const found = steps.filter((block) => block.startsWith(name + "\n"));
     assert.equal(found.length, 1, name);
     return found[0];
   };
-  const pr = step("Browser functional (PR)");
-  assert.ok(pr.includes("if: github.event_name == 'pull_request'"));
-  assert.ok(pr.includes("ESP_PERFORMANCE_PROFILE: pr"));
-  assert.ok(pr.includes("run: npm run test:browser:pr"));
-  const full = step("Browser");
-  assert.ok(full.includes("if: github.event_name != 'pull_request'"));
-  assert.ok(full.includes("ESP_PERFORMANCE_PROFILE: completion"));
-  assert.ok(full.includes("run: npm run test:browser\n"));
-  const prArtifact = step("Upload PR browser functional results");
+  const browser = step("Browser");
+  assert.doesNotMatch(browser, /^ {8}if:/m);
+  assert.ok(browser.includes("run: npm run test:browser:functional"));
   assert.ok(
-    prArtifact.includes("if: always() && github.event_name == 'pull_request'"),
-  );
-  assert.ok(prArtifact.includes("name: pr-browser-functional-"));
-  assert.ok(prArtifact.includes("artifacts/playwright/"));
-  assert.ok(prArtifact.includes("artifacts/playwright-report/"));
-  assert.ok(!prArtifact.includes("artifacts/dnd-selection-rendering/"));
-  const evidenceArtifact = step("Upload shopping browser evidence");
-  assert.ok(
-    evidenceArtifact.includes(
-      "if: always() && github.event_name != 'pull_request'",
+    browser.includes(
+      "github.event_name == 'pull_request' && 'pr' || 'completion'",
     ),
   );
-  assert.ok(
-    evidenceArtifact.includes("name: shopping-browser-evidence-completion-"),
-  );
-  assert.ok(
-    evidenceArtifact.includes("path: artifacts/dnd-selection-rendering/"),
-  );
+  assert.ok(!ci.includes("run: npm run test:browser\n"));
+  assert.ok(!ci.includes("test:browser:completion"));
+  assert.ok(!ci.includes("artifacts/dnd-selection-rendering/"));
+  const report = step("Upload browser functional results");
+  assert.ok(report.includes("if: always()\n"));
+  assert.ok(report.includes("name: browser-functional-"));
+  assert.ok(report.includes("artifacts/playwright/"));
+  assert.ok(report.includes("artifacts/playwright-report/"));
   assert.deepEqual(
     GROUPS.map((g) => g.group),
     ["functional", "shopping", "range", "drag", "transfer"],
   );
+});
+
+test("performance measurement is dispatch-only and preserves full completion evidence", async () => {
+  const manual = await readFile(
+    path.join(repository, ".github/workflows/shopping-browser-performance.yml"),
+    "utf8",
+  );
+  const trigger = manual.match(/^on:\n([\s\S]*?)(?=\n\S)/m);
+  assert.equal(trigger?.[1].trim(), "workflow_dispatch:");
+  assert.ok(manual.includes("node-version: 24.19.0"));
+  assert.ok(manual.includes("npm install --global npm@11.19.0"));
+  assert.ok(manual.includes("run: npm ci\n"));
+  assert.ok(manual.includes("run: npm run verify:toolchain"));
+  assert.ok(manual.includes("npx playwright install --with-deps chromium"));
+  assert.ok(manual.includes("ESP_PERFORMANCE_PROFILE: completion"));
+  assert.equal(
+    manual.match(/run: npm run test:browser:completion\n/g)?.length,
+    1,
+  );
+  assert.doesNotMatch(
+    manual,
+    /--profile pr|ESP_PERFORMANCE_PROFILE: pr\b|--grep/,
+  );
+  assert.ok(manual.includes("if: always()\n"));
+  assert.ok(
+    manual.includes(
+      "name: shopping-browser-evidence-completion-${{ github.run_id }}-${{ github.run_attempt }}",
+    ),
+  );
+  assert.ok(manual.includes("path: artifacts/dnd-selection-rendering/"));
+  assert.ok(manual.includes("overwrite: false"));
 });
