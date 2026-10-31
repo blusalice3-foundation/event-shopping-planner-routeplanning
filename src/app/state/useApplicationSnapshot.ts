@@ -163,14 +163,16 @@ type Batch = {
 };
 function settleShoppingMoves(
   batch: Batch | undefined,
-  committed: boolean,
-  reason = SHOPPING_PLACEMENT_CHANGED_REASON,
+  result: ShoppingMoveCompletion = {
+    status: "aborted",
+    reason: SHOPPING_PLACEMENT_CHANGED_REASON,
+  },
 ): void {
   batch?.shoppingMoveCompletions?.forEach((resolve, index) => {
     resolve(
-      committed && !batch.abortedShoppingMoves?.has(index)
-        ? { status: "committed" }
-        : { status: "aborted", reason },
+      result.status === "committed" && batch.abortedShoppingMoves?.has(index)
+        ? { status: "aborted", reason: SHOPPING_PLACEMENT_CHANGED_REASON }
+        : result,
     );
   });
 }
@@ -713,7 +715,7 @@ export function useApplicationSnapshot(
           const expired = new Set(ids);
           submitted.current
             .filter((batch) => expired.has(batch.id))
-            .forEach((batch) => settleShoppingMoves(batch, false));
+            .forEach((batch) => settleShoppingMoves(batch));
           submitted.current = submitted.current.filter(
             (batch) => !expired.has(batch.id),
           );
@@ -884,7 +886,15 @@ export function useApplicationSnapshot(
       }
       settleShoppingMoves(
         submitted.current.find((batch) => batch.id === id),
-        result.status === "committed",
+        result.status === "committed"
+          ? { status: "committed" }
+          : result.status === "cancelled"
+            ? { status: "cancelled" }
+            : {
+                status: "aborted",
+                reason:
+                  "確認が無効になったため移動を中止しました。現在の内容を確認してやり直してください。",
+              },
       );
       releasePending(id);
       submitted.current = submitted.current.filter((batch) => batch.id !== id);
@@ -927,7 +937,7 @@ export function useApplicationSnapshot(
     });
     suspended.current.clear();
     batches.forEach((batch) =>
-      settleShoppingMoves(batch, false, reason.message),
+      settleShoppingMoves(batch, { status: "aborted", reason: reason.message }),
     );
     for (const resolver of resolvers.current.values()) resolver.reject(reason);
     resolvers.current.clear();
@@ -998,13 +1008,13 @@ export function useApplicationSnapshot(
         rebuildPreview();
         return;
       }
-      settleShoppingMoves(
-        batch,
-        false,
-        error instanceof Error
-          ? error.message
-          : SHOPPING_PLACEMENT_CHANGED_REASON,
-      );
+      settleShoppingMoves(batch, {
+        status: "aborted",
+        reason:
+          error instanceof Error
+            ? error.message
+            : SHOPPING_PLACEMENT_CHANGED_REASON,
+      });
       coordinator.discard(id);
       releasePending(id);
       submitted.current = submitted.current.filter((batch) => batch.id !== id);

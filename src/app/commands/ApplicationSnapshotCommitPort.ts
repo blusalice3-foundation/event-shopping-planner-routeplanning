@@ -54,6 +54,7 @@ export interface ShoppingMovePatch {
 }
 export type ShoppingMoveCompletion =
   | { status: "committed" }
+  | { status: "cancelled" }
   | { status: "aborted"; reason: string };
 export type ShoppingMoveReceipt =
   | {

@@ -917,7 +917,7 @@ export const useShoppingItemMutationCommands = ({
             void receipt.completion.then((completion) => {
               if (completion.status === "aborted")
                 placementRejected(completion.reason);
-              else finishSelection();
+              else if (completion.status === "committed") finishSelection();
             });
           } else finishSelection();
         }
@@ -1065,7 +1065,7 @@ export const useShoppingItemMutationCommands = ({
       if (receipt.completion)
         void receipt.completion.then((result) => {
           if (result.status === "aborted") placementRejected(result.reason);
-          else finish();
+          else if (result.status === "committed") finish();
         });
       else finish();
     },

@@ -2605,3 +2605,67 @@ it("keeps a sole confirmed-group return quiet and unchanged when the queue repor
   expect(h.stores.eventLists[EVENT]).toBe(allItems);
   expect(h.stores.executeModeItems[EVENT][DAY]).toEqual(["a", "b"]);
 });
+
+it.each(["drag", "vertical button"] as const)(
+  "keeps selection, range and sort without a banner after user cancellation: %s",
+  async (operation) => {
+    const a = item("a", { number: "1", quantity: 3, remarks: "最新のメモ" });
+    const b = item("b", { number: operation === "drag" ? "2" : "1" });
+    const allItems = [a, b];
+    const selected = new Set(["a"]);
+    const order = operation === "drag" ? ["b"] : ["a", "b"];
+    const h = createHarness({
+      eventLists: { [EVENT]: allItems },
+      executeModeItems: { [EVENT]: { [DAY]: order } },
+      selectedItemIds: selected,
+      blockSortDirection: "desc",
+      candidateNumberSortDirection: "asc",
+    });
+    let finish!: (result: { status: "cancelled" }) => void;
+    const completion = new Promise<{ status: "cancelled" }>((resolve) => {
+      finish = resolve;
+    });
+    h.spies.queueShoppingMovePatch.mockReturnValue({
+      status: "accepted",
+      operationId: "cancelled-save",
+      moveId: "cancelled-save:move:1",
+      completion,
+    });
+    const rejected = vi.fn();
+    h.ports.alerts.placementRejected = rejected;
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(h.ports),
+    );
+    act(() => {
+      if (operation === "drag")
+        result.current.moveItem(
+          "a",
+          "__END_OF_LIST__",
+          "execute",
+          "candidate",
+          frozenDrag("candidate", "execute", ["a"], ["a"], [a]),
+        );
+      else result.current.moveItemDown("a", "execute");
+    });
+    expect(h.spies.queueShoppingMovePatch).toHaveBeenCalledOnce();
+    await act(async () => {
+      finish({ status: "cancelled" });
+      await completion;
+    });
+    expect(rejected).not.toHaveBeenCalled();
+    expect(h.spies.notify).not.toHaveBeenCalled();
+    expect(h.spies.clearSelection).not.toHaveBeenCalled();
+    expect(h.spies.removeSelectedItemIds).not.toHaveBeenCalled();
+    expect(h.spies.clearRangeSelection).not.toHaveBeenCalled();
+    expect(h.spies.setSortState).not.toHaveBeenCalled();
+    expect(h.spies.setBlockSortDirection).not.toHaveBeenCalled();
+    expect(h.spies.setCandidateNumberSortDirection).not.toHaveBeenCalled();
+    expect(h.spies.setEventLists).not.toHaveBeenCalled();
+    expect(h.spies.updateExecuteModeItems).not.toHaveBeenCalled();
+    expect(h.ports.state.selectedItemIds).toBe(selected);
+    expect(h.stores.blockSortDirection).toBe("desc");
+    expect(h.stores.candidateNumberSortDirection).toBe("asc");
+    expect(h.stores.eventLists[EVENT]).toBe(allItems);
+    expect(h.stores.executeModeItems[EVENT][DAY]).toBe(order);
+  },
+);

@@ -2565,8 +2565,8 @@ it.each(["cancel", "confirm"] as const)(
       });
     }
     if (receipt.status !== "accepted") throw new Error("not accepted");
-    await expect(receipt.completion).resolves.toMatchObject({
-      status: outcome === "confirm" ? "committed" : "aborted",
+    await expect(receipt.completion).resolves.toEqual({
+      status: outcome === "confirm" ? "committed" : "cancelled",
     });
     if (outcome === "cancel") {
       expect(h.commit).not.toHaveBeenCalled();
@@ -2602,4 +2602,79 @@ it("terminates a known review if placement changes while it is awaiting confirma
   expect(h.result.current.failure).toBeNull();
   expect(h.commit).not.toHaveBeenCalled();
   expect(h.durable().executeModeItems.event["1日目"]).toEqual(["1", "2"]);
+});
+
+it.each(["retry", "discard"] as const)(
+  "leaves a failed move receipt pending until the user chooses %s",
+  async (outcome) => {
+    const h = harness();
+    hydrateShopping(h);
+    h.commit.mockRejectedValueOnce(new DOMException("保存中断", "AbortError"));
+    const before = structuredClone(h.durable());
+    let receipt!: ReturnType<typeof h.result.current.queueShoppingMovePatch>;
+    act(() => {
+      receipt = h.result.current.queueShoppingMovePatch(moveInput());
+    });
+    if (receipt.status !== "accepted") throw new Error("not accepted");
+    const settled = vi.fn();
+    void receipt.completion!.then(settled);
+    await waitFor(() =>
+      expect(h.result.current.retryableFailures).toHaveLength(1),
+    );
+    expect(settled).not.toHaveBeenCalled();
+    expect(h.commit).toHaveBeenCalledOnce();
+    expect(h.durable()).toEqual(before);
+    if (outcome === "retry") {
+      await act(async () => {
+        h.result.current.retryPending();
+        await h.result.current.flush();
+      });
+    } else {
+      act(() => h.result.current.discardPending());
+    }
+    await expect(receipt.completion).resolves.toEqual({
+      status: outcome === "retry" ? "committed" : "cancelled",
+    });
+    expect(h.commit).toHaveBeenCalledTimes(outcome === "retry" ? 2 : 1);
+    expect(h.durable().executeModeItems.event["1日目"]).toEqual(
+      outcome === "retry" ? ["1"] : [],
+    );
+    expect(h.durable().eventLists).toEqual(before.eventLists);
+    expect(h.result.current.retryableFailures).toEqual([]);
+    expect(h.result.current.confirmations).toEqual([]);
+    expect(h.result.current.pendingCount).toBe(0);
+  },
+);
+
+it("reports an expired renewed review without claiming placement changed", async () => {
+  const h = harness();
+  let receipt!: ReturnType<typeof h.result.current.queueShoppingMovePatch>;
+  act(() => {
+    receipt = knownInitialModeReview(h);
+  });
+  await waitFor(() => expect(h.result.current.confirmations).toHaveLength(1));
+  const previous = h.result.current.confirmations[0];
+  const destination = previous.confirmation.choices!.find(
+    (choice) => choice.label === "統合先の日付表記",
+  )!;
+  act(() => h.result.current.choose(previous.token, destination.id, " 1日目 "));
+  await waitFor(() =>
+    expect(h.result.current.confirmations[0].token).not.toBe(previous.token),
+  );
+  await act(async () => {
+    h.result.current.confirm(previous.token);
+    await h.result.current.coordinator.enqueue(() => undefined);
+  });
+  if (receipt.status !== "accepted") throw new Error("not accepted");
+  await expect(receipt.completion).resolves.toEqual({
+    status: "aborted",
+    reason:
+      "確認が無効になったため移動を中止しました。現在の内容を確認してやり直してください。",
+  });
+  expect(h.commit).not.toHaveBeenCalled();
+  expect(h.durable().executeModeItems.event["1日目"]).toEqual(["1", "2"]);
+  expect(h.result.current.confirmations).toEqual([]);
+  expect(h.result.current.retryableFailures).toEqual([]);
+  expect(h.result.current.failure).toBeNull();
+  h.result.current.coordinator.discard(receipt.operationId);
 });
