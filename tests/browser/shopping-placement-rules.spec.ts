@@ -85,6 +85,7 @@ async function restore(
   phone: boolean,
   grouped: boolean,
   guide = false,
+  source = backup(guide),
 ) {
   await page.goto("/");
   await expect(page.locator("#loading-screen")).toBeHidden();
@@ -93,7 +94,7 @@ async function restore(
     .setInputFiles({
       name: "placement-rules.json",
       mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(backup(guide)), "utf8"),
+      buffer: Buffer.from(JSON.stringify(source), "utf8"),
     });
   const dialog = page.getByRole("dialog", {
     name: "バックアップからイベントを復元",
@@ -528,3 +529,234 @@ for (const touch of [false, true])
       });
     });
   }
+
+/** Compare physical book/order records and their commit identity outside timing windows. */
+async function placementRecords(page: Page) {
+  return page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("EventShoppingPlannerDB");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      return await new Promise<Record<string, Array<[IDBValidKey, unknown]>>>(
+        (resolve, reject) => {
+          const result: Record<string, Array<[IDBValidKey, unknown]>> = {
+            eventLists: [],
+            executeModeItems: [],
+            integrity: [],
+          };
+          const tx = db.transaction(
+            ["eventLists", "executeModeItems", "syncQueue"],
+            "readonly",
+          );
+          for (const store of ["eventLists", "executeModeItems", "syncQueue"]) {
+            const cursor = tx.objectStore(store).openCursor();
+            cursor.onsuccess = () => {
+              const entry = cursor.result;
+              if (!entry) return;
+              if (store !== "syncQueue")
+                result[store].push([entry.key, entry.value]);
+              else if (
+                typeof entry.key === "string" &&
+                (entry.key.endsWith(":eventLists:data") ||
+                  entry.key.endsWith(":executeModeItems:data"))
+              )
+                result.integrity.push([entry.key, entry.value]);
+              entry.continue();
+            };
+          }
+          tx.oncomplete = () => resolve(result);
+          tx.onerror = () => reject(tx.error);
+          tx.onabort = () => reject(tx.error);
+        },
+      );
+    } finally {
+      db.close();
+    }
+  });
+}
+
+async function displayedNavigationIds(page: Page) {
+  return page
+    .locator(
+      '[data-shopping-drag-column="execute"] [data-space-navigation-visit-id]',
+    )
+    .evaluateAll((elements) => [
+      ...new Set(
+        elements.map((element) =>
+          element.getAttribute("data-space-navigation-visit-id"),
+        ),
+      ),
+    ]);
+}
+
+test("fragmented visits keep list, map visit list and navigator order without display-only saves", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const source = backup();
+  source.data.dayModes[eventName][day] = "execute";
+  const mapKey = `${day}マップ`;
+  Object.assign(source.data.mapData, {
+    [eventName]: {
+      [mapKey]: {
+        maxRow: 8,
+        maxCol: 12,
+        cells: [],
+        mergedCells: [],
+        blocks: [
+          {
+            name: "A",
+            startRow: 1,
+            startCol: 1,
+            endRow: 6,
+            endCol: 5,
+            numberCells: [
+              { row: 2, col: 2, value: 1 },
+              { row: 3, col: 2, value: 2 },
+              { row: 4, col: 2, value: 3 },
+              { row: 5, col: 2, value: 4 },
+            ],
+          },
+          {
+            name: "B",
+            startRow: 1,
+            startCol: 7,
+            endRow: 6,
+            endCol: 11,
+            numberCells: [
+              { row: 2, col: 8, value: 1 },
+              { row: 3, col: 8, value: 2 },
+            ],
+          },
+        ],
+      },
+    },
+  });
+  source.data.hallDefinitions[eventName] = {
+    [mapKey]: [
+      {
+        id: "hall-a",
+        name: "Aホール",
+        blockNames: ["A"],
+        vertices: [
+          { row: 1, col: 1 },
+          { row: 1, col: 5 },
+          { row: 6, col: 5 },
+          { row: 6, col: 1 },
+        ],
+      },
+      {
+        id: "hall-b",
+        name: "Bホール",
+        blockNames: ["B"],
+        vertices: [
+          { row: 1, col: 7 },
+          { row: 1, col: 11 },
+          { row: 6, col: 11 },
+          { row: 6, col: 7 },
+        ],
+      },
+    ],
+  };
+  await restore(page, false, true, false, source);
+  const expectedBooks = ["a1", "a2", "a3", "b1", "hall-b"];
+  const expectedNavigationIds = [
+    `A-01a:none@placement:${JSON.stringify(["confirmed", '@hall:["map","1日目マップ","hall-a"]'])}`,
+    `A-02a:none@placement:${JSON.stringify(["confirmed", '@hall:["map","1日目マップ","hall-a"]'])}`,
+    `B-01a:none@placement:${JSON.stringify(["confirmed", '@hall:["map","1日目マップ","hall-b"]'])}`,
+  ];
+  const beforeRecords = await placementRecords(page);
+  const beforeItems = await readBrowserEventLists(page);
+  expect((await saved(page)).ids).toEqual(initialExecute);
+  expect(await displayIds(page)).toEqual(expectedBooks);
+  expect(await displayedNavigationIds(page)).toEqual(expectedNavigationIds);
+
+  const checkNavigator = async () => {
+    await page
+      .getByRole("button", { name: "スペース一覧を開く", exact: true })
+      .click();
+    const dialog = page.getByRole("dialog", {
+      name: "スペース一覧",
+      exact: true,
+    });
+    const entries = dialog.locator(
+      '[data-testid="space-navigator-window"] button',
+    );
+    await expect(entries).toHaveCount(3);
+    for (const [index, label] of ["A-01a", "A-02a", "B-01a"].entries()) {
+      await expect(
+        entries.nth(index).getByText(label, { exact: true }),
+      ).toBeVisible();
+      await expect(entries.nth(index).locator("span").first()).toHaveText(
+        String(index + 1),
+      );
+    }
+    await dialog
+      .getByRole("button", { name: "スペース一覧を閉じる", exact: true })
+      .click();
+  };
+  await checkNavigator();
+  const grouping = page
+    .getByRole("button", { name: "スペース別", exact: true })
+    .first();
+  await grouping.click();
+  expect(await displayIds(page)).toEqual(expectedBooks);
+  expect(await displayedNavigationIds(page)).toEqual(expectedNavigationIds);
+  await checkNavigator();
+  await grouping.click();
+  expect(await displayIds(page)).toEqual(expectedBooks);
+  expect(await displayedNavigationIds(page)).toEqual(expectedNavigationIds);
+  expect(await placementRecords(page)).toEqual(beforeRecords);
+
+  await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
+  await expect(page.locator('[data-route-item-count="3"]')).toBeVisible();
+  await page.getByTitle("リスト表示に切り替え", { exact: true }).hover();
+  await page.mouse.down();
+  const openPanel = page.getByRole("button", {
+    name: "📍 訪問リスト",
+    exact: true,
+  });
+  await expect(openPanel).toBeVisible();
+  await page.mouse.up();
+  await openPanel.click();
+  const mapRows = page.locator("[data-drag-item]");
+  await expect(mapRows).toHaveCount(5);
+  expect(
+    await mapRows.evaluateAll((elements) =>
+      elements.map((element) =>
+        element.querySelector("p")?.textContent?.trim(),
+      ),
+    ),
+  ).toEqual(expectedBooks);
+  await page.getByTitle("閉じる", { exact: true }).click();
+  await page.getByTitle("リスト表示に切り替え", { exact: true }).click();
+  expect(await displayIds(page)).toEqual(expectedBooks);
+  expect(await displayedNavigationIds(page)).toEqual(expectedNavigationIds);
+  expect(await placementRecords(page)).toEqual(beforeRecords);
+  expect(await readBrowserEventLists(page)).toEqual(beforeItems);
+
+  await page.reload();
+  await page.getByText(eventName, { exact: true }).click();
+  const listButton = page.getByTitle("リスト表示に切り替え", { exact: true });
+  if (await listButton.isVisible()) await listButton.click();
+  await expect.poll(() => displayIds(page)).toEqual(expectedBooks);
+  expect(await displayedNavigationIds(page)).toEqual(expectedNavigationIds);
+  await checkNavigator();
+  expect((await saved(page)).ids).toEqual(initialExecute);
+  expect(await placementRecords(page)).toEqual(beforeRecords);
+  expect(await readBrowserEventLists(page)).toEqual(beforeItems);
+  await testInfo.attach("display-only-placement-proof", {
+    body: Buffer.from(
+      JSON.stringify({
+        expectedBooks,
+        expectedNavigationIds,
+        raw: initialExecute,
+        records: await placementRecords(page),
+      }),
+      "utf8",
+    ),
+    contentType: "application/json",
+  });
+});
