@@ -104,7 +104,13 @@ function Harness({
   };
   return (
     <ShoppingDragProvider eventName="Event" day="Day1" generation={generation}>
-      <ShoppingList {...common} items={execute} columnType="execute" />
+      <ShoppingList
+        {...common}
+        items={execute}
+        dragExecuteOrder={execute.map((item) => item.id)}
+        dragSourceItems={allItems}
+        columnType="execute"
+      />
       <ShoppingList
         {...common}
         items={candidate}
@@ -901,3 +907,49 @@ it.each(["native-card", "native-heading", "touch"] as const)(
     expect(document.body).not.toHaveClass("esp-body-scroll-lock");
   },
 );
+
+describe("book preview retains an interleaved raw visit base", () => {
+  it.each([false, true])(
+    "moves a first member after a peer with grouping %s",
+    async (grouped) => {
+      const b1 = item("b1", "02a"),
+        a3 = item("a3", "01a3");
+      const onMove = vi.fn();
+      const view = render(
+        <Harness
+          grouped={grouped}
+          onMove={onMove}
+          initialExecute={[a1, b1, a2, a3]}
+          initialCandidate={[]}
+        />,
+      );
+      const row = (id: string) =>
+        view.container.querySelector<HTMLElement>(
+          `[data-item-id="${id}"]:not([data-space-group-key])`,
+        )!;
+      vi.spyOn(row("a2"), "getBoundingClientRect").mockReturnValue(
+        rect(100, 200),
+      );
+      const transfer = { setData: vi.fn(), getData: () => "execute" };
+      fireEvent.dragStart(row("a1"), { dataTransfer: transfer });
+      dragOver(row("a2"), 175, transfer);
+      fireEvent.drop(row("a2"), { dataTransfer: transfer });
+      expect(onMove).toHaveBeenCalledTimes(1);
+      expect(onMove.mock.calls[0][4].placement.expectedItemIds).toEqual([
+        "a2",
+        "a1",
+        "a3",
+        "b1",
+      ]);
+      await waitFor(() =>
+        expect(
+          [
+            ...view.container.querySelectorAll(
+              '[data-shopping-drag-column="execute"] [data-item-id]:not([data-space-group-key])',
+            ),
+          ].map((el) => el.getAttribute("data-item-id")),
+        ).toEqual(["a2", "a1", "a3", "b1"]),
+      );
+    },
+  );
+});

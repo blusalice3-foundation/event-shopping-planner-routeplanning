@@ -539,8 +539,9 @@ describe("drop placement validation with reused visit membership", () => {
       const merged = item("merged", "01a3", { manualHallId: "one" });
       const before = [a1, b, a2];
       const after = [a1, x, b, a2, merged];
+      const completePresentation = { ...p, allItems: [...before, x, merged] };
       const placement = resolveShoppingDragPlacement(
-        buildShoppingDragLayout(before, p),
+        buildShoppingDragLayout(before, completePresentation),
         [x, merged],
         b.id,
         "before",

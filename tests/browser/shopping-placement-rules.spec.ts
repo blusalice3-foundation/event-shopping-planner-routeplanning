@@ -181,8 +181,40 @@ async function saved(page: Page) {
     { eventName, day },
   );
 }
-async function begin(page: Page, id: string, touch: boolean) {
+async function ensureRow(page: Page, id: string) {
+  if ((await row(page, id).count()) === 0) {
+    const itemKey = `item:${JSON.stringify(id)}`;
+    const groups: Record<string, string> = {
+      a1: "A-01a",
+      a2: "A-01a",
+      a3: "A-01a",
+      b1: "A-02a",
+      "hall-b": "B-01a",
+      "merge-a": "A-01a",
+      "new-a": "A-03a",
+      "mixed-b": "B-02a",
+      "priority-a": "A-04a:highest",
+    };
+    const groupKey = `group:${JSON.stringify(groups[id])}`;
+    const itemOwner = page
+      .locator(
+        `[data-viewport-row-key=${JSON.stringify(itemKey)}], [data-row-key=${JSON.stringify(itemKey)}]`,
+      )
+      .first();
+    const groupOwner = page
+      .locator(
+        `[data-viewport-row-key=${JSON.stringify(groupKey)}], [data-row-key=${JSON.stringify(groupKey)}]`,
+      )
+      .first();
+    await (
+      (await itemOwner.count()) ? itemOwner : groupOwner
+    ).scrollIntoViewIfNeeded();
+    await expect(row(page, id)).toBeAttached();
+  }
   await row(page, id).scrollIntoViewIfNeeded();
+}
+async function begin(page: Page, id: string, touch: boolean) {
+  await ensureRow(page, id);
   await page.evaluate(
     ({ id, touch }) => {
       const source = document.querySelector<HTMLElement>(
@@ -228,7 +260,7 @@ async function hover(
   edge: "before" | "after",
   groupBoundary: boolean,
 ) {
-  await row(page, id).scrollIntoViewIfNeeded();
+  await ensureRow(page, id);
   return page.evaluate(
     async ({ id, touch, edge, groupBoundary }) => {
       const target = document.querySelector<HTMLElement>(

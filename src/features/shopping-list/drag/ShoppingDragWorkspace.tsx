@@ -575,6 +575,9 @@ function createWorkspace(
           layout: buildShoppingDragLayout(
             rawExecuteItems(list).filter((item) => !ids.has(item.id)),
             list.presentation,
+            isBookReorder
+              ? list.items.filter((item) => !ids.has(item.id))
+              : undefined,
           ),
         };
       }

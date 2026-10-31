@@ -2490,8 +2490,16 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       halls: hallDefinitions,
       hallOrder,
       map: mapData,
+      allItems: dragSourceItems,
     }),
-    [showSpaceGroups, showHallGroups, hallDefinitions, hallOrder, mapData],
+    [
+      showSpaceGroups,
+      showHallGroups,
+      hallDefinitions,
+      hallOrder,
+      mapData,
+      dragSourceItems,
+    ],
   );
   const handleDragMove = useStableCallback(
     (...args: Parameters<typeof onMoveItem>) => {

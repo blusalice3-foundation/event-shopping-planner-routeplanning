@@ -109,6 +109,27 @@ async function durableItems(page: Page) {
   return (await readBrowserEventLists(page))[eventName];
 }
 
+/** Ordinary additions retain the existing shared-membership review. */
+async function confirmAdditionIfRequired(page: Page, circle: string) {
+  const review = page.getByRole("dialog", { name: "所属・配置の変更を確認" });
+  await expect
+    .poll(async () => {
+      if (await review.isVisible()) return "review";
+      return (await durableItems(page)).some((item) => item.circle === circle)
+        ? "saved"
+        : "pending";
+    })
+    .not.toBe("pending");
+  if (await review.isVisible()) {
+    await expect(
+      review.getByRole("region", { name: "確認内容" }),
+    ).toContainText(circle);
+    await review
+      .getByRole("button", { name: "確認して保存", exact: true })
+      .click();
+    await expect(review).toBeHidden();
+  }
+}
 for (const layout of ["pc", "smartphone"] as const) {
   test.describe(`space addition ${layout}`, () => {
     test.use({ hasTouch: layout === "smartphone" });
@@ -176,6 +197,7 @@ for (const layout of ["pc", "smartphone"] as const) {
         if (layout === "smartphone") await add.tap();
         else await add.click();
         await expect(dialog).toBeHidden();
+        await confirmAdditionIfRequired(page, circle);
         await expect
           .poll(
             async () =>
@@ -246,6 +268,7 @@ for (const layout of ["pc", "smartphone"] as const) {
       if (layout === "smartphone") await submit.tap();
       else await submit.click();
       await expect(dialog).toBeHidden();
+      await confirmAdditionIfRequired(page, "混在から追加");
       await expect
         .poll(async () => (await durableItems(page)).length)
         .toBe(before.length + 5);

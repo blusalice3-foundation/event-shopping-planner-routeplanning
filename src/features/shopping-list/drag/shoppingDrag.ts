@@ -1,6 +1,9 @@
 import type { ShoppingItem } from "../../../types/item";
 import type { DayMapData, HallDefinition } from "../../../types/map";
-import type { ProjectedVisit } from "../../../utils/visitProjection";
+import {
+  projectItemsToExecutionVisits,
+  type ProjectedVisit,
+} from "../../../utils/visitProjection";
 import {
   buildExecutionPlacementGroupKey,
   isSameExecutionPlacementGroup,
@@ -17,6 +20,8 @@ export interface ShoppingDragPresentation {
   readonly halls: HallDefinition[];
   readonly hallOrder: string[];
   readonly map: DayMapData | null;
+  /** Complete membership peers across both columns; the UI supplies its projected event items. */
+  readonly allItems?: readonly ShoppingItem[];
 }
 export interface ShoppingDragPlacement {
   readonly kind?: "items";
@@ -68,9 +73,11 @@ export interface ShoppingDragMoveContext {
 }
 export const shoppingPlacementContext = (
   presentation: ShoppingDragPresentation,
+  fallbackItems?: readonly ShoppingItem[],
 ): ExecutionPlacementContext => ({
   mapData: presentation.map,
   hallDefinitions: presentation.halls,
+  allItems: presentation.allItems ?? fallbackItems,
 });
 
 export function projectShoppingDragDisplay(
@@ -79,11 +86,12 @@ export function projectShoppingDragDisplay(
 ): ShoppingItem[] {
   return flattenExecutionPlacementItems(
     items,
-    shoppingPlacementContext(presentation),
+    shoppingPlacementContext(presentation, items),
     presentation.hallOrder,
   );
 }
 export interface ShoppingDragLayout {
+  readonly context: ExecutionPlacementContext;
   readonly rawItems: readonly ShoppingItem[];
   readonly items: readonly ShoppingItem[];
   readonly visits: ProjectedVisit[];
@@ -104,13 +112,17 @@ export interface ShoppingDragLayout {
 export function buildShoppingDragLayout(
   items: readonly ShoppingItem[],
   presentation: ShoppingDragPresentation,
+  displayItems?: readonly ShoppingItem[],
 ): ShoppingDragLayout {
-  const context = shoppingPlacementContext(presentation);
-  const visits = projectExecutionPlacementVisits(
-    items,
-    context,
-    presentation.hallOrder,
-  );
+  const context = shoppingPlacementContext(presentation, items);
+  const preparedPresentation = presentation.allItems
+    ? presentation
+    : { ...presentation, allItems: items };
+  const visits = displayItems
+    ? projectItemsToExecutionVisits(displayItems, (item) =>
+        buildExecutionPlacementVisitKey(item, context),
+      )
+    : projectExecutionPlacementVisits(items, context, presentation.hallOrder);
   const display = visits.flatMap((visit) => visit.items);
   const ranges = new Map<
     string,
@@ -150,6 +162,7 @@ export function buildShoppingDragLayout(
     visitInitialRawEnd.set(visit.key, end);
   }
   return {
+    context,
     rawItems: items,
     items: display,
     visits,
@@ -159,7 +172,7 @@ export function buildShoppingDragLayout(
     visitsByKey: new Map(visits.map((visit) => [visit.key, visit])),
     displayVisitKeys: visits.map((visit) => visit.key),
     visitBoundaryByItemIndex: boundaries,
-    presentation,
+    presentation: preparedPresentation,
     absentGroupSlots: new Map(),
     ranges,
     buckets,
@@ -168,9 +181,9 @@ export function buildShoppingDragLayout(
 export function shoppingDragHasSingleGroup(
   moving: readonly ShoppingItem[],
   presentation: ShoppingDragPresentation,
+  context = shoppingPlacementContext(presentation, moving),
 ): boolean {
   if (!moving.length) return false;
-  const context = shoppingPlacementContext(presentation);
   const key = buildExecutionPlacementGroupKey(moving[0], context);
   return moving.every(
     (item) =>
@@ -182,7 +195,7 @@ function suggestedGroupSlot(
   layout: ShoppingDragLayout,
   first: ShoppingItem,
 ): number {
-  const context = shoppingPlacementContext(layout.presentation);
+  const context = layout.context;
   const group = buildExecutionPlacementGroupKey(first, context);
   const bucket = layout.buckets.get(group);
   if (bucket) return bucket.last + 1;
@@ -209,8 +222,9 @@ export function resolveShoppingDragPlacement(
   referenceId: string | undefined,
   boundary: "before" | "after" | "end",
 ): ShoppingDragPlacement | null {
-  if (!shoppingDragHasSingleGroup(moving, layout.presentation)) return null;
-  const context = shoppingPlacementContext(layout.presentation);
+  if (!shoppingDragHasSingleGroup(moving, layout.presentation, layout.context))
+    return null;
+  const context = layout.context;
   const groupKey = buildExecutionPlacementGroupKey(moving[0], context);
   const movingVisits = projectExecutionPlacementVisits(moving, context);
   const merged = movingVisits.filter((visit) =>
@@ -280,8 +294,9 @@ export function resolveShoppingDragColumnPlacement(
   layout: ShoppingDragLayout,
   moving: readonly ShoppingItem[],
 ): ShoppingDragPlacement | null {
-  if (!shoppingDragHasSingleGroup(moving, layout.presentation)) return null;
-  const context = shoppingPlacementContext(layout.presentation);
+  if (!shoppingDragHasSingleGroup(moving, layout.presentation, layout.context))
+    return null;
+  const context = layout.context;
   const index = suggestedGroupSlot(layout, moving[0]);
   const next = layout.items[index];
   const previous = layout.items[index - 1];
@@ -323,8 +338,13 @@ export function resolveShoppingBookPlacement(
   boundary: "before" | "after",
 ): ShoppingDragPlacement | null {
   const reference = layout.itemsById.get(referenceId);
-  if (!reference || !moving.length) return null;
-  const context = shoppingPlacementContext(layout.presentation);
+  if (
+    !reference ||
+    !moving.length ||
+    !shoppingDragHasSingleGroup(moving, layout.presentation, layout.context)
+  )
+    return null;
+  const context = layout.context;
   const key = buildExecutionPlacementVisitKey(reference, context);
   if (
     !moving.every(
@@ -370,7 +390,7 @@ export function validateShoppingDragPlacement(
   before: readonly ShoppingItem[],
   after: readonly ShoppingItem[],
 ): boolean {
-  const context = shoppingPlacementContext(placement.presentation);
+  const context = shoppingPlacementContext(placement.presentation, before);
   const visits = projectExecutionPlacementVisits(
     before,
     context,

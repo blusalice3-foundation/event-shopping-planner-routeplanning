@@ -1117,6 +1117,13 @@ describe("useShoppingItemMutationCommands", () => {
     act(() =>
       result.current.moveItem("a", "target", "candidate", "execute", context),
     );
+    expect(harness.spies.notify).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "配置先を確定できなかったため、移動を中止しました",
+      ),
+    );
+    expect(harness.spies.queueShoppingMovePatch).not.toHaveBeenCalled();
+    expect(harness.spies.removeSelectedItemIds).not.toHaveBeenCalled();
     expect(harness.spies.clearRangeSelection).not.toHaveBeenCalled();
     expect(harness.spies.setSortState).not.toHaveBeenCalled();
     expect(harness.spies.updateExecuteModeItems).not.toHaveBeenCalled();

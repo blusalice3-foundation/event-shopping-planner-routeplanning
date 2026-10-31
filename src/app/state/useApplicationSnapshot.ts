@@ -762,6 +762,8 @@ export function useApplicationSnapshot(
           for (const [eventName, eventItems] of Object.entries(
             next.eventLists,
           )) {
+            if (eventItems === recordEntry(prepared.eventLists, eventName))
+              continue;
             // A quantity/priority/order overlay does not change hall resolution.
             // Never carry metadata across a map, definition or assignment edit.
             if (

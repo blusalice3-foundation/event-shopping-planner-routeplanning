@@ -860,7 +860,12 @@ export const useShoppingItemMutationCommands = ({
           dragContext,
         });
         if (dragContext) {
-          if (!result.eventListItems && !result.executeModeItems) return;
+          if (!result.eventListItems && !result.executeModeItems) {
+            placementRejected(
+              "配置先を確定できなかったため、移動を中止しました。所属・優先度・品目の順序を確認し、もう一度ドラッグしてください。",
+            );
+            return;
+          }
           recordShoppingMovePlanReady();
           const receipt = queueShoppingMovePatch({
             eventName: activeEventName,
