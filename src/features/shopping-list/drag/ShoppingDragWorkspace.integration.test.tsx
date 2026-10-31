@@ -1595,3 +1595,103 @@ describe("neutral execution column surfaces", () => {
     },
   );
 });
+
+describe("candidate container whitespace keeps its original endpoint", () => {
+  it.each([
+    { input: "native", grouped: false },
+    { input: "native", grouped: true },
+    { input: "touch", grouped: false },
+    { input: "touch", grouped: true },
+  ] as const)(
+    "appends the requested book from a real in-root gutter: $input/$grouped",
+    ({ input, grouped }) => {
+      const onMove = vi.fn();
+      const view = render(
+        <Harness
+          grouped={grouped}
+          initialExecute={[]}
+          initialCandidate={[
+            item("one", "01a"),
+            item("two", "02a"),
+            item("three", "03a"),
+          ]}
+          onMove={onMove}
+        />,
+      );
+      const root = view.container.querySelector<HTMLElement>(
+        '[data-shopping-drag-column="candidate"]',
+      )!;
+      const source = root.querySelector<HTMLElement>(
+        '[data-item-id="two"]:not([data-space-group-key])',
+      )!;
+      const rows = new Map([
+        ['item:"one"', rect(100, 180)],
+        ['item:"two"', rect(230, 310)],
+        ['item:"three"', rect(350, 430)],
+      ]);
+      vi.spyOn(
+        HTMLElement.prototype,
+        "getBoundingClientRect",
+      ).mockImplementation(function (this: HTMLElement) {
+        if (this === root) return { ...rect(0, 500), right: 200, width: 200 };
+        const key = this.dataset.viewportRowKey ?? this.dataset.rowKey;
+        let bounds = key && rows.get(key);
+        if (!bounds && this.dataset.itemId)
+          bounds = rows.get(`item:${JSON.stringify(this.dataset.itemId)}`);
+        if (!bounds && key?.startsWith("group:")) {
+          bounds = key.includes("01a")
+            ? rect(80, 200)
+            : key.includes("02a")
+              ? rect(210, 320)
+              : rect(330, 450);
+        }
+        return {
+          ...(bounds || rect(0, 500)),
+          left: 10,
+          right: 180,
+          width: 170,
+        };
+      });
+      // x=195 is inside the list, alongside its cards, and hits no card/header.
+      Object.defineProperty(document, "elementFromPoint", {
+        configurable: true,
+        value: () => root,
+      });
+      const transfer = { setData: vi.fn(), getData: () => "candidate" };
+      if (input === "native") {
+        fireEvent.dragStart(source, { dataTransfer: transfer });
+        const over = new Event("dragover", { bubbles: true, cancelable: true });
+        Object.defineProperties(over, {
+          clientX: { value: 195 },
+          clientY: { value: 360 },
+          dataTransfer: { value: transfer },
+        });
+        fireEvent(root, over);
+        fireEvent.drop(root, { dataTransfer: transfer });
+      } else {
+        vi.useFakeTimers();
+        vi.stubGlobal("scrollBy", vi.fn());
+        fireEvent.touchStart(source, {
+          touches: [{ identifier: 1, clientX: 80, clientY: 260 }],
+        });
+        act(() => vi.advanceTimersByTime(250));
+        fireEvent.touchMove(source, {
+          touches: [{ identifier: 1, clientX: 195, clientY: 360 }],
+        });
+        fireEvent.touchEnd(source, {
+          changedTouches: [{ identifier: 1, clientX: 195, clientY: 360 }],
+        });
+      }
+      expect(onMove).toHaveBeenCalledTimes(1);
+      expect(onMove.mock.calls[0][1]).toBe("__END_OF_LIST__");
+      expect(onMove.mock.calls[0][4].effectiveIds).toEqual(["two"]);
+      expect(
+        [
+          ...root.querySelectorAll<HTMLElement>(
+            "[data-item-id]:not([data-space-group-key])",
+          ),
+        ].map((element) => element.dataset.itemId),
+      ).toEqual(["one", "three", "two"]);
+    },
+  );
+});

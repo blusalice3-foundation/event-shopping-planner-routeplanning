@@ -673,7 +673,7 @@ function createWorkspace(
 
       const list = lists.get(column);
       const rowHit =
-        !targetId && list
+        column === "execute" && !targetId && list
           ? resolveRowReference(list, clientY, clientX)
           : undefined;
       const neutralColumnBlank = rowHit?.kind === "column";
