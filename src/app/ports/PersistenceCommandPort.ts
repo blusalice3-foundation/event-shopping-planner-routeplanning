@@ -160,6 +160,13 @@ export interface ApplicationShoppingMove {
       column: "execute" | "candidate";
     }[];
     groupNeighbors?: readonly (readonly (string | null)[])[];
+    configuredOrder?: readonly {
+      group: string;
+      relations: readonly (readonly [
+        string,
+        "before" | "after" | "unordered" | "missing",
+      ])[];
+    }[];
     tailGroups?: readonly string[];
     sourceOrder: readonly string[];
     targetOrder: readonly string[];

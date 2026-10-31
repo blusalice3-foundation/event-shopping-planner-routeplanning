@@ -51,6 +51,7 @@ import {
   planShoppingOrderMutation,
 } from "../../features/consistency/domain/mutations";
 import { recordEntry } from "../../utils/ownRecord";
+import { getItemGroupId } from "../../utils/hallGrouping";
 import { semanticEqual } from "../../utils/semanticEquality";
 import type { ShoppingItem } from "../../types/item";
 
@@ -229,11 +230,14 @@ export function shoppingMovePlacementBaseline(
       ? buildCandidatePlacementVisitKey(item)
       : buildExecutionPlacementVisitKey(item);
   const remainingTargetIds = targetIds.filter((id) => !moving.has(id));
-  const remainingVisitKeys = new Set(
-    remainingTargetIds.flatMap((id) =>
-      byId.has(id) ? [buildExecutionPlacementVisitKey(byId.get(id)!)] : [],
-    ),
-  );
+  const remainingVisitKeys = new Set<string>();
+  const remainingGroups = new Set<string>();
+  remainingTargetIds.forEach((id) => {
+    const item = byId.get(id);
+    if (!item) return;
+    remainingVisitKeys.add(buildExecutionPlacementVisitKey(item));
+    remainingGroups.add(buildExecutionPlacementGroupKey(item));
+  });
   const positioned = new Set(
     command.effectiveIds.filter(
       (id) =>
@@ -392,7 +396,14 @@ export function shoppingMovePlacementBaseline(
     };
   });
   let groupNeighbors: Array<Array<string | null>> | undefined;
-  // Existing visit tails and book slots do not depend on other groups surviving.
+  let configuredOrder: NonNullable<
+    ApplicationShoppingMove["placementBaseline"]
+  >["configuredOrder"];
+  const newGroups = [...movingGroups].filter(
+    (key) => !remainingGroups.has(key),
+  );
+  // Existing-group gaps, visit tails and book slots have their own dependencies.
+  // Only creating an absent group depends on its neighboring groups' topology.
   if (
     command.targetColumn === "execute" &&
     positioned.size > 0 &&
@@ -428,40 +439,113 @@ export function shoppingMovePlacementBaseline(
             ...halls.map((hall) => hall.id),
           ]),
         ];
-    const displayItems = [
-      ...executing,
-      ...command.effectiveIds.filter((id) => !executeSet.has(id)),
-    ].flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []));
-    let groups = [
-      ...new Set(
-        flattenExecutionPlacementItems(
-          displayItems,
-          {
-            hallDefinitions: halls,
-            mapData: map.status === "resolved" ? map.data : null,
-            allItems: items,
-          },
-          hallOrder,
-        ).map((item) => buildExecutionPlacementGroupKey(item)),
-      ),
+    const implicitUnassigned = [
+      "undefined:highest",
+      "undefined:priority",
+      "undefined",
     ];
-    const frozenGroups = command.placementBaseline?.groupNeighbors;
-    if (frozenGroups) {
-      const dependentGroups = new Set(
-        frozenGroups.flatMap((entry) =>
-          entry.filter((key): key is string => key !== null),
-        ),
+    const configuredIds = new Set([
+      ...hallOrder,
+      ...halls.flatMap((hall) => [
+        hall.id,
+        `${hall.id}:highest`,
+        `${hall.id}:priority`,
+      ]),
+      ...implicitUnassigned,
+    ]);
+    const configured = [
+      ...new Set([
+        ...hallOrder,
+        ...halls.map((hall) => hall.id),
+        ...(halls.length ? [] : implicitUnassigned),
+      ]),
+    ];
+    const configuredPositions = new Map(
+      configured.map((key, index) => [key, index]),
+    );
+    // Unlisted priority groups share a fallback phase; their manual order is
+    // checked by the actual visit/gap dependencies, not configuration order.
+    const rank = (id: string): number | undefined => {
+      if (!configuredIds.has(id)) return undefined;
+      return (
+        configuredPositions.get(id) ??
+        configured.length + (id === "undefined" ? 1 : 0)
       );
-      groups = groups.filter((key) => dependentGroups.has(key));
-    }
-    groupNeighbors = [...movingGroups].sort().map((key) => {
-      const index = groups.indexOf(key);
-      return [groups[index - 1] ?? null, key, groups[index + 1] ?? null];
+    };
+    const positionedGroups = new Map<string, string>();
+    positioned.forEach((id) => {
+      const item = byId.get(id);
+      if (!item) return;
+      const group = buildExecutionPlacementGroupKey(item);
+      if (!positionedGroups.has(group))
+        positionedGroups.set(
+          group,
+          getItemGroupId(item, null, []) ?? "undefined",
+        );
     });
+    configuredOrder = [...positionedGroups]
+      .sort(([first], [second]) => first.localeCompare(second))
+      .map(([group, id]) => {
+        const frozen = command.placementBaseline?.configuredOrder?.find(
+          (entry) => entry.group === group,
+        );
+        const references = frozen
+          ? frozen.relations.map(([key]) => key)
+          : [...configuredIds].filter((key) => key !== id).sort();
+        const at = rank(id);
+        return {
+          group,
+          relations: references.map((key) => {
+            const reference = rank(key);
+            const relation =
+              at === undefined || reference === undefined
+                ? "missing"
+                : reference < at
+                  ? "before"
+                  : reference > at
+                    ? "after"
+                    : "unordered";
+            return [key, relation] as const;
+          }),
+        };
+      });
+    if (newGroups.length > 0) {
+      const displayItems = [
+        ...executing,
+        ...command.effectiveIds.filter((id) => !executeSet.has(id)),
+      ].flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []));
+      let groups = [
+        ...new Set(
+          flattenExecutionPlacementItems(
+            displayItems,
+            {
+              hallDefinitions: halls,
+              mapData: map.status === "resolved" ? map.data : null,
+              allItems: items,
+            },
+            hallOrder,
+          ).map((item) => buildExecutionPlacementGroupKey(item)),
+        ),
+      ];
+      const frozenGroups = command.placementBaseline?.groupNeighbors;
+      if (frozenGroups) {
+        const dependentGroups = new Set(
+          frozenGroups.flatMap((entry) =>
+            entry.filter((key): key is string => key !== null),
+          ),
+        );
+        groups = groups.filter((key) => dependentGroups.has(key));
+      }
+      groupNeighbors = newGroups.sort().map((key) => {
+        const index = groups.indexOf(key);
+        return [groups[index - 1] ?? null, key, groups[index + 1] ?? null];
+      });
+    }
   }
   return {
     entries,
     ...(groupNeighbors ? { groupNeighbors } : {}),
+    ...(configuredOrder ? { configuredOrder } : {}),
     ...(tailGroups ? { tailGroups } : {}),
     sourceOrder: source.filter((id) => relevant.has(id)),
     targetOrder: (command.targetColumn === "execute"

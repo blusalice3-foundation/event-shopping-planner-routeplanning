@@ -305,3 +305,57 @@ describe("unrelated placement group removal", () => {
     );
   });
 });
+
+it("keeps an existing-group insertion gap when an unrelated hall is deleted", () => {
+  const source = fixtureWithWest();
+  (source.eventLists.event[1] as ShoppingItem).number = "02a";
+  (source.eventLists.event[2] as ShoppingItem).number = "03a";
+  const command = frozen(source, ["target", "incoming", "far", "west"]);
+  const current = structuredClone(source);
+  current.eventLists.event = current.eventLists.event.filter(
+    (entry) => (entry as ShoppingItem).id !== "west",
+  );
+  current.executeModeItems.event[day] = ["target", "far"];
+  const result = planShoppingMove(current, command);
+  expect(result.confirmation).toBeUndefined();
+  expect(result.snapshot.executeModeItems.event[day]).toEqual([
+    "target",
+    "incoming",
+    "far",
+  ]);
+  expect(result.snapshot.eventLists.event).toEqual(current.eventLists.event);
+  for (const entry of current.eventLists.event)
+    expect(result.snapshot.eventLists.event).toContain(entry);
+});
+
+it("ignores remote configured-group reordering when the affected group's relations stay unchanged", () => {
+  const source = fixtureWithWest();
+  (source.eventLists.event[1] as ShoppingItem).number = "02a";
+  (source.eventLists.event[2] as ShoppingItem).number = "03a";
+  source.hallDefinitions.event[`__mapless__:${day}`].push({
+    id: "north",
+    name: "北館",
+    blockNames: ["C"],
+    vertices: [],
+  });
+  const command = frozen(source, ["target", "incoming", "far", "west"]);
+  const current = structuredClone(source);
+  ensureDayConsistency(current.eventConsistency.event, day).mapless = {
+    assignments: {},
+    hallOrder: ["east", "north", "west"].map((hallId) => ({
+      hall: { kind: "simple" as const, dayKey: day, hallId },
+      priority: "none" as const,
+    })),
+    hallVisitLists: [],
+    route: null,
+  };
+  const result = planShoppingMove(current, command);
+  expect(result.confirmation).toBeUndefined();
+  expect(result.snapshot.executeModeItems.event[day]).toEqual([
+    "target",
+    "incoming",
+    "far",
+    "west",
+  ]);
+  expect(result.snapshot.eventLists.event).toEqual(current.eventLists.event);
+});
