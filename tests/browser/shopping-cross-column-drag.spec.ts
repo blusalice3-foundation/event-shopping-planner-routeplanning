@@ -418,7 +418,7 @@ async function hover(
   scroll = 0,
 ) {
   return page.evaluate(
-    async ({ input, id, edge, grouped, scroll }) => {
+    async ({ input, id, edge, grouped, scroll, observeGeometry }) => {
       const state = window as unknown as {
         __dragTransfer: DataTransfer;
         __dragSource: string;
@@ -492,7 +492,7 @@ async function hover(
       await new Promise((resolve) => setTimeout(resolve, 0));
       // Keep the existing response interval separate from the guide audit reads.
       const ms = performance.now() - began;
-      return {
+      const response = {
         ms,
         viewportScroll: { before: scrollBefore, after: window.scrollY },
         status: root.querySelector<HTMLElement>("[data-shopping-drag-status]")
@@ -524,8 +524,125 @@ async function hover(
         }),
         header: !!header,
       };
+      // Observe only after the original response clock and guide audit fields.
+      if (!observeGeometry && response.status !== undefined) return response;
+      const bounds = (value: DOMRect) => ({
+        x: value.x,
+        y: value.y,
+        top: value.top,
+        bottom: value.bottom,
+        left: value.left,
+        right: value.right,
+        width: value.width,
+        height: value.height,
+      });
+      const describe = (element: Element | null) =>
+        element
+          ? {
+              tag: element.tagName,
+              connected: element.isConnected,
+              itemId: element.getAttribute("data-item-id"),
+              referenceId: element.getAttribute(
+                "data-shopping-drag-reference-id",
+              ),
+              rowKey: element.getAttribute("data-row-key"),
+              viewportRowKey: element.getAttribute("data-viewport-row-key"),
+              viewportActive: element.getAttribute("data-viewport-active"),
+              viewportRetain: element.getAttribute("data-viewport-retain"),
+              column: element.getAttribute("data-shopping-drag-column"),
+              surface: element.getAttribute("data-shopping-drag-surface"),
+              spaceGroupKey: element.getAttribute("data-space-group-key"),
+              className: element.getAttribute("class"),
+              rect: bounds(element.getBoundingClientRect()),
+            }
+          : null;
+      const hit =
+        typeof document.elementFromPoint === "function"
+          ? document.elementFromPoint(x, y)
+          : null;
+      const ancestry = [];
+      for (
+        let element = hit;
+        element && ancestry.length < 12;
+        element = element.parentElement
+      )
+        ancestry.push(describe(element));
+      const currentTarget = itemElement(id);
+      const source =
+        typeof state.__dragSource === "string"
+          ? itemElement(state.__dragSource)
+          : null;
+      const clone = document.querySelector(".esp-shopping-touch-clone");
+      return {
+        ...response,
+        geometry: {
+          requested: { id, edge, grouped, input, scroll },
+          point: { x, y },
+          pointInsideViewport:
+            x >= 0 && x < window.innerWidth && y >= 0 && y < window.innerHeight,
+          initialVisitTop: bounds(top),
+          initialVisitBottom: bounds(bottom),
+          originalTarget: describe(target),
+          originalOwner: describe(owner),
+          nextVisitMember: describe(next),
+          currentTarget: describe(currentTarget),
+          hit: describe(hit),
+          hitAncestry: ancestry,
+          hitColumn: describe(
+            hit?.closest(
+              "[data-shopping-drag-column], [data-shopping-drag-surface]",
+            ) ?? null,
+          ),
+          root: describe(root),
+          header: describe(document.querySelector("header")),
+          viewport: {
+            scrollX: window.scrollX,
+            scrollY: window.scrollY,
+            width: window.innerWidth,
+            height: window.innerHeight,
+            scrollHeight: document.documentElement.scrollHeight,
+            devicePixelRatio: window.devicePixelRatio,
+            visual: window.visualViewport
+              ? {
+                  top: window.visualViewport.offsetTop,
+                  left: window.visualViewport.offsetLeft,
+                  width: window.visualViewport.width,
+                  height: window.visualViewport.height,
+                  scale: window.visualViewport.scale,
+                }
+              : null,
+          },
+          source: {
+            id: state.__dragSource,
+            element: describe(source),
+            retainedOwner: describe(
+              source?.closest("[data-viewport-retain]") ?? null,
+            ),
+            opacityDimmed: source?.classList.contains("opacity-40") ?? false,
+            clone: describe(clone),
+            cloneCount: document.querySelectorAll(".esp-shopping-touch-clone")
+              .length,
+            clonePointerEvents: clone
+              ? getComputedStyle(clone).pointerEvents
+              : null,
+            effectiveIds: Array.from(
+              document.querySelectorAll("[data-shopping-drag-effective]"),
+            ).map((element) => element.getAttribute("data-item-id")),
+            statusCount: document.querySelectorAll(
+              "[data-shopping-drag-status]",
+            ).length,
+          },
+        },
+      };
     },
-    { input, id, edge, grouped, scroll },
+    {
+      input,
+      id,
+      edge,
+      grouped,
+      scroll,
+      observeGeometry: process.env.ESP_DRAG_GEOMETRY_DIAGNOSTIC === "1",
+    },
   );
 }
 async function autoScroll(page: Page, input: Input) {
@@ -3061,10 +3178,28 @@ for (const count of [150, 500])
               );
             }
             if (scenario.name === "rejected") {
-              expect(response.status).toBe("rejected");
+              expect(
+                response.status,
+                response.status === "rejected"
+                  ? undefined
+                  : JSON.stringify({
+                      scenario: scenario.name,
+                      sample: i,
+                      response,
+                    }),
+              ).toBe("rejected");
               expect(response.guides).toHaveLength(0);
             } else {
-              expect(response.status).toBe("accepted");
+              expect(
+                response.status,
+                response.status === "accepted"
+                  ? undefined
+                  : JSON.stringify({
+                      scenario: scenario.name,
+                      sample: i,
+                      response,
+                    }),
+              ).toBe("accepted");
               if (
                 scenario.name === "multiple-merges" ||
                 scenario.name === "offscreen-merge"
@@ -3194,7 +3329,16 @@ for (const count of [150, 500])
             await new Promise((resolve) => setTimeout(resolve, 0));
           });
           const target = await hover(page, input, "priority", "after", grouped);
-          expect(target.status).toBe("accepted");
+          expect(
+            target.status,
+            target.status === "accepted"
+              ? undefined
+              : JSON.stringify({
+                  scenario: "drop-warmup",
+                  sample: i,
+                  response: target,
+                }),
+          ).toBe("accepted");
           // Balanced E,D,D,E pairs compare the same evolving fixture without changing the product or threshold.
           const probeEnabled = compareProbe && (i % 4 === 0 || i % 4 === 3);
           await page.evaluate(
