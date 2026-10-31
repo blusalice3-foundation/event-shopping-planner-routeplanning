@@ -1,3 +1,4 @@
+import { ensureDayConsistency } from "../../features/consistency/domain/context";
 import { describe, expect, it } from "vitest";
 import type {
   ApplicationShoppingMove,
@@ -50,6 +51,21 @@ function fixture(): PersistenceSnapshot {
     },
     eventConsistency: { event: createEventConsistency() },
   };
+}
+function fixtureWithWest(): PersistenceSnapshot {
+  const source = fixture();
+  (source.eventLists.event as ShoppingItem[]).push({
+    ...item("west", "01a"),
+    block: "B",
+  });
+  source.executeModeItems.event[day].push("west");
+  source.hallDefinitions.event[`__mapless__:${day}`].push({
+    id: "west",
+    name: "西館",
+    blockNames: ["B"],
+    vertices: [],
+  });
+  return source;
 }
 function frozen(
   source: PersistenceSnapshot,
@@ -190,5 +206,102 @@ describe("scoped placement dependencies", () => {
           .event as ShoppingItem[]
       ).map((entry) => entry.id),
     ).toEqual(["incoming", "target", "far"]);
+  });
+});
+
+describe("unrelated placement group removal", () => {
+  it("keeps an existing-visit merge when the sole book in an unrelated hall is deleted", () => {
+    const source = fixtureWithWest();
+    const command = frozen(source, ["target", "incoming", "far", "west"]);
+    const current = structuredClone(source);
+    current.eventLists.event = current.eventLists.event.filter(
+      (entry) => (entry as ShoppingItem).id !== "west",
+    );
+    current.executeModeItems.event[day] = ["target", "far"];
+    Object.assign(current.eventLists.event[2] as ShoppingItem, {
+      quantity: 8,
+      price: 1400,
+      remarks: "最新の追加入力",
+    });
+    const result = planShoppingMove(current, command);
+    expect(result.confirmation).toBeUndefined();
+    expect(result.snapshot.executeModeItems.event[day]).toEqual([
+      "target",
+      "incoming",
+      "far",
+    ]);
+    expect(result.snapshot.eventLists.event).toEqual(current.eventLists.event);
+    expect(result.snapshot.eventLists.event[2]).toBe(
+      current.eventLists.event[2],
+    );
+  });
+
+  it("keeps book-order slots when the sole book in an unrelated hall is deleted", () => {
+    const source = fixtureWithWest();
+    source.executeModeItems.event[day] = ["target", "far", "incoming", "west"];
+    const command = frozen(source, ["incoming", "far", "target", "west"]);
+    command.sourceColumn = "execute";
+    command.requestedIds = ["target"];
+    command.effectiveIds = ["target"];
+    command.hoverId = "incoming";
+    command.reorderWithinVisit = true;
+    command.placementBaseline = shoppingMovePlacementBaseline(source, {
+      ...command,
+      placementBaseline: undefined,
+    });
+    const current = structuredClone(source);
+    current.eventLists.event = current.eventLists.event.filter(
+      (entry) => (entry as ShoppingItem).id !== "west",
+    );
+    current.executeModeItems.event[day] = ["target", "far", "incoming"];
+    Object.assign(current.eventLists.event[0] as ShoppingItem, {
+      purchaseStatus: "Purchased",
+      quantity: 5,
+      price: 1700,
+    });
+    const result = planShoppingMove(current, command);
+    expect(result.confirmation).toBeUndefined();
+    expect(result.snapshot.executeModeItems.event[day]).toEqual([
+      "incoming",
+      "far",
+      "target",
+    ]);
+    expect(result.snapshot.eventLists.event).toEqual(current.eventLists.event);
+    expect(result.snapshot.eventLists.event[0]).toBe(
+      current.eventLists.event[0],
+    );
+  });
+
+  it("still aborts a new placement group's insertion when its hall order changes", () => {
+    const source = fixtureWithWest();
+    source.eventLists.event = source.eventLists.event.filter((entry) =>
+      ["incoming", "west"].includes((entry as ShoppingItem).id),
+    );
+    source.executeModeItems.event[day] = ["west"];
+    const command = frozen(source, ["incoming", "west"]);
+    command.hoverId = "west";
+    command.placementBaseline = shoppingMovePlacementBaseline(source, {
+      ...command,
+      placementBaseline: undefined,
+    });
+    const current = structuredClone(source);
+    ensureDayConsistency(current.eventConsistency.event, day).mapless = {
+      assignments: {},
+      hallOrder: [
+        {
+          hall: { kind: "simple", dayKey: day, hallId: "west" },
+          priority: "none",
+        },
+        {
+          hall: { kind: "simple", dayKey: day, hallId: "east" },
+          priority: "none",
+        },
+      ],
+      hallVisitLists: [],
+      route: null,
+    };
+    expect(() => planShoppingMove(current, command)).toThrow(
+      ShoppingPlacementChangedError,
+    );
   });
 });

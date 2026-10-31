@@ -392,7 +392,12 @@ export function shoppingMovePlacementBaseline(
     };
   });
   let groupNeighbors: Array<Array<string | null>> | undefined;
-  if (command.targetColumn === "execute") {
+  // Existing visit tails and book slots do not depend on other groups surviving.
+  if (
+    command.targetColumn === "execute" &&
+    positioned.size > 0 &&
+    !command.reorderWithinVisit
+  ) {
     const event = recordEntry(snapshot.eventConsistency, command.eventName);
     const settings = getDayConsistency(event, command.day);
     const maps = (recordEntry(projected.mapData, command.eventName) ??
