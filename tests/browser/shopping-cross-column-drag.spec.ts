@@ -17,6 +17,13 @@ test.use({
 });
 const eventName = "列間ドラッグ検証";
 const day = "1日目";
+const dropSaveTargetMapping = {
+  policyId: "execution-placement-valid-drop-save-target-2026-11-01",
+  approvalSource: "call_ffc847ef15264588957ed8343692485d",
+  sourcePattern: "new-${i}",
+  previous: { id: "priority", edge: "after", priorityLevel: "priority" },
+  current: { id: "a1", edge: "before", priorityLevel: "none" },
+} as const;
 type Input = "native" | "touch";
 const makeItem = (
   id: string,
@@ -1740,6 +1747,177 @@ for (const input of ["native", "touch"] as const)
         .not.toContain("merge-offscreen");
     });
   }
+type RejectedDropPhysicalIO = {
+  mutationRequests: Array<{ store: string; method: string }>;
+  readwriteTransactions: number;
+  completedReadwriteTransactions: number;
+};
+async function observeRejectedDropPhysicalIO(page: Page) {
+  const worker = page
+    .workers()
+    .find((value) => value.url().includes("persistence.worker"));
+  expect(worker).toBeDefined();
+  await worker!.evaluate(() => {
+    const state: RejectedDropPhysicalIO = {
+      mutationRequests: [],
+      readwriteTransactions: 0,
+      completedReadwriteTransactions: 0,
+    };
+    const transaction = IDBDatabase.prototype.transaction;
+    IDBDatabase.prototype.transaction = function (
+      ...args: Parameters<IDBDatabase["transaction"]>
+    ) {
+      const result = transaction.apply(this, args);
+      if (result.mode === "readwrite") {
+        state.readwriteTransactions++;
+        result.addEventListener("complete", () => {
+          state.completedReadwriteTransactions++;
+        });
+      }
+      return result;
+    };
+    for (const method of ["put", "add", "delete", "clear"] as const) {
+      const original = IDBObjectStore.prototype[method];
+      Object.defineProperty(IDBObjectStore.prototype, method, {
+        configurable: true,
+        writable: true,
+        value: function (this: IDBObjectStore, ...args: unknown[]) {
+          state.mutationRequests.push({ store: this.name, method });
+          return (original as (...values: unknown[]) => IDBRequest).apply(
+            this,
+            args,
+          );
+        },
+      });
+    }
+    Object.assign(globalThis, {
+      __legacyPriorityDropIO: () => ({
+        ...state,
+        mutationRequests: [...state.mutationRequests],
+      }),
+    });
+  });
+  return () =>
+    worker!.evaluate(() =>
+      (
+        globalThis as unknown as {
+          __legacyPriorityDropIO: () => RejectedDropPhysicalIO;
+        }
+      ).__legacyPriorityDropIO(),
+    );
+}
+for (const count of [150, 500])
+  for (const input of ["native", "touch"] as const)
+    for (const grouped of [false, true])
+      test(`old priority-after drop rejects without saving: ${count} ${input} grouping ${grouped}`, async ({
+        page,
+      }, testInfo) => {
+        test.skip(
+          process.env.ESP_EVIDENCE_PHASE === "before",
+          "The old product accepts this legacy operation; D05 rejection is after-only.",
+        );
+        test.setTimeout(240000);
+        const errors: string[] = [];
+        page.on("pageerror", (error) => errors.push(error.message));
+        const backup = performanceFixture(count);
+        expect(
+          backup.data.eventLists[eventName].find((item) => item.id === "new-0")
+            ?.priorityLevel,
+        ).toBe("none");
+        expect(
+          backup.data.eventLists[eventName].find(
+            (item) => item.id === "priority",
+          )?.priorityLevel,
+        ).toBe("priority");
+        await restore(page, backup);
+        await grouping(page, grouped);
+        // Observe after restore settles; retain the 500ms-debounce exclusion
+        // window for the rejected hover and stationary pointer release.
+        await page.waitForTimeout(600);
+        const physicalIO = await observeRejectedDropPhysicalIO(page);
+        const beforeItems = await stored(page, "eventLists");
+        const beforeOrder = await stored(page, "executeModeItems");
+        await select(page, ["new-0"]);
+        await expect(headerMove(page, "candidate")).toHaveText(/\(1件\)$/u);
+        const beforeIO = await physicalIO();
+        expect(beforeIO).toEqual({
+          mutationRequests: [],
+          readwriteTransactions: 0,
+          completedReadwriteTransactions: 0,
+        });
+        await start(page, input, "new-0");
+        const response = await hover(page, input, "priority", "after", grouped);
+        expect(response.status).toBe("rejected");
+        expect(response.text).toMatch(/所属|優先度/u);
+        expect(
+          response.guides.map(({ kind, edge, owner }) => ({
+            kind,
+            edge,
+            owner,
+          })),
+        ).toEqual([
+          {
+            kind: "suggestion",
+            edge: "after",
+            owner: grouped
+              ? `group:"A-${Math.floor(count / 2) + 4}a"`
+              : "offscreen",
+          },
+        ]);
+        expect(Number.isFinite(response.guides[0].offsetPx)).toBe(true);
+        expect(response.guides[0].offsetPx).toBeLessThanOrEqual(1);
+        // No second hover or accepted resultId: scrolling alone cannot
+        // authorize the original pointer's release.
+        await finish(page, input, true);
+        await expect(page.locator(".esp-shopping-touch-clone")).toHaveCount(0);
+        await page
+          .getByRole("listitem", { name: / new-0 ユーザー登録$/u })
+          .scrollIntoViewIfNeeded();
+        await expect(selectionBox(page, "new-0")).toBeChecked();
+        await expect(headerMove(page, "candidate")).toHaveText(/\(1件\)$/u);
+        const selectedIdsAfterRelease = await page
+          .locator(
+            '[data-item-id]:not([data-space-group-key]) input[type="checkbox"]:checked',
+          )
+          .evaluateAll((boxes) =>
+            boxes.map(
+              (box) =>
+                box.closest<HTMLElement>(
+                  "[data-item-id]:not([data-space-group-key])",
+                )!.dataset.itemId,
+            ),
+          );
+        expect(selectedIdsAfterRelease).toEqual(["new-0"]);
+        await page.waitForTimeout(600);
+        const afterIO = await physicalIO();
+        expect(afterIO).toEqual(beforeIO);
+        const afterItems = await stored(page, "eventLists");
+        const afterOrder = await stored(page, "executeModeItems");
+        expect(afterItems).toEqual(beforeItems);
+        expect(afterOrder).toEqual(beforeOrder);
+        await reopen(page);
+        expect(await stored(page, "eventLists")).toEqual(beforeItems);
+        expect(await stored(page, "executeModeItems")).toEqual(beforeOrder);
+        expect(errors).toEqual([]);
+        await attach(testInfo, "legacy-priority-after-rejection", {
+          count,
+          input,
+          grouped,
+          phase: "after-only",
+          mapping: dropSaveTargetMapping,
+          source: "new-0",
+          target: dropSaveTargetMapping.previous,
+          response,
+          selectedIdsAfterRelease,
+          settleMs: 600,
+          physicalIO: { before: beforeIO, after: afterIO },
+          beforeItems,
+          afterItems,
+          beforeOrder,
+          afterOrder,
+          reloadUnchanged: true,
+        });
+      });
 for (const input of ["native", "touch"] as const)
   test(`impossible OFF boundary rejects a mixed drop atomically: ${input}`, async ({
     page,
@@ -3234,6 +3412,15 @@ for (const count of [150, 500])
                     : "offscreen",
                 });
             }
+            if (
+              scenario.name === "rejected" &&
+              process.env.ESP_EVIDENCE_PHASE !== "before"
+            )
+              expectedGuides.push({
+                kind: "suggestion",
+                edge: "after",
+                owner: "priority",
+              });
             const identity = (line: {
               kind?: string;
               edge?: string;
@@ -3262,10 +3449,23 @@ for (const count of [150, 500])
               previousBoundary = observedBoundary;
             }
             guideSamples.push({ ...response, expectedGuides });
-            if ("viewportScroll" in response)
-              expect(response.viewportScroll.after, scenario.name).toBe(
-                response.viewportScroll.before,
-              );
+            if ("viewportScroll" in response) {
+              if (
+                scenario.name === "rejected" &&
+                process.env.ESP_EVIDENCE_PHASE !== "before"
+              ) {
+                expect(
+                  response.viewportScroll.after,
+                  scenario.name,
+                ).toBeGreaterThan(response.viewportScroll.before);
+                expect(response.guides[0].guideRect.bottom).toBeGreaterThan(0);
+                expect(response.guides[0].guideRect.top).toBeLessThan(1000);
+              } else {
+                expect(response.viewportScroll.after, scenario.name).toBe(
+                  response.viewportScroll.before,
+                );
+              }
+            }
             if ("scrollBefore" in response) {
               expect(response.scrollAfter).toBeGreaterThan(
                 response.scrollBefore,
@@ -3298,7 +3498,9 @@ for (const count of [150, 500])
                       response,
                     }),
               ).toBe("rejected");
-              expect(response.guides).toHaveLength(0);
+              expect(response.guides).toHaveLength(
+                process.env.ESP_EVIDENCE_PHASE === "before" ? 0 : 1,
+              );
             } else {
               expect(
                 response.status,
@@ -3421,6 +3623,16 @@ for (const count of [150, 500])
             }
           ).__dragRenderProbe.setEnabled(false),
         );
+        // This independent raw-order expectation retains the initial priority
+        // slot and every unrelated ID; it does not normalize display groups.
+        const expectedDropExecuteIds = [
+          ...(
+            (await stored(page, "executeModeItems"))[eventName] as Record<
+              string,
+              string[]
+            >
+          )[day],
+        ];
         for (
           let i = 0;
           i < performanceMeasurementSampleCount * (compareProbe ? 2 : 1);
@@ -3438,7 +3650,7 @@ for (const count of [150, 500])
             await new Promise(requestAnimationFrame);
             await new Promise((resolve) => setTimeout(resolve, 0));
           });
-          const target = await hover(page, input, "priority", "after", grouped);
+          const target = await hover(page, input, "a1", "before", grouped);
           expect(
             target.status,
             target.status === "accepted"
@@ -3519,6 +3731,19 @@ for (const count of [150, 500])
           (probeEnabled ? enabledSaveCompletionMs : saveCompletionMs).push(
             Date.now() - began,
           );
+          // Validate the target mapping only after both existing clocks and
+          // the original save poll have ended.
+          const targetRawIndex = expectedDropExecuteIds.indexOf("a1");
+          expect(targetRawIndex).toBeGreaterThanOrEqual(0);
+          expectedDropExecuteIds.splice(targetRawIndex, 0, id);
+          expect(
+            (
+              (await stored(page, "executeModeItems"))[eventName] as Record<
+                string,
+                string[]
+              >
+            )[day],
+          ).toEqual(expectedDropExecuteIds);
         }
         await page.evaluate(() =>
           (
@@ -3549,6 +3774,7 @@ for (const count of [150, 500])
             previousFixtureSource: "19c7541175b2a60076807dd17469127d67f8407d",
             offscreenSpace: `A-${Math.floor(count / 2) + 4}a`,
             addressExchangeId: `execute-${Math.floor(count / 2) - 6}`,
+            dropSaveTargetMapping,
             halls: ["A", "B"],
             priorities: ["none", "priority"],
           },
@@ -3577,6 +3803,7 @@ for (const count of [150, 500])
           rendererBefore,
           rendererAfter: await rendererState(page),
           saveCompletionMs,
+          dropSavedRawExecuteIds: expectedDropExecuteIds,
           ...(diagnosticPerformanceMetrics.length
             ? { diagnosticPerformanceMetrics }
             : {}),
