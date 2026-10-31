@@ -577,11 +577,19 @@ async function placementRecords(page: Page) {
   });
 }
 
+async function publicListDisplayIds(page: Page) {
+  return page
+    .getByRole("list", { name: "買い物リスト", exact: true })
+    .locator("[data-item-id]:not([data-space-group-key])")
+    .evaluateAll((elements) =>
+      elements.map((element) => element.getAttribute("data-item-id")),
+    );
+}
+
 async function displayedNavigationIds(page: Page) {
   return page
-    .locator(
-      '[data-shopping-drag-column="execute"] [data-space-navigation-visit-id]',
-    )
+    .getByRole("list", { name: "買い物リスト", exact: true })
+    .locator("[data-space-navigation-visit-id]")
     .evaluateAll((elements) => [
       ...new Set(
         elements.map((element) =>
@@ -670,7 +678,7 @@ test("fragmented visits keep list, map visit list and navigator order without di
   const beforeRecords = await placementRecords(page);
   const beforeItems = await readBrowserEventLists(page);
   expect((await saved(page)).ids).toEqual(initialExecute);
-  expect(await displayIds(page)).toEqual(expectedBooks);
+  expect(await publicListDisplayIds(page)).toEqual(expectedBooks);
   expect(await displayedNavigationIds(page)).toEqual(expectedNavigationIds);
 
   const checkNavigator = async () => {
@@ -702,11 +710,11 @@ test("fragmented visits keep list, map visit list and navigator order without di
     .getByRole("button", { name: "スペース別", exact: true })
     .first();
   await grouping.click();
-  expect(await displayIds(page)).toEqual(expectedBooks);
+  expect(await publicListDisplayIds(page)).toEqual(expectedBooks);
   expect(await displayedNavigationIds(page)).toEqual(expectedNavigationIds);
   await checkNavigator();
   await grouping.click();
-  expect(await displayIds(page)).toEqual(expectedBooks);
+  expect(await publicListDisplayIds(page)).toEqual(expectedBooks);
   expect(await displayedNavigationIds(page)).toEqual(expectedNavigationIds);
   expect(await placementRecords(page)).toEqual(beforeRecords);
 
@@ -732,7 +740,7 @@ test("fragmented visits keep list, map visit list and navigator order without di
   ).toEqual(expectedBooks);
   await page.getByTitle("閉じる", { exact: true }).click();
   await page.getByTitle("リスト表示に切り替え", { exact: true }).click();
-  expect(await displayIds(page)).toEqual(expectedBooks);
+  expect(await publicListDisplayIds(page)).toEqual(expectedBooks);
   expect(await displayedNavigationIds(page)).toEqual(expectedNavigationIds);
   expect(await placementRecords(page)).toEqual(beforeRecords);
   expect(await readBrowserEventLists(page)).toEqual(beforeItems);
@@ -741,7 +749,7 @@ test("fragmented visits keep list, map visit list and navigator order without di
   await page.getByText(eventName, { exact: true }).click();
   const listButton = page.getByTitle("リスト表示に切り替え", { exact: true });
   if (await listButton.isVisible()) await listButton.click();
-  await expect.poll(() => displayIds(page)).toEqual(expectedBooks);
+  await expect.poll(() => publicListDisplayIds(page)).toEqual(expectedBooks);
   expect(await displayedNavigationIds(page)).toEqual(expectedNavigationIds);
   await checkNavigator();
   expect((await saved(page)).ids).toEqual(initialExecute);
