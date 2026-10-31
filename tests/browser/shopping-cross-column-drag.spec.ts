@@ -1692,8 +1692,15 @@ for (const input of ["native", "touch"] as const)
         expect(result.guides).toHaveLength(0);
         expect(result.text).toMatch(/ホール|所属/);
         await finish(page, input, true);
-        for (const id of ["merge-a", "merge-offscreen"])
+        for (const id of ["merge-a", "merge-offscreen"]) {
+          // Read retained checkbox state after the exact public row is visible.
+          await page
+            .getByRole("listitem", {
+              name: new RegExp(` ${id} ユーザー登録$`),
+            })
+            .scrollIntoViewIfNeeded();
           await expect(selectionBox(page, id)).toBeChecked();
+        }
         expect((await stored(page, "executeModeItems"))[eventName]).toEqual(
           beforeOrder,
         );
