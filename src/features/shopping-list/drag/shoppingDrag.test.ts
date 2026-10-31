@@ -868,3 +868,114 @@ describe("execution column blank-area placement", () => {
     });
   });
 });
+
+for (const spaceGroups of [true, false])
+  it(`keeps a sole visit at its accepted group boundary: grouping ${spaceGroups}`, () => {
+    const prepared = prepare(
+      [item("a", "01a"), item("b", "02a", { block: "B" })],
+      [],
+      {
+        ...presentation(spaceGroups),
+        halls: [
+          { id: "east", name: "東館", vertices: [], blockNames: ["A"] },
+          { id: "west", name: "西館", vertices: [], blockNames: ["B"] },
+        ],
+        hallOrder: ["east", "west"],
+      },
+    );
+    const [a, b] = prepared.existing;
+    const p = { ...prepared.p, allItems: prepared.existing };
+    const layout = buildShoppingDragLayout([b], p);
+    const placement = resolveShoppingDragPlacement(layout, [a], "b", "before");
+    expect(placement).not.toBeNull();
+    expect(placement?.anchorId).toBe("b");
+    expect(resolveShoppingDragPlacement(layout, [a], "b", "after")).toBeNull();
+    const dragContext = {
+      ...context([a], placement!),
+      sourceColumn: "execute" as const,
+    };
+    const result = computeMoveItem({
+      dragId: "a",
+      hoverId: "b",
+      sourceColumn: "execute",
+      targetColumn: "execute",
+      mode: "edit",
+      effectiveSelectedIds: new Set(["a"]),
+      allItems: prepared.existing,
+      executeModeItems: { [day]: ["a", "b"] },
+      dayName: day,
+      selectedBlockFilters: new Set(),
+      areItemsInSameHall: (first, second) => first === second,
+      dragContext,
+    });
+    expect(result.executeModeItems?.[day]).toEqual(["a", "b"]);
+    expect(result.eventListItems).toBeUndefined();
+  });
+
+for (const spaceGroups of [true, false])
+  it(`inserts into an absent confirmed group before its next group: grouping ${spaceGroups}`, () => {
+    const a = item("new-a", "01a", { quantity: 3, price: 1500 });
+    const b = item("b", "02a", { block: "B", quantity: 2, price: 800 });
+    const p = {
+      ...presentation(spaceGroups),
+      halls: [
+        { id: "east", name: "東館", vertices: [], blockNames: ["A"] },
+        { id: "west", name: "西館", vertices: [], blockNames: ["B"] },
+      ],
+      hallOrder: ["east", "west"],
+    };
+    const accepted = move([b], [a], "before", p, "b");
+    expect(accepted?.ids).toEqual(["new-a", "b"]);
+    expect(accepted?.display).toEqual(["new-a", "b"]);
+    expect(accepted?.result.transferredItemIds).toEqual(["new-a"]);
+    expect(accepted?.result.eventListItems).toBeUndefined();
+    expect(move([b], [a], "after", p, "b")).toBeNull();
+    expect([a.quantity, a.price, b.quantity, b.price]).toEqual([
+      3, 1500, 2, 800,
+    ]);
+  });
+
+it("rechecks raw membership peers from the current event instead of a held presentation", () => {
+  const a = item("a", "01a", { manualHallId: "east" });
+  const b = item("b", "02a", { block: "B", manualHallId: "west" });
+  const heldItems = [a, b];
+  const p = {
+    ...presentation(),
+    allItems: heldItems,
+    halls: [
+      { id: "east", name: "東館", vertices: [], blockNames: ["A"] },
+      { id: "west", name: "西館", vertices: [], blockNames: ["A", "B"] },
+    ],
+    hallOrder: ["east", "west"],
+  };
+  const placement = resolveShoppingDragPlacement(
+    buildShoppingDragLayout([b], p),
+    [a],
+    "b",
+    "before",
+  );
+  expect(placement).not.toBeNull();
+  const lateConflictingPeer = item("late", "01a2", {
+    block: "Ａ",
+    manualHallId: "west",
+  });
+  const run = (allItems: ShoppingItem[]) =>
+    computeMoveItem({
+      dragId: "a",
+      hoverId: "b",
+      sourceColumn: "candidate",
+      targetColumn: "execute",
+      mode: "edit",
+      effectiveSelectedIds: new Set(["a"]),
+      allItems,
+      executeModeItems: { [day]: ["b"] },
+      dayName: day,
+      // The raw block filter excludes full-width Ａ, while shared membership
+      // normalizes it to A. Current hidden peers must still affect resolution.
+      selectedBlockFilters: new Set(["A"]),
+      dragContext: context([a], placement!),
+    });
+  expect(run(heldItems).executeModeItems?.[day]).toEqual(["a", "b"]);
+  expect(run([...heldItems, lateConflictingPeer])).toEqual({});
+  expect(p.allItems).toBe(heldItems);
+});

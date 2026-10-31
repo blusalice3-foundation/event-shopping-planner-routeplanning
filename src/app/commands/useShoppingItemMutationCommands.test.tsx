@@ -2,6 +2,7 @@ import {
   buildShoppingDragLayout,
   resolveShoppingDragPlacement,
   type ShoppingDragMoveContext,
+  type ShoppingDragPresentation,
 } from "../../features/shopping-list/drag/shoppingDrag";
 import { projectItemsToExecutionVisits as projectVisits } from "../../utils/visitProjection";
 import { buildExecutionPlacementVisitKey } from "../../utils/executionPlacement";
@@ -10,6 +11,7 @@ const projectItemsToExecutionVisits = (items: readonly ShoppingItem[]) =>
 // @vitest-environment jsdom
 
 import { emptyApplicationSnapshot as emptyApplicationSnapshotForImport } from "../state/useApplicationSnapshot";
+import { projectConsistencySnapshot } from "../../features/consistency/domain/projection";
 import { rememberItemUpdateBaseline } from "../../utils/itemUpdateBaseline";
 import {
   act,
@@ -2517,3 +2519,89 @@ it.each(["add", "remove"] as const)(
     expect(h.spies.clearSelection).not.toHaveBeenCalled();
   },
 );
+
+it("keeps a sole confirmed-group return quiet and unchanged when the queue reports same order", () => {
+  const key = `__mapless__:${DAY}`;
+  const projected = projectConsistencySnapshot(
+    {
+      ...emptyApplicationSnapshotForImport(),
+      eventLists: {
+        [EVENT]: [
+          item("a", { block: "A", number: "01a", quantity: 3, price: 1500 }),
+          item("b", { block: "B", number: "02a", quantity: 2, price: 800 }),
+        ],
+      },
+      hallDefinitions: {
+        [EVENT]: {
+          [key]: [
+            { id: "east", name: "東館", vertices: [], blockNames: ["A"] },
+            { id: "west", name: "西館", vertices: [], blockNames: ["B"] },
+          ],
+        },
+      },
+    },
+    EVENT,
+    DAY,
+  );
+  const allItems = projected.eventLists[EVENT] as ShoppingItem[];
+  const [a, b] = allItems;
+  const halls = projected.hallDefinitions[EVENT][
+    key
+  ] as ShoppingDragPresentation["halls"];
+  const presentation = {
+    spaceGroups: true,
+    hallGroups: false,
+    map: null,
+    halls,
+    hallOrder: halls.map((hall) => hall.id),
+    allItems,
+  };
+  const placement = resolveShoppingDragPlacement(
+    buildShoppingDragLayout([b], presentation),
+    [a],
+    "b",
+    "before",
+  );
+  expect(placement).not.toBeNull();
+  const selectedItemIds = new Set(["a"]);
+  const h = createHarness({
+    eventLists: { [EVENT]: allItems },
+    executeModeItems: { [EVENT]: { [DAY]: ["a", "b"] } },
+    selectedItemIds,
+    spaceGroupDragItemIds: ["a"],
+    blockSortDirection: "desc",
+    candidateNumberSortDirection: "asc",
+    areItemsInSameHallGroup: (first, second) => first === second,
+  });
+  h.spies.queueShoppingMovePatch.mockReturnValue({
+    status: "noop",
+    reason: "same-order",
+  });
+  const rejected = vi.fn();
+  h.ports.alerts.placementRejected = rejected;
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  act(() =>
+    result.current.moveItem("a", "b", "execute", "execute", {
+      ...frozenDrag("execute", "execute", ["a"], ["a"], [a]),
+      placement: placement!,
+    }),
+  );
+  expect(h.spies.queueShoppingMovePatch).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({ executeModeItems: { [DAY]: ["a", "b"] } }),
+  );
+  expect(rejected).not.toHaveBeenCalled();
+  expect(h.spies.notify).not.toHaveBeenCalled();
+  expect(h.spies.clearSelection).not.toHaveBeenCalled();
+  expect(h.spies.removeSelectedItemIds).not.toHaveBeenCalled();
+  expect(h.spies.clearRangeSelection).not.toHaveBeenCalled();
+  expect(h.spies.setSortState).not.toHaveBeenCalled();
+  expect(h.spies.setBlockSortDirection).not.toHaveBeenCalled();
+  expect(h.spies.setCandidateNumberSortDirection).not.toHaveBeenCalled();
+  expect(h.spies.setEventLists).not.toHaveBeenCalled();
+  expect(h.spies.updateExecuteModeItems).not.toHaveBeenCalled();
+  expect(h.ports.state.selectedItemIds).toBe(selectedItemIds);
+  expect(h.stores.blockSortDirection).toBe("desc");
+  expect(h.stores.candidateNumberSortDirection).toBe("asc");
+  expect(h.stores.eventLists[EVENT]).toBe(allItems);
+  expect(h.stores.executeModeItems[EVENT][DAY]).toEqual(["a", "b"]);
+});

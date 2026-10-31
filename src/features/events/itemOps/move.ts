@@ -4,6 +4,7 @@ import {
   isSameExecutionPlacementVisit,
   canPlaceExecutionItemsAtBoundary,
   applyExecutionBookOrder,
+  findExecutionPlacementGroupTailAnchor,
 } from "../../../utils/executionPlacement";
 import {
   sameDragIds,
@@ -79,6 +80,17 @@ export function computeMoveItem(params: {
     recordEntry(executeModeItems, savedDayName) || [],
   );
   const normalizedDayName = normalizeExecutionVisitDay(dayName);
+  const acceptedPlacement = dragContext?.placement;
+  const placementContext = {
+    mapData: acceptedPlacement?.presentation.map,
+    hallDefinitions: acceptedPlacement?.presentation.halls,
+    allItems,
+  };
+  // Resolve raw peers from the current complete event, never a held drag array.
+  const currentPlacement = acceptedPlacement && {
+    ...acceptedPlacement,
+    presentation: { ...acceptedPlacement.presentation, allItems },
+  };
 
   if (dragContext) {
     if (
@@ -297,9 +309,9 @@ export function computeMoveItem(params: {
       }
 
       if (
-        dragContext?.placement &&
+        currentPlacement &&
         !validateShoppingDragPlacement(
-          dragContext.placement,
+          currentPlacement,
           (recordEntry(executeModeItems, savedDayName) || []).flatMap((id) => {
             const item = itemsMap.get(id);
             return item ? [item] : [];
@@ -500,7 +512,8 @@ export function computeMoveItem(params: {
         movingItems,
         remainingItems,
         beforeId,
-        context: { allItems },
+        context: placementContext,
+        hallOrder: acceptedPlacement?.presentation.hallOrder,
       })
     )
       return {};
@@ -508,12 +521,22 @@ export function computeMoveItem(params: {
       const neighbours = [remaining[index - 1], remaining[index]].filter(
         (id): id is string => !!id,
       );
-      if (
-        !neighbours.some((id) =>
-          movingItems.every((item) => areItemsInSameHall(item.id, id)),
-        )
-      )
-        return {};
+      const hasMatchingNeighbour = neighbours.some((id) =>
+        movingItems.every((item) => areItemsInSameHall(item.id, id)),
+      );
+      const isCanonicalEmptyGroupSlot =
+        !hasMatchingNeighbour &&
+        !!acceptedPlacement &&
+        !remainingItems.some((item) =>
+          isSameExecutionPlacementGroup(first, item, placementContext),
+        ) &&
+        findExecutionPlacementGroupTailAnchor(
+          first,
+          remainingItems,
+          placementContext,
+          acceptedPlacement.presentation.hallOrder,
+        ) === beforeId;
+      if (!hasMatchingNeighbour && !isCanonicalEmptyGroupSlot) return {};
     }
     const before = remaining.flatMap((id) => itemsById.get(id) ?? []);
     remaining.splice(index, 0, ...selectedBlock);
@@ -538,9 +561,9 @@ export function computeMoveItem(params: {
       resultIds = applyExecutionBookOrder(dayItems, desired);
     }
     if (
-      dragContext?.placement &&
+      currentPlacement &&
       !validateShoppingDragPlacement(
-        dragContext.placement,
+        currentPlacement,
         before,
         resultIds.flatMap((id) => itemsById.get(id) ?? []),
       )
