@@ -1063,3 +1063,45 @@ describe("guidance requires subsequent pointer movement", () => {
     );
   }
 });
+
+describe("existing space is a merge drop zone", () => {
+  it.each([false, true])(
+    "shows its tail for either edge of a matching space, grouping %s",
+    async (grouped) => {
+      const onMove = vi.fn();
+      const incoming = item("incoming", "01a4");
+      const view = render(
+        <Harness
+          grouped={grouped}
+          onMove={onMove}
+          initialCandidate={[incoming]}
+        />,
+      );
+      const row = (id: string) =>
+        view.container.querySelector<HTMLElement>(
+          `[data-item-id="${id}"]:not([data-space-group-key])`,
+        )!;
+      const owner = grouped
+        ? row("a1").closest<HTMLElement>('[data-row-key^="group:"]')!
+        : row("a1");
+      vi.spyOn(owner, "getBoundingClientRect").mockReturnValue(rect(100, 300));
+      const transfer = { setData: vi.fn(), getData: () => "candidate" };
+      fireEvent.dragStart(row("incoming"), { dataTransfer: transfer });
+      dragOver(row("a1"), 110, transfer);
+      expect(
+        view.container.querySelector('[data-shopping-drag-guide="merge"]'),
+      ).toHaveAttribute("data-shopping-drag-boundary", "after");
+      fireEvent.drop(row("a1"), { dataTransfer: transfer });
+      expect(onMove).toHaveBeenCalledTimes(1);
+      await waitFor(() =>
+        expect(
+          [
+            ...view.container.querySelectorAll(
+              '[data-shopping-drag-column="execute"] [data-item-id]:not([data-space-group-key])',
+            ),
+          ].map((el) => el.getAttribute("data-item-id")),
+        ).toEqual(["a1", "a2", "incoming"]),
+      );
+    },
+  );
+});

@@ -647,7 +647,6 @@ function createWorkspace(
         !mergeOnly ||
         Boolean(
           referenceKey &&
-          boundary === "after" &&
           placement!.mergeVisits.some((visit) => visit.key === referenceKey),
         );
       const tail = layout.items.at(-1);

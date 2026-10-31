@@ -152,6 +152,7 @@ export interface ApplicationShoppingMove {
   candidateSortMode?: string;
   reorderWithinVisit?: boolean;
   baselineVisits: readonly { id: string; key: string }[];
+  initialDayMergeSignature?: string;
   placementBaseline?: {
     entries: readonly {
       id: string;

@@ -1,4 +1,9 @@
 import {
+  duplicateEventDays,
+  planDayMerge,
+} from "../../features/consistency/domain/dayMerge";
+import { dayMergeChoicePrefix } from "../../features/consistency/domain/dayMergeMutation";
+import {
   projectConsistencySnapshot,
   isCompleteHallOrder,
 } from "../../features/consistency/domain/projection";
@@ -30,6 +35,7 @@ import type {
 } from "../ports/PersistenceCommandPort";
 import {
   MutationTargetMissingError,
+  semanticSignature,
   type MutationChoices,
   type MutationPlan,
 } from "./applicationMutationCoordinator";
@@ -80,10 +86,55 @@ export function shoppingMoveVisitBaseline(
       key: buildExecutionVisitProjectionKey(item),
     }));
 }
+/** Only an already-present legacy day conflict may use the existing review flow. */
+export function shoppingMoveInitialDayMergeSignature(
+  snapshot: PersistenceSnapshot,
+  eventName: string,
+  day: string,
+): string | undefined {
+  if (
+    !duplicateEventDays(snapshot, eventName).some((value) =>
+      sameDay(value, day),
+    )
+  )
+    return undefined;
+  const scoped = scopeDaySnapshot(snapshot, eventName, day);
+  const comparison = planDayMerge(scoped, eventName, day).confirmation
+    ?.comparison as { before?: unknown } | undefined;
+  return comparison ? semanticSignature(comparison.before) : undefined;
+}
+
+function permitsKnownInitialDayReview(
+  command: ApplicationShoppingMove,
+  confirmation: NonNullable<MutationPlan["confirmation"]>,
+): boolean {
+  if (!command.initialDayMergeSignature) return false;
+  const comparison = confirmation.comparison as
+    | { merges?: Array<{ before?: unknown }>; operation?: unknown }
+    | undefined;
+  const prefix = dayMergeChoicePrefix(command.eventName, command.day);
+  return (
+    comparison?.merges?.length === 1 &&
+    comparison.operation === null &&
+    semanticSignature(comparison.merges[0].before) ===
+      command.initialDayMergeSignature &&
+    !!confirmation.choices?.length &&
+    confirmation.choices.every((choice) => choice.id.startsWith(prefix))
+  );
+}
 export function shoppingMoveMatchesBaseline(
   snapshot: PersistenceSnapshot,
   command: ApplicationShoppingMove,
 ): boolean {
+  if (
+    command.initialDayMergeSignature &&
+    shoppingMoveInitialDayMergeSignature(
+      snapshot,
+      command.eventName,
+      command.day,
+    ) !== command.initialDayMergeSignature
+  )
+    return false;
   if (command.placementBaseline)
     return semanticEqual(
       command.placementBaseline,
@@ -695,7 +746,11 @@ export function planShoppingMove(
   if (ordered !== items)
     next.eventLists = { ...snapshot.eventLists, [eventName]: ordered };
   if (command.placementBaseline) {
-    if (plan.confirmation) throw new ShoppingPlacementChangedError();
+    if (
+      plan.confirmation &&
+      !permitsKnownInitialDayReview(command, plan.confirmation)
+    )
+      throw new ShoppingPlacementChangedError();
     return { ...plan, snapshot: next };
   }
   return confirmChangedFieldConflicts({ ...plan, snapshot: next }, [

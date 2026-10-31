@@ -2473,3 +2473,133 @@ it("accepts a quantity edit then move using the same resolved hall context as du
   expect(h.durable().executeModeItems.event["1日目"]).toEqual(["1"]);
   expect(h.durable().eventLists.event[0]).toMatchObject({ quantity: 7 });
 });
+
+function knownInitialModeReview(h: ReturnType<typeof harness>) {
+  hydrateShopping(h);
+  Object.assign(h.durable().eventLists.event[0] as object, { number: "01a" });
+  Object.assign(h.durable().eventLists.event[1] as object, { number: "01a2" });
+  h.durable().executeModeItems.event["1日目"] = ["1", "2"];
+  h.durable().dayModes.event[" 1日目 "] = "execute";
+  act(() => {
+    h.result.current.hydrationSetters.setEventLists(
+      structuredClone(h.durable().eventLists) as never,
+    );
+    h.result.current.hydrationSetters.setExecuteModeItems(
+      structuredClone(h.durable().executeModeItems),
+    );
+    h.result.current.hydrationSetters.setDayModes(
+      structuredClone(h.durable().dayModes) as never,
+    );
+  });
+  return h.result.current.queueShoppingMovePatch(
+    moveInput({
+      sourceColumn: "execute",
+      targetColumn: "execute",
+      requestedIds: ["2"],
+      effectiveIds: ["2"],
+      hoverId: "1",
+      reorderWithinVisit: true,
+      baselineExecuteIds: ["1", "2"],
+      executeModeItems: { "1日目": ["2", "1"] },
+    }),
+  );
+}
+
+it.each(["cancel", "confirm"] as const)(
+  "keeps the initially known duplicate-day review on the frozen save queue: %s",
+  async (outcome) => {
+    const h = harness();
+    let receipt!: ReturnType<typeof h.result.current.queueShoppingMovePatch>;
+    act(() => {
+      receipt = knownInitialModeReview(h);
+    });
+    expect(receipt.status).toBe("accepted");
+    await waitFor(() => expect(h.result.current.confirmations).toHaveLength(1));
+    expect(h.commit).not.toHaveBeenCalled();
+    expect(h.result.current.confirmations[0].confirmation.title).toContain(
+      "1日目 の保存先を統合",
+    );
+    if (outcome === "cancel") {
+      act(() =>
+        h.result.current.cancel(h.result.current.confirmations[0].token),
+      );
+    } else {
+      const destination =
+        h.result.current.confirmations[0].confirmation.choices!.find(
+          (choice) => choice.label === "統合先の日付表記",
+        )!;
+      act(() =>
+        h.result.current.choose(
+          h.result.current.confirmations[0].token,
+          destination.id,
+          " 1日目 ",
+        ),
+      );
+      await waitFor(() =>
+        expect(
+          h.result.current.confirmations[0].confirmation.choices!.find(
+            (choice) => choice.id === destination.id,
+          )?.value,
+        ).toBe(" 1日目 "),
+      );
+      const mode = h.result.current.confirmations[0].confirmation.choices!.find(
+        (choice) => choice.label === "統合後の表示モード",
+      )!;
+      act(() =>
+        h.result.current.choose(
+          h.result.current.confirmations[0].token,
+          mode.id,
+          "execute",
+        ),
+      );
+      await waitFor(() =>
+        expect(
+          h.result.current.confirmations[0].confirmation.choices!.find(
+            (choice) => choice.id === mode.id,
+          )?.value,
+        ).toBe("execute"),
+      );
+      await act(async () => {
+        h.result.current.confirm(h.result.current.confirmations[0].token);
+        await h.result.current.flush();
+      });
+    }
+    if (receipt.status !== "accepted") throw new Error("not accepted");
+    await expect(receipt.completion).resolves.toMatchObject({
+      status: outcome === "confirm" ? "committed" : "aborted",
+    });
+    if (outcome === "cancel") {
+      expect(h.commit).not.toHaveBeenCalled();
+      expect(h.durable().executeModeItems.event["1日目"]).toEqual(["1", "2"]);
+    } else {
+      expect(h.durable().executeModeItems.event[" 1日目 "]).toEqual(["2", "1"]);
+      expect(h.durable().dayModes.event).toEqual({ " 1日目 ": "execute" });
+    }
+  },
+);
+
+it("terminates a known review if placement changes while it is awaiting confirmation", async () => {
+  const h = harness();
+  let receipt!: ReturnType<typeof h.result.current.queueShoppingMovePatch>;
+  act(() => {
+    receipt = knownInitialModeReview(h);
+  });
+  await waitFor(() => expect(h.result.current.confirmations).toHaveLength(1));
+  Object.assign(h.durable().eventLists.event[1] as object, {
+    priorityLevel: "highest",
+  });
+  await act(async () => {
+    h.result.current.confirm(h.result.current.confirmations[0].token);
+    await h.result.current.flush();
+  });
+  if (receipt.status !== "accepted") throw new Error("not accepted");
+  await expect(receipt.completion).resolves.toMatchObject({
+    status: "aborted",
+    reason: expect.stringContaining("移動を中止"),
+  });
+  expect(h.result.current.confirmations).toEqual([]);
+  expect(h.result.current.retryableFailures).toEqual([]);
+  expect(h.result.current.failure).toBeNull();
+  expect(h.commit).not.toHaveBeenCalled();
+  expect(h.durable().executeModeItems.event["1日目"]).toEqual(["1", "2"]);
+});

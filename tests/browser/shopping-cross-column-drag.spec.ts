@@ -201,6 +201,33 @@ for (const count of [150, 500])
         ],
       },
     });
+    const originalPerformanceItems = originalItems.map((item) =>
+      item.id.startsWith("execute-")
+        ? { ...item, priorityLevel: "none" }
+        : item,
+    );
+    const originalFarA = originalPerformanceItems.find(
+      (item) => item.id === `execute-${Math.floor(count / 2) - 6}`,
+    )!;
+    const originalOffscreen = originalPerformanceItems.find(
+      (item) => item.id === "offscreen",
+    )!;
+    const expectedItems = originalPerformanceItems.map((item) =>
+      item.id === originalFarA.id
+        ? {
+            ...item,
+            block: originalOffscreen.block,
+            number: originalOffscreen.number,
+          }
+        : item.id === "offscreen"
+          ? { ...item, block: "A", number: `${originalFarA.number}a` }
+          : item.id === "merge-offscreen"
+            ? { ...item, block: "A", number: `${originalFarA.number}a2` }
+            : item,
+    );
+    // Compare with 19c's original performanceFixture transformations, not
+    // fixture()'s raw filler priorities. Only the three approved addresses differ.
+    expect(revisedItems).toEqual(expectedItems);
     const expectedNumberCells = (block: string) =>
       [
         ...new Set(
@@ -1293,6 +1320,8 @@ for (const input of ["native", "touch"] as const)
       }
       await restore(page, backup);
       await grouping(page, grouped);
+      const currentRules = process.env.ESP_EVIDENCE_PHASE !== "before";
+      const beforeOrder = (await stored(page, "executeModeItems"))[eventName];
       await start(page, input, "merge-a");
       await page.evaluate(async (input) => {
         const root = document.querySelector<HTMLElement>(
@@ -1351,10 +1380,10 @@ for (const input of ["native", "touch"] as const)
         await new Promise(requestAnimationFrame);
       }, input);
       const status = page.locator(
-        '[data-shopping-drag-column="execute"] [data-shopping-drag-status="accepted"]',
+        `[data-shopping-drag-column="execute"] [data-shopping-drag-status="${currentRules ? "rejected" : "accepted"}"]`,
       );
       const expectVisibleNotice = async () => {
-        await expect(status).toContainText("画面外");
+        await expect(status).toContainText(currentRules ? "案内" : "画面外");
         await expect(status).toBeInViewport({ ratio: 1 });
         await expect
           .poll(() =>
@@ -1373,6 +1402,20 @@ for (const input of ["native", "touch"] as const)
           .toBe(true);
       };
       await expectVisibleNotice();
+      if (currentRules) {
+        await expect(
+          page.locator('[data-shopping-drag-guide="suggestion"]'),
+        ).toBeAttached();
+        expect((await stored(page, "executeModeItems"))[eventName]).toEqual(
+          beforeOrder,
+        );
+        // Inspect the readable guide while scrolling; scrolling alone never commits.
+        await page.evaluate(async () => {
+          scrollBy(0, 1000);
+          await new Promise(requestAnimationFrame);
+        });
+        await expectVisibleNotice();
+      }
       expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
       const beforeScroll = await page.evaluate(() => window.scrollY);
       await page.evaluate(() => window.scrollBy(0, -120));
@@ -1384,6 +1427,15 @@ for (const input of ["native", "touch"] as const)
         body: await page.screenshot(),
         contentType: "image/png",
       });
+      if (currentRules) {
+        expect((await stored(page, "executeModeItems"))[eventName]).toEqual(
+          beforeOrder,
+        );
+        await revealFunctionalTarget(page, "a2");
+        const valid = await hover(page, input, "a2", "after", grouped);
+        expect(valid.status).toBe("accepted");
+        expect(valid.guides.some((line) => line.kind === "merge")).toBe(true);
+      }
       await finish(page, input, true);
       await expect(
         page.locator("[data-shopping-drag-status], [data-shopping-drag-guide]"),
@@ -2007,7 +2059,20 @@ for (const input of ["native", "touch"] as const)
       await grouping(page, false);
       await select(page, ["x"]);
       await start(page, input, "x");
-      const result = await hover(page, input, "c", "after", false);
+      const beforeOrder = (await stored(page, "executeModeItems"))[eventName];
+      let result = await hover(page, input, "c", "after", false);
+      if (process.env.ESP_EVIDENCE_PHASE !== "before") {
+        expect(result.status).toBe("rejected");
+        expect(result.guides.some((line) => line.kind === "suggestion")).toBe(
+          true,
+        );
+        expect((await stored(page, "executeModeItems"))[eventName]).toEqual(
+          beforeOrder,
+        );
+        const endpoint = compatible ? "a2" : "a1";
+        await revealFunctionalTarget(page, endpoint);
+        result = await hover(page, input, endpoint, "after", false);
+      }
       expect(result.status).toBe("accepted");
       expect(
         result.guides.map(({ kind, edge, owner }) => ({ kind, edge, owner })),
@@ -2106,6 +2171,36 @@ for (const input of ["native", "touch"] as const)
       )
       .toEqual(["two", "one", "three"]);
   });
+/** Public scrolling for functional setup only; timing scenarios never call this. */
+async function revealFunctionalTarget(page: Page, id: string) {
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(
+          async ({ id, key }) => {
+            const cardSelector = `[data-item-id=${JSON.stringify(id)}]:not([data-space-group-key]):not(.esp-shopping-touch-clone)`;
+            const card = document.querySelector<HTMLElement>(cardSelector);
+            const pending = document.querySelector<HTMLElement>(
+              `[data-row-key=${JSON.stringify(key)}]`,
+            );
+            const target = card ?? pending;
+            if (!target) return false;
+            target.scrollIntoView({ block: "center", behavior: "instant" });
+            await new Promise(requestAnimationFrame);
+            await new Promise(requestAnimationFrame);
+            const actual = document.querySelector<HTMLElement>(cardSelector);
+            if (!actual) return false;
+            const bounds = actual.getBoundingClientRect();
+            return (
+              bounds.height > 0 && bounds.bottom > 0 && bounds.top < innerHeight
+            );
+          },
+          { id, key: `item:${JSON.stringify(id)}` },
+        ),
+      { timeout: 10000, intervals: [50, 100, 250] },
+    )
+    .toBe(true);
+}
 async function rendererState(page: Page) {
   return page.locator("[data-list-renderer]").evaluateAll((roots) =>
     roots.map((root, index) => {
@@ -2374,7 +2469,9 @@ async function fixturePresentationControl(page: Page) {
   ).toBe(true);
   expect(
     observations.some((value) =>
-      value.visitIds.some((id) => id?.endsWith(":priority")),
+      value.visitIds.some((id) =>
+        id?.split("@placement:")[0].endsWith(":priority"),
+      ),
     ),
   ).toBe(true);
   return observations;

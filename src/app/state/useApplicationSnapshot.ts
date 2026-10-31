@@ -9,6 +9,7 @@ import {
   shoppingExecuteIds,
   shoppingMoveVisitBaseline,
   shoppingMovePlacementBaseline,
+  shoppingMoveInitialDayMergeSignature,
   ShoppingPlacementChangedError,
   SHOPPING_PLACEMENT_CHANGED_REASON,
 } from "../commands/shoppingMoveMutation";
@@ -213,12 +214,13 @@ function planBatch(
   if (batch.shoppingOnly && batch.shoppingMoves?.length) {
     let snapshot = latest;
     let accepted = 0;
+    const initialReviews: MutationConfirmation[] = [];
     const invalidatedEvents = new Set<string>();
     batch.shoppingMoves.forEach((move, index) => {
       if (batch.abortedShoppingMoves?.has(index)) return;
       try {
         const planned = planShoppingMove(snapshot, move, choices);
-        if (planned.confirmation) throw new ShoppingPlacementChangedError();
+        if (planned.confirmation) initialReviews.push(planned.confirmation);
         snapshot = planned.snapshot;
         planned.invalidatedEvents?.forEach((event) =>
           invalidatedEvents.add(event),
@@ -234,10 +236,29 @@ function planBatch(
         });
       }
     });
+    if (!accepted && batch.abortedShoppingMoves?.size)
+      throw new ShoppingPlacementChangedError();
     batch.acceptedBase = latest;
     batch.acceptedDraft = snapshot;
     return {
       snapshot,
+      ...(initialReviews.length
+        ? {
+            confirmation:
+              initialReviews.length === 1
+                ? initialReviews[0]
+                : {
+                    ...initialReviews[0],
+                    details: initialReviews.flatMap((review) => review.details),
+                    choices: initialReviews.flatMap(
+                      (review) => review.choices ?? [],
+                    ),
+                    comparison: initialReviews.map(
+                      (review) => review.comparison,
+                    ),
+                  },
+          }
+        : {}),
       invalidatedEvents: [...invalidatedEvents],
       ...(accepted ? {} : { skipCommit: true }),
     };
@@ -957,6 +978,7 @@ export function useApplicationSnapshot(
         ((batch?.retainOnConflict || batch?.retryOnFailure) &&
           !(error instanceof MutationCancelledError) &&
           !(error instanceof MutationTargetMissingError) &&
+          !(error instanceof ShoppingPlacementChangedError) &&
           !(error instanceof CommittedStateApplyError))
       ) {
         suspended.current.add(id);
@@ -993,7 +1015,10 @@ export function useApplicationSnapshot(
       resolvers.current.get(id)?.reject(error);
       resolvers.current.delete(id);
       setPendingCount(resolvers.current.size);
-      if (!(error instanceof MutationCancelledError))
+      if (
+        !(error instanceof MutationCancelledError) &&
+        !(error instanceof ShoppingPlacementChangedError)
+      )
         setFailure(
           error instanceof Error ? error.message : "保存に失敗しました。",
         );
@@ -1312,6 +1337,11 @@ export function useApplicationSnapshot(
             input.day,
           ),
         };
+        command.initialDayMergeSignature = shoppingMoveInitialDayMergeSignature(
+          rawRef.current,
+          input.eventName,
+          input.day,
+        );
         command.placementBaseline = shoppingMovePlacementBaseline(
           latest,
           command,

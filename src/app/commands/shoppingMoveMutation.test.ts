@@ -1,3 +1,4 @@
+import { dayMergeChoicePrefix } from "../../features/consistency/domain/dayMergeMutation";
 import { ensureDayConsistency } from "../../features/consistency/domain/context";
 import { describe, expect, it, vi } from "vitest";
 import type {
@@ -18,6 +19,7 @@ import {
   planShoppingMove,
   shoppingMoveVisitBaseline,
   shoppingMovePlacementBaseline,
+  shoppingMoveInitialDayMergeSignature,
   ShoppingPlacementChangedError,
 } from "./shoppingMoveMutation";
 
@@ -429,4 +431,118 @@ it("saves a one-book reorder into the current visit's raw slots without losing i
     remarks: "保存待ち中の入力",
   });
   expect(result.snapshot.eventLists.event[1]).toBe(current.eventLists.event[1]);
+});
+
+describe("known initial day merge review", () => {
+  function pendingReorder() {
+    const source = fixture();
+    (source.eventLists.event[1] as ShoppingItem).number = "01a2";
+    (source.eventLists.event as ShoppingItem[]).push(item("unrelated", "99a"));
+    source.executeModeItems.event[day] = ["a", "b"];
+    source.dayModes.event[" 1日目 "] = "execute";
+    const input: ApplicationShoppingMove = {
+      version: 1,
+      eventName: "event",
+      day,
+      sourceColumn: "execute",
+      targetColumn: "execute",
+      requestedIds: ["b"],
+      effectiveIds: ["b"],
+      hoverId: "a",
+      reorderWithinVisit: true,
+      baselineItemIds: ["a", "b", "unrelated"],
+      itemIds: ["a", "b", "unrelated"],
+      baselineExecuteIds: ["a", "b"],
+      executeIds: ["b", "a"],
+      baselineVisits: shoppingMoveVisitBaseline(source, "event", day),
+      initialDayMergeSignature: shoppingMoveInitialDayMergeSignature(
+        source,
+        "event",
+        day,
+      ),
+    };
+    input.placementBaseline = shoppingMovePlacementBaseline(source, input);
+    return { source, input };
+  }
+  it("retains the known duplicate-day review and its explicit destination and mode choices", () => {
+    const { source, input } = pendingReorder();
+    const review = planShoppingMove(source, input).confirmation;
+    expect(review?.title).toContain("1日目 の保存先を統合");
+    const prefix = dayMergeChoicePrefix("event", day);
+    expect(review?.choices?.map((choice) => choice.id)).toEqual(
+      expect.arrayContaining([`${prefix}destination`, `${prefix}mode`]),
+    );
+    const selected = planShoppingMove(source, input, {
+      [`${prefix}destination`]: " 1日目 ",
+      [`${prefix}mode`]: "execute",
+    });
+    expect(selected.confirmation?.title).toContain("1日目 の保存先を統合");
+    expect(selected.snapshot.executeModeItems.event[" 1日目 "]).toEqual([
+      "b",
+      "a",
+    ]);
+    expect(selected.snapshot.dayModes.event).toEqual({ " 1日目 ": "execute" });
+  });
+  it("still aborts a newly appearing review instead of offering a new placement", () => {
+    const { source, input } = pendingReorder();
+    delete input.initialDayMergeSignature;
+    expect(() => planShoppingMove(source, input)).toThrow(
+      ShoppingPlacementChangedError,
+    );
+  });
+  it("aborts if the initially known merge changes or disappears before saving", () => {
+    const { source, input } = pendingReorder();
+    for (const changed of ["changed", "resolved"] as const) {
+      const latest = structuredClone(source);
+      if (changed === "changed") latest.dayModes.event[" 1日目 "] = "focus";
+      else delete latest.dayModes.event[" 1日目 "];
+      expect(() => planShoppingMove(latest, input)).toThrow(
+        ShoppingPlacementChangedError,
+      );
+    }
+  });
+  it("keeps latest quantity and memo changes while reviewing only the original day conflict", () => {
+    const { source, input } = pendingReorder();
+    Object.assign(source.eventLists.event[1] as ShoppingItem, {
+      quantity: 8,
+      price: 777,
+      remarks: "確認待ち中の入力",
+    });
+    Object.assign(source.eventLists.event[2] as ShoppingItem, {
+      quantity: 11,
+      price: 1234,
+      remarks: "無関係な候補の最新メモ",
+    });
+    const result = planShoppingMove(source, input);
+    expect(result.confirmation?.title).toContain("1日目 の保存先を統合");
+    expect(result.snapshot.eventLists.event[2]).toMatchObject({
+      id: "unrelated",
+      quantity: 11,
+      price: 1234,
+      remarks: "無関係な候補の最新メモ",
+    });
+    expect(result.snapshot.eventLists.event[1]).toMatchObject({
+      id: "b",
+      quantity: 8,
+      price: 777,
+      remarks: "確認待ち中の入力",
+    });
+  });
+});
+
+it("aborts the original day review when its execute order changes", () => {
+  const source = fixture();
+  (source.eventLists.event[1] as ShoppingItem).number = "01a2";
+  source.dayModes.event[" 1日目 "] = "execute";
+  const input = command(source, false);
+  input.initialDayMergeSignature = shoppingMoveInitialDayMergeSignature(
+    source,
+    "event",
+    day,
+  );
+  input.placementBaseline = shoppingMovePlacementBaseline(source, input);
+  source.executeModeItems.event[day] = [];
+  expect(() => planShoppingMove(source, input)).toThrow(
+    ShoppingPlacementChangedError,
+  );
 });
