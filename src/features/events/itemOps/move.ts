@@ -210,7 +210,25 @@ export function computeMoveItem(params: {
         positionedItemIds.push(...visit.itemIds);
       });
 
-      if (positionedItemIds.length > 0) {
+      const columnInsertions = dragContext?.placement?.hallTailInsertions;
+      if (positionedItemIds.length > 0 && columnInsertions) {
+        if (
+          !sameDragIds(
+            positionedItemIds,
+            columnInsertions.flatMap((entry) => entry.itemIds),
+          )
+        )
+          return {};
+        for (const insertion of columnInsertions) {
+          const index = dayItems.indexOf(insertion.anchorId);
+          if (insertion.anchorId !== "__END_OF_LIST__" && index < 0) return {};
+          dayItems.splice(
+            index < 0 ? dayItems.length : index,
+            0,
+            ...insertion.itemIds,
+          );
+        }
+      } else if (positionedItemIds.length > 0) {
         const hoverItem = itemsMap.get(hoverId);
         const hoverVisitKey = hoverItem
           ? buildExecutionVisitProjectionKey(hoverItem)

@@ -2887,9 +2887,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       }
       if (dragWorkspace) {
         const root = elementUnder.closest<HTMLElement>(
-          "[data-shopping-drag-column]",
+          "[data-shopping-drag-column], [data-shopping-drag-surface]",
         );
-        const targetColumn = root?.dataset.shoppingDragColumn as
+        const targetColumn = (root?.dataset.shoppingDragColumn ??
+          root?.dataset.shoppingDragSurface) as
           | "execute"
           | "candidate"
           | undefined;

@@ -13,10 +13,12 @@ import {
 } from "../../../utils/visitProjection";
 import {
   buildShoppingDragLayout,
+  resolveShoppingDragColumnPlacement,
   resolveShoppingDragPlacement,
   type ShoppingDragColumn,
   type ShoppingDragLayout,
   type ShoppingDragMoveContext,
+  type ShoppingDragPlacement,
   type ShoppingDragPresentation,
 } from "./shoppingDrag";
 
@@ -69,6 +71,53 @@ const Context = createContext<ShoppingDragWorkspace | null>(null);
 export const useShoppingDragWorkspace = (): ShoppingDragWorkspace | null =>
   useContext(Context);
 
+/** Extends cross-column hit testing across headers and unused column space. */
+export function ShoppingDragColumnSurface({
+  column,
+  className,
+  children,
+}: {
+  column: ShoppingDragColumn;
+  className?: string;
+  children: React.ReactNode;
+}): React.ReactElement {
+  const workspace = useShoppingDragWorkspace();
+  const acceptsDrag = () => {
+    const active = workspace?.active();
+    return (
+      active !== null &&
+      active !== undefined &&
+      active.context.sourceColumn !== column
+    );
+  };
+  return (
+    <div
+      className={className}
+      data-shopping-drag-surface={column}
+      onDragOver={(event) => {
+        if (!acceptsDrag()) return;
+        event.preventDefault();
+        event.stopPropagation();
+        workspace!.hover(column, undefined, event.clientY, event.clientX);
+      }}
+      onDrop={(event) => {
+        if (!acceptsDrag()) return;
+        event.preventDefault();
+        event.stopPropagation();
+        workspace!.hover(column, undefined, event.clientY, event.clientX);
+        workspace!.drop(column);
+      }}
+      onDragLeave={(event) => {
+        const next = event.relatedTarget;
+        if (next instanceof Node && event.currentTarget.contains(next)) return;
+        if (acceptsDrag()) workspace!.leave();
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 function rawExecuteItems(list: DragList): readonly ShoppingItem[] {
   if (!list.executeOrder) return list.items;
   const itemsById = new Map(list.items.map((item) => [item.id, item]));
@@ -86,7 +135,11 @@ function createWorkspace(
   const lists = new Map<ShoppingDragColumn, DragList>();
   const listeners = new Set<(active: boolean) => void>();
   let active: ActiveDrag | null = null;
-  let layoutCache: { list: DragList; layout: ShoppingDragLayout } | null = null;
+  let layoutCache: {
+    list: DragList;
+    layout: ShoppingDragLayout;
+    columnPlacement?: ShoppingDragPlacement | null;
+  } | null = null;
   let hoverPoint: {
     column: ShoppingDragColumn;
     id?: string;
@@ -406,12 +459,19 @@ function createWorkspace(
           ? "before"
           : "after"
         : "end";
-      const placement = resolveShoppingDragPlacement(
-        layout,
-        active.moving,
-        targetId,
-        boundary,
-      );
+      const placement = targetId
+        ? resolveShoppingDragPlacement(
+            layout,
+            active.moving,
+            targetId,
+            boundary,
+          )
+        : layoutCache.columnPlacement === undefined
+          ? (layoutCache.columnPlacement = resolveShoppingDragColumnPlacement(
+              layout,
+              active.moving,
+            ))
+          : layoutCache.columnPlacement;
       if (!placement) {
         decorate(
           list,
@@ -431,6 +491,7 @@ function createWorkspace(
         edge: "before" | "after";
         kind: string;
       }[] = [];
+      let offscreen = false;
       if (placement.positionedIds.length > 0) {
         if (elements)
           lines.push({
@@ -438,10 +499,34 @@ function createWorkspace(
             edge: boundary === "before" ? "before" : "after",
             kind: "insert",
           });
+        else if (placement.hallTailInsertions)
+          placement.hallTailInsertions.forEach((insertion) => {
+            const previousKey =
+              layout.displayVisitKeys[insertion.insertVisitIndex - 1];
+            const previousId =
+              previousKey &&
+              layout.visitsByKey.get(previousKey)?.itemIds.at(-1);
+            const destination = previousId
+              ? visitElements(list, layout, previousId)
+              : null;
+            if (previousId && !destination) {
+              offscreen = true;
+              return;
+            }
+            if (destination) {
+              const rect = destination.last.getBoundingClientRect();
+              if (rect.bottom < 0 || rect.top > window.innerHeight)
+                offscreen = true;
+            }
+            lines.push({
+              element: destination?.last ?? list.root()!,
+              edge: "after",
+              kind: "insert",
+            });
+          });
         else
           lines.push({ element: list.root()!, edge: "after", kind: "insert" });
       }
-      let offscreen = false;
       placement.mergeTargetIds.forEach((id) => {
         const row = list.presentation.spaceGroups
           ? null
@@ -459,8 +544,10 @@ function createWorkspace(
       });
       const text =
         placement.mergeTargetIds.length > 0
-          ? `${placement.positionedIds.length > 0 ? "新しい訪問を境界へ挿入し、" : ""}既存の${placement.mergeVisits.length}訪問の末尾へ合流します。${offscreen ? "画面外の合流先を含みます。" : ""}`
-          : "表示した訪問境界へ移動します。";
+          ? `${placement.positionedIds.length > 0 ? (placement.hallTailInsertions ? "新しい訪問を所属ホール・優先度の末尾へ挿入し、" : "新しい訪問を境界へ挿入し、") : ""}既存の${placement.mergeVisits.length}訪問の末尾へ合流します。${offscreen ? "画面外の合流先を含みます。" : ""}`
+          : placement.hallTailInsertions
+            ? `所属ホール・優先度の末尾へ移動します。${offscreen ? "画面外の挿入先を含みます。" : ""}`
+            : "表示した訪問境界へ移動します。";
       decorate(
         list,
         JSON.stringify([
@@ -483,9 +570,12 @@ function createWorkspace(
         point.x === undefined || typeof document.elementFromPoint !== "function"
           ? null
           : document.elementFromPoint(point.x, point.y);
-      const root = element?.closest<HTMLElement>("[data-shopping-drag-column]");
+      const root = element?.closest<HTMLElement>(
+        "[data-shopping-drag-column], [data-shopping-drag-surface]",
+      );
       if (root) {
-        const column = root.dataset.shoppingDragColumn as ShoppingDragColumn;
+        const column = (root.dataset.shoppingDragColumn ??
+          root.dataset.shoppingDragSurface) as ShoppingDragColumn;
         const reference = element?.closest<HTMLElement>(
           "[data-item-id], [data-shopping-drag-reference-id]",
         );

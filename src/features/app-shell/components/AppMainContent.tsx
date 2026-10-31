@@ -1,4 +1,7 @@
-import { ShoppingDragProvider } from "../../shopping-list/drag/ShoppingDragWorkspace";
+import {
+  ShoppingDragColumnSurface,
+  ShoppingDragProvider,
+} from "../../shopping-list/drag/ShoppingDragWorkspace";
 import type { BulkImportResult } from "../../../types/import";
 import React, { Suspense } from "react";
 import EventListScreen from "../../../components/EventListScreen";
@@ -696,9 +699,12 @@ const AppMainContent: React.FC<AppMainContentProps> = ({
               generation={eventGeneration}
             >
               {/* Reserve 40px chain targets with 2px clearance on both sides. */}
-              <div className="grid grid-cols-2 gap-x-11 gap-y-4">
+              <div className="grid min-h-[calc(100dvh-var(--app-header-height,0px)-var(--footer-height,0px)-var(--app-main-content-padding,1rem)*2)] grid-cols-2 gap-x-11 gap-y-4">
                 {/* 表示処理の補足 */}
-                <div className="space-y-2">
+                <ShoppingDragColumnSurface
+                  column="execute"
+                  className="space-y-2"
+                >
                   <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-3">
                     <div className="flex items-center justify-between mb-2">
                       <h2 className="text-sm font-semibold text-blue-900 dark:text-blue-100">
@@ -786,10 +792,13 @@ const AppMainContent: React.FC<AppMainContentProps> = ({
                       skipLimitedPurchaseForSingleQuantity
                     }
                   />
-                </div>
+                </ShoppingDragColumnSurface>
 
                 {/* 表示処理の補足 */}
-                <div className="space-y-2">
+                <ShoppingDragColumnSurface
+                  column="candidate"
+                  className="space-y-2"
+                >
                   <div className="bg-slate-100 dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 rounded-lg p-3">
                     <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">
                       候補アイテム
@@ -903,7 +912,7 @@ const AppMainContent: React.FC<AppMainContentProps> = ({
                       skipLimitedPurchaseForSingleQuantity
                     }
                   />
-                </div>
+                </ShoppingDragColumnSurface>
               </div>
             </ShoppingDragProvider>
           ) : currentMode === "focus" ? (

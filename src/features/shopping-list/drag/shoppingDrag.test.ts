@@ -6,6 +6,7 @@ import {
   buildShoppingDragLayout,
   projectShoppingDragDisplay,
   resolveShoppingDragPlacement,
+  resolveShoppingDragColumnPlacement,
   validateShoppingDragPlacement,
   type ShoppingDragMoveContext,
   type ShoppingDragPresentation,
@@ -540,5 +541,259 @@ describe("drop placement validation with reused visit membership", () => {
         [...before, a, merged],
       ),
     ).toBe(false);
+  });
+});
+
+describe("execution column blank-area placement", () => {
+  const columnPresentation = (
+    spaceGroups: boolean,
+  ): ShoppingDragPresentation => ({
+    ...presentation(spaceGroups),
+    halls: ["A", "B", "C"].map((name) => ({
+      id: name,
+      name,
+      vertices: [],
+      blockNames: [name],
+    })),
+    hallOrder: ["A:priority", "A", "B", "C", "undefined"],
+  });
+  function columnMove(
+    existing: ShoppingItem[],
+    moving: ShoppingItem[],
+    p: ShoppingDragPresentation,
+  ) {
+    const placement = resolveShoppingDragColumnPlacement(
+      buildShoppingDragLayout(existing, p),
+      moving,
+    );
+    expect(placement).not.toBeNull();
+    if (!placement) throw new Error("Expected an accepted column placement");
+    const allItems = [...existing, ...moving];
+    const result = computeMoveItem({
+      dragId: moving[0].id,
+      hoverId: placement.anchorId,
+      sourceColumn: "candidate",
+      targetColumn: "execute",
+      mode: "edit",
+      effectiveSelectedIds: new Set(moving.map((value) => value.id)),
+      allItems,
+      executeModeItems: { [day]: existing.map((value) => value.id) },
+      dayName: day,
+      selectedBlockFilters: new Set(),
+      dragContext: context(moving, placement),
+    });
+    const ids = result.executeModeItems?.[day];
+    expect(ids).toBeDefined();
+    const itemsById = new Map(allItems.map((value) => [value.id, value]));
+    const after = (ids ?? []).map((id) => itemsById.get(id)!);
+    expect(validateShoppingDragPlacement(placement, existing, after)).toBe(
+      true,
+    );
+    return {
+      placement,
+      result,
+      ids,
+      after,
+      display: projectShoppingDragDisplay(after, p).map((value) => value.id),
+    };
+  }
+  describe.each([true, false])("space groups %s", (grouped) => {
+    const p = columnPresentation(grouped);
+    it("inserts into an empty execution column in source visit order", () => {
+      const moved = columnMove(
+        [],
+        [item("x", "10", { block: "B" }), item("y", "11")],
+        p,
+      );
+      expect(moved.ids).toEqual(["x", "y"]);
+      expect(moved.display).toEqual(["x", "y"]);
+    });
+    it("uses the moving item's hall tail before a later hall", () => {
+      const a1 = item("a1", "01"),
+        a2 = item("a2", "02"),
+        b = item("b", "03", { block: "B" });
+      const moved = columnMove([a1, a2, b], [item("x", "10")], p);
+      expect(moved.ids).toEqual(["a1", "a2", "x", "b"]);
+      expect(moved.display).toEqual(["a1", "a2", "x", "b"]);
+    });
+    it("keeps the existing hall and priority segment", () => {
+      const priority = item("priority", "01", { priorityLevel: "priority" }),
+        normal = item("normal", "02"),
+        b = item("b", "03", { block: "B" });
+      const moved = columnMove(
+        [priority, normal, b],
+        [item("x", "10", { priorityLevel: "priority" })],
+        p,
+      );
+      expect(moved.ids).toEqual(["priority", "x", "normal", "b"]);
+      expect(moved.display).toEqual(["priority", "x", "normal", "b"]);
+    });
+    it("places a new priority segment at its existing hall tail", () => {
+      const a = item("a", "01"),
+        b = item("b", "02", { block: "B" });
+      const moved = columnMove(
+        [a, b],
+        [item("x", "10", { priorityLevel: "priority" })],
+        p,
+      );
+      expect(moved.ids).toEqual(["a", "x", "b"]);
+      expect(moved.display).toEqual(["a", "x", "b"]);
+    });
+    it("extends an existing priority segment before a new segment at the same hall tail", () => {
+      const a = item("a", "01"),
+        b = item("b", "02", { block: "B" });
+      const moved = columnMove(
+        [a, b],
+        [
+          item("new-priority", "10", { priorityLevel: "priority" }),
+          item("new-normal", "11"),
+        ],
+        p,
+      );
+      expect(moved.display).toEqual(["a", "new-normal", "new-priority", "b"]);
+      expect(moved.ids?.filter((id) => id === "a" || id === "b")).toEqual([
+        "a",
+        "b",
+      ]);
+    });
+    it("appends a hall that does not yet appear in the execution column", () => {
+      const a = item("a", "01"),
+        b = item("b", "02", { block: "B" });
+      const moved = columnMove([a, b], [item("x", "10", { block: "C" })], p);
+      expect(moved.ids).toEqual(["a", "b", "x"]);
+      expect(moved.display).toEqual(["a", "b", "x"]);
+    });
+    it("treats unassigned items as their own hall segment", () => {
+      const unassigned = item("unassigned", "01", { block: "X" }),
+        b = item("b", "02", { block: "B" });
+      const moved = columnMove(
+        [unassigned, b],
+        [item("x", "10", { block: "X" })],
+        p,
+      );
+      expect(moved.ids).toEqual(["unassigned", "x", "b"]);
+      expect(moved.display).toEqual(["unassigned", "x", "b"]);
+    });
+    it("distributes a mixed selection to each hall tail without reordering existing visits", () => {
+      const a = item("a", "01"),
+        b = item("b", "02", { block: "B" });
+      const moved = columnMove(
+        [a, b],
+        [
+          item("b-new-1", "10", { block: "B" }),
+          item("a-new-1", "11"),
+          item("c-new", "12", { block: "C" }),
+          item("a-new-2", "13"),
+          item("b-new-2", "14", { block: "B" }),
+        ],
+        p,
+      );
+      expect(moved.ids).toEqual([
+        "a",
+        "a-new-1",
+        "a-new-2",
+        "b",
+        "b-new-1",
+        "b-new-2",
+        "c-new",
+      ]);
+      expect(moved.display).toEqual(moved.ids);
+      expect(moved.result.transferredItemIds).toHaveLength(5);
+    });
+    it("merges an existing visit before placing the remaining visits at hall tails", () => {
+      const a = item("a", "01a"),
+        aTail = item("a-tail", "02"),
+        b = item("b", "03", { block: "B" });
+      const moved = columnMove(
+        [a, aTail, b],
+        [item("merge", "01a2"), item("new", "10")],
+        p,
+      );
+      expect(moved.ids).toEqual(["a", "merge", "a-tail", "new", "b"]);
+      expect(moved.display).toEqual(moved.ids);
+      expect(moved.result.placement).toBe("mixed");
+      expect(moved.result.mergedIntoVisitItemIds).toEqual(["a"]);
+    });
+    it("preserves non-contiguous raw members of an existing visit", () => {
+      const a1 = item("a1", "01a"),
+        a2 = item("a2", "01a2"),
+        aTail = item("a-tail", "02"),
+        b = item("b", "03", { block: "B" });
+      const moved = columnMove([a1, aTail, a2, b], [item("x", "10")], p);
+      expect(moved.display).toEqual(["a1", "a2", "a-tail", "x", "b"]);
+      expect(moved.ids?.filter((id) => id !== "x")).toEqual([
+        "a1",
+        "a-tail",
+        "a2",
+        "b",
+      ]);
+    });
+    it.each([
+      {
+        blocks: ["A", "B", "A"],
+        groupedIds: ["existing-0", "existing-1", "existing-2", "x"],
+        hallIds: ["existing-0", "existing-2", "x", "existing-1"],
+      },
+      {
+        blocks: ["B", "A", "B"],
+        groupedIds: ["existing-0", "existing-1", "x", "existing-2"],
+        hallIds: ["existing-0", "existing-2", "existing-1", "x"],
+      },
+      {
+        blocks: ["A", "B", "B"],
+        groupedIds: ["existing-0", "x", "existing-1", "existing-2"],
+        hallIds: ["existing-0", "x", "existing-1", "existing-2"],
+      },
+      {
+        blocks: ["B", "B", "B"],
+        groupedIds: ["existing-0", "existing-1", "existing-2", "x"],
+        hallIds: ["existing-0", "existing-1", "existing-2", "x"],
+      },
+    ])(
+      "finds the displayed hall tail for interleaved raw halls $blocks",
+      ({ blocks, groupedIds, hallIds }) => {
+        const existing = blocks.map((block, index) =>
+          item(`existing-${index}`, String(index + 1), { block }),
+        );
+        const moved = columnMove(existing, [item("x", "10")], p);
+        expect(moved.display).toEqual(grouped ? groupedIds : hallIds);
+        expect(moved.ids?.filter((id) => id !== "x")).toEqual(
+          existing.map((value) => value.id),
+        );
+      },
+    );
+    it("keeps a new same-space visit coherent across its members' hall tails", () => {
+      const a = item("a", "01", { manualHallId: "A" }),
+        b = item("b", "02", { block: "B", manualHallId: "B" }),
+        x1 = item("x1", "10a", { manualHallId: "A" }),
+        x2 = item("x2", "10a2", { manualHallId: "B" });
+      const sharedBlockPresentation = {
+        ...p,
+        halls: p.halls.map((hall) => ({ ...hall, blockNames: ["A", "B"] })),
+      };
+      const moved = columnMove([a, b], [x1, x2], sharedBlockPresentation);
+      expect(moved.display).toEqual(
+        grouped ? ["a", "b", "x1", "x2"] : ["a", "x1", "b", "x2"],
+      );
+      expect(moved.ids?.filter((id) => id !== "x1" && id !== "x2")).toEqual([
+        "a",
+        "b",
+      ]);
+    });
+    it("rejects a stale destination order or added destination visit", () => {
+      const a = item("a", "01"),
+        b = item("b", "02", { block: "B" });
+      const moved = columnMove([a, b], [item("x", "10")], p);
+      expect(
+        validateShoppingDragPlacement(moved.placement, [b, a], moved.after),
+      ).toBe(false);
+      expect(
+        validateShoppingDragPlacement(
+          moved.placement,
+          [a, item("late", "03"), b],
+          moved.after,
+        ),
+      ).toBe(false);
+    });
   });
 });

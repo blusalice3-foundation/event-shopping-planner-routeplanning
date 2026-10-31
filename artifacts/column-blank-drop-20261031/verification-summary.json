@@ -1,0 +1,400 @@
+{
+  "kind": "shopping-column-blank-drop-verification",
+  "schemaVersion": 1,
+  "taskDate": "2026-10-31",
+  "timezone": "Asia/Tokyo",
+  "status": "passed",
+  "recordedAt": "2026-10-30T17:36:24.7406632+00:00",
+  "changes": [
+    "候補列のエリア全体で列間ドロップを受け付ける",
+    "空の実行列には先頭へ配置する",
+    "実行列の空き領域では所属ホール・同優先度の末尾へ配置する",
+    "同スペースへの合流を優先し、複数ホールの選択を分配する"
+  ],
+  "source": {
+    "workspace": "D:\\event-shopping-planner-routeplanning-1.9.6.7",
+    "workspaceBaseCommit": "02e507300310062537db1bd034ea52013d5645d0",
+    "workspaceChangesCommitted": false,
+    "measuredWorktree": "D:\\esp-blank-drop-verify-20261031",
+    "measuredProductCommit": "02cfd15cd34fd966892724d9ae7ed271e3198b13",
+    "measuredSourceState": "clean",
+    "manifest": [
+      {
+        "path": "src/components/ShoppingList.tsx",
+        "sha256": "b917c52135c28a5e87120ca0dcc603054d736c0ebb09b606543d2678ead112a6",
+        "measuredSha256": "b917c52135c28a5e87120ca0dcc603054d736c0ebb09b606543d2678ead112a6",
+        "byteIdentical": true,
+        "encoding": "UTF-8",
+        "bom": false,
+        "newline": "LF"
+      },
+      {
+        "path": "src/features/app-shell/components/AppMainContent.tsx",
+        "sha256": "3f27e2a2ae7257b934f9e0b2c35829d6438cd5d7763e6a3187d55a074d7a795a",
+        "measuredSha256": "3f27e2a2ae7257b934f9e0b2c35829d6438cd5d7763e6a3187d55a074d7a795a",
+        "byteIdentical": true,
+        "encoding": "UTF-8",
+        "bom": false,
+        "newline": "LF"
+      },
+      {
+        "path": "src/features/events/itemOps/move.ts",
+        "sha256": "3339cd09d6add365116b61854d8177460bf2a4cb6c74044966a1862a8e4de61d",
+        "measuredSha256": "3339cd09d6add365116b61854d8177460bf2a4cb6c74044966a1862a8e4de61d",
+        "byteIdentical": true,
+        "encoding": "UTF-8",
+        "bom": false,
+        "newline": "LF"
+      },
+      {
+        "path": "src/features/shopping-list/drag/ShoppingDragWorkspace.tsx",
+        "sha256": "36d4558322143cdfc402d974f691a8692876b4af7ca24c4e7484f0dcc0afa45f",
+        "measuredSha256": "36d4558322143cdfc402d974f691a8692876b4af7ca24c4e7484f0dcc0afa45f",
+        "byteIdentical": true,
+        "encoding": "UTF-8",
+        "bom": false,
+        "newline": "LF"
+      },
+      {
+        "path": "src/features/shopping-list/drag/shoppingDrag.test.ts",
+        "sha256": "ce5d266fd60fcfca81bc11fe4db133bd007aac166c585cabc93d5dbc9f76c219",
+        "measuredSha256": "ce5d266fd60fcfca81bc11fe4db133bd007aac166c585cabc93d5dbc9f76c219",
+        "byteIdentical": true,
+        "encoding": "UTF-8",
+        "bom": false,
+        "newline": "LF"
+      },
+      {
+        "path": "src/features/shopping-list/drag/shoppingDrag.ts",
+        "sha256": "520ff2407ae54bb8d49ee289d446a6d3c97e9ff1bc5b5dd5afe4bb51b59b4fca",
+        "measuredSha256": "520ff2407ae54bb8d49ee289d446a6d3c97e9ff1bc5b5dd5afe4bb51b59b4fca",
+        "byteIdentical": true,
+        "encoding": "UTF-8",
+        "bom": false,
+        "newline": "LF"
+      },
+      {
+        "path": "tests/browser/shopping-column-blank-drop.spec.ts",
+        "sha256": "520ce7b2fa956d6b388e69cb5862fc9f7f43e91efc6d701e3b18e70112d0a26a",
+        "measuredSha256": "520ce7b2fa956d6b388e69cb5862fc9f7f43e91efc6d701e3b18e70112d0a26a",
+        "byteIdentical": true,
+        "encoding": "UTF-8",
+        "bom": false,
+        "newline": "LF"
+      }
+    ]
+  },
+  "checks": {
+    "typecheck": "passed",
+    "eslint": "passed",
+    "prettier": "passed",
+    "gitDiffCheck": "passed",
+    "encoding": {
+      "status": "passed",
+      "scannedTextFiles": 1164,
+      "replacementCharacterCount": 0,
+      "utf8BomChanges": false,
+      "representativeStrings": [
+        "ユーザー登録",
+        "エラーが発生しました"
+      ]
+    },
+    "unitIntegration": {
+      "status": "passed",
+      "shoppingDrag": 50,
+      "itemOps": 43,
+      "touchDragCleanup": 1,
+      "workspaceIntegration": 23,
+      "total": 117
+    },
+    "focusedBrowser": {
+      "passed": 24,
+      "skipped": 0,
+      "failed": 0,
+      "report": "D:\\esp-blank-drop-evidence-20261031\\focused-report.json"
+    },
+    "functionalBrowser": {
+      "passed": 451,
+      "skipped": 54,
+      "failed": 0,
+      "flaky": 0,
+      "report": "D:\\esp-blank-drop-verify-20261031\\artifacts\\dnd-selection-rendering\\after\\2026-10-30T15-56-57-506Z-b64729c9-f4ae-4cc6-980d-cb98c33b6e10\\functional\\report.json"
+    }
+  },
+  "performance": {
+    "command": "npm run test:browser:completion",
+    "status": "passed",
+    "runId": "2026-10-30T15-56-57-506Z-b64729c9-f4ae-4cc6-980d-cb98c33b6e10",
+    "runRoot": "D:\\esp-blank-drop-verify-20261031\\artifacts\\dnd-selection-rendering\\after\\2026-10-30T15-56-57-506Z-b64729c9-f4ae-4cc6-980d-cb98c33b6e10",
+    "runResult": "D:\\esp-blank-drop-verify-20261031\\artifacts\\dnd-selection-rendering\\after\\2026-10-30T15-56-57-506Z-b64729c9-f4ae-4cc6-980d-cb98c33b6e10\\run-result.json",
+    "samplingProfile": {
+      "id": "completion",
+      "sampleCount": 10,
+      "policyDate": "2026-10-26",
+      "completionEligible": true
+    },
+    "samplingPolicyId": "performance-samples-2026-10-26",
+    "requiredCases": 144,
+    "primaryMetrics": 530,
+    "saveAuxiliaryMetrics": 46,
+    "groups": [
+      {
+        "group": "shopping",
+        "status": "passed",
+        "caseCount": 16,
+        "samplingProfile": {
+          "id": "completion",
+          "sampleCount": 10,
+          "policyDate": "2026-10-26",
+          "completionEligible": true
+        },
+        "acceptanceCriteriaId": "shopping-operations-150-500-65-100-2026-10-25",
+        "acceptanceThresholds": {
+          "minimumCount": 10,
+          "medianMs": 65,
+          "p95Ms": 100
+        },
+        "evidenceFile": "D:\\esp-blank-drop-verify-20261031\\artifacts\\dnd-selection-rendering\\after\\2026-10-30T15-56-57-506Z-b64729c9-f4ae-4cc6-980d-cb98c33b6e10\\shopping\\evidence-verification.json"
+      },
+      {
+        "group": "range",
+        "status": "passed",
+        "caseCount": 20,
+        "samplingProfile": {
+          "id": "completion",
+          "sampleCount": 10,
+          "policyDate": "2026-10-26",
+          "completionEligible": true
+        },
+        "acceptanceCriteriaId": "dnd-selection-rendering-160-160-2026-10-28",
+        "acceptanceThresholds": {
+          "minimumCount": 10,
+          "medianMs": 160,
+          "p95Ms": 160
+        },
+        "evidenceFile": "D:\\esp-blank-drop-verify-20261031\\artifacts\\dnd-selection-rendering\\after\\2026-10-30T15-56-57-506Z-b64729c9-f4ae-4cc6-980d-cb98c33b6e10\\range\\evidence-verification.json"
+      },
+      {
+        "group": "drag",
+        "status": "passed",
+        "caseCount": 8,
+        "samplingProfile": {
+          "id": "completion",
+          "sampleCount": 10,
+          "policyDate": "2026-10-26",
+          "completionEligible": true
+        },
+        "acceptanceCriteriaId": "dnd-selection-rendering-160-160-2026-10-28",
+        "acceptanceThresholds": {
+          "minimumCount": 10,
+          "medianMs": 160,
+          "p95Ms": 160
+        },
+        "evidenceFile": "D:\\esp-blank-drop-verify-20261031\\artifacts\\dnd-selection-rendering\\after\\2026-10-30T15-56-57-506Z-b64729c9-f4ae-4cc6-980d-cb98c33b6e10\\drag\\evidence-verification.json"
+      },
+      {
+        "group": "transfer",
+        "status": "passed",
+        "caseCount": 100,
+        "samplingProfile": {
+          "id": "completion",
+          "sampleCount": 10,
+          "policyDate": "2026-10-26",
+          "completionEligible": true
+        },
+        "acceptanceCriteriaId": "dnd-selection-rendering-160-160-2026-10-28",
+        "acceptanceThresholds": {
+          "minimumCount": 10,
+          "medianMs": 160,
+          "p95Ms": 160
+        },
+        "evidenceFile": "D:\\esp-blank-drop-verify-20261031\\artifacts\\dnd-selection-rendering\\after\\2026-10-30T15-56-57-506Z-b64729c9-f4ae-4cc6-980d-cb98c33b6e10\\transfer\\evidence-verification.json"
+      }
+    ],
+    "aggregateFile": "D:\\esp-blank-drop-evidence-20261031\\performance-summary.json",
+    "aggregate": {
+      "schemaVersion": 1,
+      "runRoot": "D:/esp-blank-drop-verify-20261031/artifacts/dnd-selection-rendering/after/2026-10-30T15-56-57-506Z-b64729c9-f4ae-4cc6-980d-cb98c33b6e10",
+      "runId": "2026-10-30T15-56-57-506Z-b64729c9-f4ae-4cc6-980d-cb98c33b6e10",
+      "status": "passed",
+      "productCommit": "02cfd15cd34fd966892724d9ae7ed271e3198b13",
+      "sourceState": "clean",
+      "sourceDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "samplingProfile": {
+        "id": "completion",
+        "sampleCount": 10,
+        "policyDate": "2026-10-26",
+        "completionEligible": true
+      },
+      "samplingPolicyId": "performance-samples-2026-10-26",
+      "functional": {
+        "failed": 0,
+        "passed": 451,
+        "skipped": 54
+      },
+      "caseCount": 144.0,
+      "primaryMetricCount": 530,
+      "saveAuxiliaryMetricCount": 46,
+      "allMetricSampleCounts": [
+        10
+      ],
+      "groups": [
+        {
+          "group": "shopping",
+          "status": "passed",
+          "evidenceStatus": "passed",
+          "cases": 16,
+          "primaryMetrics": 192,
+          "saveAuxiliaryMetrics": 0,
+          "dragSupplementalSaveArrays": 0,
+          "sampleCounts": [
+            10
+          ],
+          "maxMedian": {
+            "group": "shopping",
+            "condition": "{\"count\":500,\"layout\":\"pc\",\"concentrated\":true,\"mapVisible\":true}",
+            "measurementKind": "response",
+            "metric": "uiSummary.back",
+            "auxiliary": false,
+            "count": 10,
+            "medianMs": 43.44999999925494,
+            "p95Ms": 47.30000000074506
+          },
+          "maxP95": {
+            "group": "shopping",
+            "condition": "{\"count\":500,\"layout\":\"smartphone\",\"concentrated\":true,\"mapVisible\":true}",
+            "measurementKind": "response",
+            "metric": "uiSummary.back",
+            "auxiliary": false,
+            "count": 10,
+            "medianMs": 31.65000000037253,
+            "p95Ms": 53.80000000074506
+          },
+          "saveMaxMedian": null,
+          "saveMaxP95": null
+        },
+        {
+          "group": "range",
+          "status": "passed",
+          "evidenceStatus": "passed",
+          "cases": 20,
+          "primaryMetrics": 80,
+          "saveAuxiliaryMetrics": 0,
+          "dragSupplementalSaveArrays": 0,
+          "sampleCounts": [
+            10
+          ],
+          "maxMedian": {
+            "group": "range",
+            "condition": "{\"count\":500,\"layout\":\"pc\",\"renderer\":\"full\",\"rangeLength\":\"long\"}",
+            "measurementKind": "response",
+            "metric": "selectRange",
+            "auxiliary": false,
+            "count": 10,
+            "medianMs": 50.00000000093132,
+            "p95Ms": 53
+          },
+          "maxP95": {
+            "group": "range",
+            "condition": "{\"count\":500,\"layout\":\"pc\",\"renderer\":\"full\",\"rangeLength\":\"long\"}",
+            "measurementKind": "response",
+            "metric": "selectRange",
+            "auxiliary": false,
+            "count": 10,
+            "medianMs": 50.00000000093132,
+            "p95Ms": 53
+          },
+          "saveMaxMedian": null,
+          "saveMaxP95": null
+        },
+        {
+          "group": "drag",
+          "status": "passed",
+          "evidenceStatus": "passed",
+          "cases": 8,
+          "primaryMetrics": 60,
+          "saveAuxiliaryMetrics": 0,
+          "dragSupplementalSaveArrays": 8,
+          "sampleCounts": [
+            10
+          ],
+          "maxMedian": {
+            "group": "drag",
+            "condition": "{\"count\":500,\"input\":\"touch\",\"grouped\":true}",
+            "measurementKind": "response",
+            "metric": "drop",
+            "auxiliary": false,
+            "count": 10,
+            "medianMs": 48.90000000037253,
+            "p95Ms": 66.30000000074506
+          },
+          "maxP95": {
+            "group": "drag",
+            "condition": "{\"count\":500,\"input\":\"touch\",\"grouped\":true}",
+            "measurementKind": "response",
+            "metric": "drop",
+            "auxiliary": false,
+            "count": 10,
+            "medianMs": 48.90000000037253,
+            "p95Ms": 66.30000000074506
+          },
+          "saveMaxMedian": null,
+          "saveMaxP95": null
+        },
+        {
+          "group": "transfer",
+          "status": "passed",
+          "evidenceStatus": "passed",
+          "cases": 100,
+          "primaryMetrics": 198,
+          "saveAuxiliaryMetrics": 46,
+          "dragSupplementalSaveArrays": 0,
+          "sampleCounts": [
+            10
+          ],
+          "maxMedian": {
+            "group": "transfer",
+            "condition": "{\"count\":500,\"input\":\"touch\",\"grouped\":true,\"load\":\"light\",\"direction\":\"execute-to-candidate\",\"scenario\":\"range\"}",
+            "measurementKind": "frame",
+            "metric": "frame",
+            "auxiliary": false,
+            "count": 10,
+            "medianMs": 93.7860107421875,
+            "p95Ms": 101.361083984375
+          },
+          "maxP95": {
+            "group": "transfer",
+            "condition": "{\"count\":500,\"input\":\"touch\",\"grouped\":true,\"load\":\"light\",\"direction\":\"execute-to-candidate\",\"scenario\":\"range\"}",
+            "measurementKind": "frame",
+            "metric": "frame",
+            "auxiliary": false,
+            "count": 10,
+            "medianMs": 93.7860107421875,
+            "p95Ms": 101.361083984375
+          },
+          "saveMaxMedian": {
+            "group": "transfer",
+            "condition": "{\"count\":500,\"grouped\":false,\"load\":\"light\",\"input\":\"touch\",\"scenario\":\"same-column\",\"direction\":\"execute-to-execute\"}",
+            "measurementKind": "response",
+            "metric": "save",
+            "auxiliary": true,
+            "count": 10,
+            "medianMs": 48.85009765625,
+            "p95Ms": 51.7001953125
+          },
+          "saveMaxP95": {
+            "group": "transfer",
+            "condition": "{\"count\":500,\"grouped\":false,\"load\":\"light\",\"input\":\"touch\",\"scenario\":\"same-column\",\"direction\":\"execute-to-execute\"}",
+            "measurementKind": "response",
+            "metric": "save",
+            "auxiliary": true,
+            "count": 10,
+            "medianMs": 48.85009765625,
+            "p95Ms": 51.7001953125
+          }
+        }
+      ]
+    },
+    "relativePerformanceComparisonPerformed": false
+  }
+}

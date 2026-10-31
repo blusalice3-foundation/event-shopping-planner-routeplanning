@@ -3,6 +3,7 @@ import type { DayMapData, HallDefinition } from "../../../types/map";
 import {
   groupItemsByHallOrder,
   getItemGroupId,
+  parseGroupId,
 } from "../../../utils/hallGrouping";
 import {
   buildExecutionVisitProjectionKey,
@@ -33,6 +34,18 @@ export interface ShoppingDragPlacement {
     readonly itemIds: readonly string[];
   }[];
   readonly positionedIds: readonly string[];
+  /** Separate canonical slots used only when dropping into a column's blank area. */
+  readonly columnVisitKeys?: readonly string[];
+  readonly hallTailReferences?: readonly {
+    readonly key: string;
+    readonly itemIds: readonly string[];
+  }[];
+  readonly hallTailInsertions?: readonly {
+    readonly anchorId: string;
+    readonly insertVisitIndex: number;
+    readonly visitKeys: readonly string[];
+    readonly itemIds: readonly string[];
+  }[];
   readonly presentation: ShoppingDragPresentation;
 }
 export interface ShoppingDragMoveContext {
@@ -69,6 +82,7 @@ export function projectShoppingDragDisplay(
     .flatMap((group) => group.items);
 }
 export interface ShoppingDragLayout {
+  readonly rawItems: readonly ShoppingItem[];
   readonly items: readonly ShoppingItem[];
   readonly visits: ReturnType<typeof projectItemsToExecutionVisits>;
   readonly itemsById: ReadonlyMap<string, ShoppingItem>;
@@ -172,6 +186,7 @@ export function buildShoppingDragLayout(
   });
   visitBoundaryByItemIndex.push(displayVisitKeys.length);
   return {
+    rawItems: items,
     items: display,
     visits,
     itemsById: new Map(display.map((item) => [item.id, item])),
@@ -306,6 +321,140 @@ export function resolveShoppingDragPlacement(
     presentation: layout.presentation,
   };
 }
+/** Column blanks distribute new visits to their own hall/priority tails. */
+export function resolveShoppingDragColumnPlacement(
+  layout: ShoppingDragLayout,
+  moving: readonly ShoppingItem[],
+): ShoppingDragPlacement | null {
+  const movingVisits = projectItemsToExecutionVisits(moving);
+  const merging = movingVisits.filter((visit) =>
+    layout.visitsByKey.has(visit.key),
+  );
+  const base = resolveShoppingDragPlacement(
+    layout,
+    merging.flatMap((visit) => visit.items),
+    undefined,
+    "end",
+  );
+  if (!base) return null;
+  const groupTails = new Map<string, string>();
+  const hallTails = new Map<string | null, string>();
+  for (const item of layout.items) {
+    const groupId = getItemGroupId(
+      item,
+      layout.presentation.map,
+      layout.presentation.halls,
+    );
+    groupTails.set(groupId ?? "undefined", item.id);
+    hallTails.set(parseGroupId(groupId).hallId, item.id);
+  }
+  const references = new Map<string, readonly string[]>();
+  const groups = new Map<
+    string,
+    {
+      anchorId: string;
+      insertVisitIndex: number;
+      existing: number;
+      visitKeys: string[];
+      itemIds: string[];
+    }
+  >();
+  for (const visit of movingVisits) {
+    if (layout.visitsByKey.has(visit.key)) continue;
+    const groupIds = [
+      ...new Set(
+        visit.items.map((item) =>
+          getItemGroupId(
+            item,
+            layout.presentation.map,
+            layout.presentation.halls,
+          ),
+        ),
+      ),
+    ];
+    const groupKey = JSON.stringify([...groupIds].sort());
+    let entry = groups.get(groupKey);
+    if (!entry) {
+      let rawSlot = 0;
+      let displaySlot = 0;
+      let existing = 2;
+      for (const group of groupIds) {
+        const groupTail = groupTails.get(group ?? "undefined");
+        const tailId = groupTail ?? hallTails.get(parseGroupId(group).hallId);
+        if (!tailId) {
+          existing = 0;
+          rawSlot = layout.rawItems.length;
+          displaySlot = layout.items.length;
+          continue;
+        }
+        existing = Math.min(existing, groupTail ? 2 : 1);
+        const key = buildExecutionVisitProjectionKey(
+          layout.itemsById.get(tailId)!,
+        );
+        const target = layout.visitsByKey.get(key)!;
+        references.set(key, target.itemIds);
+        // Display grouping can put a later hall's first raw item before this tail.
+        // Insert after the tail visit's first raw rank so legacy interleaved members
+        // keep their order and every hall segment of an incoming visit appends.
+        const firstRawIndex = Math.min(
+          ...target.itemIds.map((id) => layout.rawIndexById.get(id)!),
+        );
+        rawSlot = Math.max(rawSlot, firstRawIndex + 1);
+        displaySlot = Math.max(displaySlot, layout.ranges.get(key)!.last + 1);
+      }
+      entry = {
+        anchorId: layout.rawItems[rawSlot]?.id ?? "__END_OF_LIST__",
+        insertVisitIndex: layout.visitBoundaryByItemIndex[displaySlot],
+        existing,
+        visitKeys: [],
+        itemIds: [],
+      };
+      groups.set(groupKey, entry);
+    }
+    entry.visitKeys.push(visit.key);
+    entry.itemIds.push(...visit.itemIds);
+  }
+  const insertions = [...groups.values()].sort(
+    (a, b) =>
+      a.insertVisitIndex - b.insertVisitIndex || b.existing - a.existing,
+  );
+  // Compute this preview once per prepared layout, never once per pointer move.
+  // The canonical projection also accounts for legacy split raw visit members.
+  const after = [...layout.rawItems];
+  for (const visit of merging) {
+    let last = -1;
+    after.forEach((item, index) => {
+      if (buildExecutionVisitProjectionKey(item) === visit.key) last = index;
+    });
+    after.splice(last + 1, 0, ...visit.items);
+  }
+  const incomingById = new Map(moving.map((item) => [item.id, item]));
+  for (const insertion of insertions) {
+    const index = after.findIndex((item) => item.id === insertion.anchorId);
+    after.splice(
+      index < 0 ? after.length : index,
+      0,
+      ...insertion.itemIds.map((id) => incomingById.get(id)!),
+    );
+  }
+  const columnVisitKeys: string[] = [];
+  projectShoppingDragDisplay(after, layout.presentation).forEach((item) => {
+    const key = buildExecutionVisitProjectionKey(item);
+    if (columnVisitKeys.at(-1) !== key) columnVisitKeys.push(key);
+  });
+  return {
+    ...base,
+    anchorId: insertions[0]?.anchorId ?? base.anchorId,
+    positionedIds: insertions.flatMap((entry) => entry.itemIds),
+    positionedVisitKeys: insertions.flatMap((entry) => entry.visitKeys),
+    hallTailInsertions: insertions,
+    hallTailReferences: [...references].map(([key, itemIds]) => ({
+      key,
+      itemIds,
+    })),
+    columnVisitKeys,
+  };
+}
 export function sameDragIds(
   first: readonly string[],
   second: readonly string[],
@@ -361,6 +510,13 @@ export function validateShoppingDragPlacement(
     )
   )
     return false;
+  if (
+    placement.hallTailReferences?.some(
+      (visit) =>
+        !sameDragIds(beforeVisitIds.get(visit.key) ?? [], visit.itemIds),
+    )
+  )
+    return false;
   const actual: string[] = [];
   if (preservesVisitOrder) {
     projectItemsToExecutionVisits(after).forEach((visit) =>
@@ -374,12 +530,13 @@ export function validateShoppingDragPlacement(
       },
     );
   }
-  const expected = [...placement.baseVisitKeys];
-  expected.splice(
-    placement.insertVisitIndex,
-    0,
-    ...placement.positionedVisitKeys,
-  );
+  const expected = [...(placement.columnVisitKeys ?? placement.baseVisitKeys)];
+  if (!placement.columnVisitKeys)
+    expected.splice(
+      placement.insertVisitIndex,
+      0,
+      ...placement.positionedVisitKeys,
+    );
   return (
     actual.length === expected.length &&
     actual.every((key, index) => key === expected[index])
