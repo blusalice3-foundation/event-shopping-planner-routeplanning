@@ -503,8 +503,11 @@ for (const touch of [false, true])
           expect(await saved(page)).toEqual(merged);
           await expect(firstBox).toBeChecked();
           await expect(secondBox).toBeChecked();
-          await firstBox.uncheck();
-          await secondBox.uncheck();
+          await page
+            .getByRole("button", { name: "選択を解除", exact: true })
+            .click();
+          await expect(firstBox).not.toBeChecked();
+          await expect(secondBox).not.toBeChecked();
         }
         expect((await readBrowserEventLists(page))[eventName]).toEqual(
           itemsBefore,
