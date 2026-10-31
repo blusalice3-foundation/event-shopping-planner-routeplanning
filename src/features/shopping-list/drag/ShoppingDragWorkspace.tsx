@@ -182,6 +182,7 @@ function createWorkspace(
     context: ShoppingDragMoveContext;
   } | null = null;
   const decorations: HTMLElement[] = [];
+  const decorationOwners = new Map<HTMLElement, string | null>();
   let decorationKey = "";
   let dragStatus: { root: HTMLElement; element: HTMLElement } | null = null;
   let layoutObserver: MutationObserver | null = null;
@@ -235,8 +236,22 @@ function createWorkspace(
       clone.append(badge);
     }
   };
+  const ownDecorationPosition = (element: HTMLElement) => {
+    if (!decorationOwners.has(element))
+      decorationOwners.set(
+        element,
+        element.getAttribute("data-shopping-drag-guide-owner"),
+      );
+    element.dataset.shoppingDragGuideOwner = "true";
+  };
   const clearDecorations = () => {
     decorations.splice(0).forEach((element) => element.remove());
+    decorationOwners.forEach((previous, element) => {
+      if (element.dataset.shoppingDragGuideOwner !== "true") return;
+      if (previous === null) delete element.dataset.shoppingDragGuideOwner;
+      else element.setAttribute("data-shopping-drag-guide-owner", previous);
+    });
+    decorationOwners.clear();
     decorationKey = "";
     dragStatus = null;
   };
@@ -428,7 +443,7 @@ function createWorkspace(
     decorationKey = key;
     const root = list.root();
     if (!root) return;
-    root.classList.add("relative");
+    ownDecorationPosition(root);
     const status = document.createElement("div");
     status.setAttribute("role", "status");
     status.dataset.shoppingDragStatus = accepted ? "accepted" : "rejected";
@@ -444,7 +459,7 @@ function createWorkspace(
       line.dataset.shoppingDragGuide = kind;
       line.dataset.shoppingDragBoundary = edge;
       line.className = `absolute left-0 right-0 h-1.5 bg-blue-500 rounded-full z-30 pointer-events-none ${edge === "before" ? "top-0" : "bottom-0"}`;
-      element.classList.add("relative");
+      ownDecorationPosition(element);
       element.append(line);
       decorations.push(line);
     });

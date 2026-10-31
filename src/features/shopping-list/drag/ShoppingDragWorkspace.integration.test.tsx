@@ -1343,12 +1343,26 @@ describe("public drag row surfaces", () => {
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
     });
+    const observers: {
+      callback: IntersectionObserverCallback;
+      targets: Set<Element>;
+    }[] = [];
     vi.stubGlobal(
       "IntersectionObserver",
       class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
+        targets = new Set<Element>();
+        constructor(public callback: IntersectionObserverCallback) {
+          observers.push(this);
+        }
+        observe(element: Element) {
+          this.targets.add(element);
+        }
+        unobserve(element: Element) {
+          this.targets.delete(element);
+        }
+        disconnect() {
+          this.targets.clear();
+        }
       },
     );
     let scrolled = false;
@@ -1415,16 +1429,53 @@ describe("public drag row surfaces", () => {
       '[data-item-id="incoming"]',
     )!;
     const transfer = { setData: vi.fn(), getData: () => "candidate" };
+    root.dataset.shoppingDragGuideOwner = "external";
+    source.dataset.shoppingDragGuideOwner = "source-owner";
+    const rootClass = root.className;
     fireEvent.dragStart(source, { dataTransfer: transfer });
     dragOver(target, 150, transfer);
     expect(
       root.querySelector('[data-shopping-drag-status="accepted"]'),
     ).not.toBeNull();
-    expect(
-      mergeTail.querySelector('[data-shopping-drag-guide="merge"]'),
-    ).not.toBeNull();
+    const guide = mergeTail.querySelector(
+      '[data-shopping-drag-guide="merge"]',
+    )!;
+    expect(guide).not.toBeNull();
+    expect(mergeTail).toHaveAttribute("data-shopping-drag-guide-owner", "true");
+    expect(mergeTail).toHaveClass("esp-layout-height");
+    act(() => {
+      observers.forEach((observer) => {
+        if (observer.targets.has(mergeTail))
+          observer.callback(
+            [
+              {
+                target: mergeTail,
+                isIntersecting: true,
+                time: performance.now(),
+                boundingClientRect: mergeTail.getBoundingClientRect(),
+                intersectionRatio: 1,
+                intersectionRect: mergeTail.getBoundingClientRect(),
+                rootBounds: null,
+              },
+            ],
+            observer as unknown as IntersectionObserver,
+          );
+      });
+    });
+    expect(mergeTail).toHaveAttribute("data-viewport-active", "true");
+    expect(mergeTail).not.toHaveClass("esp-layout-height");
+    expect(guide.isConnected).toBe(true);
+    expect(guide.parentElement).toBe(mergeTail);
+    expect(mergeTail).toHaveAttribute("data-shopping-drag-guide-owner", "true");
     fireEvent.drop(target, { dataTransfer: transfer });
     expect(onMove).toHaveBeenCalledTimes(1);
     expect(onMove.mock.calls[0][4].placement.mergeTargetIds).toEqual(["a2"]);
+    expect(mergeTail).not.toHaveAttribute("data-shopping-drag-guide-owner");
+    expect(root).toHaveAttribute("data-shopping-drag-guide-owner", "external");
+    expect(source).toHaveAttribute(
+      "data-shopping-drag-guide-owner",
+      "source-owner",
+    );
+    expect(root.className).toBe(rootClass);
   });
 });

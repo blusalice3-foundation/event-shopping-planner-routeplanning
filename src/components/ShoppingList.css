@@ -139,3 +139,10 @@
     var(--tw-duration, var(--default-transition-duration, 150ms)),
     var(--tw-duration, var(--default-transition-duration, 150ms));
 }
+
+/* Retained rows replace their class names as controls mount and unmount. */
+@layer utilities {
+  :where([data-shopping-drag-guide-owner="true"]) {
+    position: relative;
+  }
+}

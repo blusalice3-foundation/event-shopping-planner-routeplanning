@@ -376,6 +376,33 @@ async function finish(page: Page, touch: boolean) {
   await expect(page.locator(".esp-shopping-touch-clone")).toHaveCount(0);
   await expect(page.locator("[data-shopping-drag-guide]")).toHaveCount(0);
 }
+async function expectGuidesAligned(page: Page) {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+  await expect
+    .poll(() =>
+      page.locator("[data-shopping-drag-guide]").evaluateAll((lines) => {
+        if (!lines.length) return 1000000;
+        return Math.max(
+          ...lines.map((line) => {
+            const owner = line.parentElement!.getBoundingClientRect();
+            const guide = line.getBoundingClientRect();
+            return Math.abs(
+              line.getAttribute("data-shopping-drag-boundary") === "before"
+                ? guide.top - owner.top
+                : guide.bottom - owner.bottom,
+            );
+          }),
+        );
+      }),
+    )
+    .toBeLessThanOrEqual(1);
+}
+
 async function displayIds(page: Page) {
   return page
     .locator(
@@ -468,6 +495,8 @@ for (const touch of [false, true])
         await expect(
           page.locator('[data-shopping-drag-guide="suggestion"]'),
         ).toBeAttached();
+        await expectGuidesAligned(page);
+
         expect(await saved(page)).toEqual(before);
         // Scrolling a valid destination under a stationary pointer cannot confirm the move.
         await finish(page, touch);
@@ -480,6 +509,8 @@ for (const touch of [false, true])
         await expect(
           page.locator('[data-shopping-drag-guide="suggestion"]'),
         ).toBeAttached();
+        await expectGuidesAligned(page);
+
         await hover(page, "a3", touch, "after", grouped);
         await finish(page, touch);
         await expect
