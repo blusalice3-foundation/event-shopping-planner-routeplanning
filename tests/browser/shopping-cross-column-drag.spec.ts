@@ -423,23 +423,33 @@ async function hover(
         __dragTransfer: DataTransfer;
         __dragSource: string;
       };
-      const target = document.querySelector<HTMLElement>(
-        `[data-item-id=${JSON.stringify(id)}]:not([data-space-group-key])`,
-      )!;
-      const root = target.closest<HTMLElement>("[data-shopping-drag-column]")!;
+      const itemElement = (itemId: string): HTMLElement | null => {
+        const card = document.querySelector<HTMLElement>(
+          `[data-item-id=${JSON.stringify(itemId)}]:not([data-space-group-key])`,
+        );
+        if (card && !card.closest(".esp-shopping-touch-clone")) return card;
+        const rowKey = `item:${JSON.stringify(itemId)}`;
+        return document.querySelector<HTMLElement>(
+          `[data-row-key=${JSON.stringify(rowKey)}], [data-viewport-row-key=${JSON.stringify(rowKey)}]`,
+        );
+      };
+      const target = itemElement(id);
+      if (!target)
+        throw new Error(
+          `Hover target ${id} has no card or retained logical item slot.`,
+        );
+      const root = target.closest<HTMLElement>("[data-shopping-drag-column]");
+      if (!root) throw new Error(`Hover target ${id} has no shopping column.`);
       const header = grouped
         ? root.querySelector<HTMLElement>(`[data-space-group-key]`)
         : null;
       const owner = grouped
-        ? target.closest<HTMLElement>('[data-row-key^="group:"]')
+        ? target.closest<HTMLElement>(
+            '[data-row-key^="group:"], [data-viewport-row-key^="group:"]',
+          )
         : null;
       const top = (owner ?? target).getBoundingClientRect();
-      const next =
-        id === "a1"
-          ? root.querySelector<HTMLElement>(
-              '[data-item-id="a2"]:not([data-space-group-key])',
-            )
-          : null;
+      const next = id === "a1" ? itemElement("a2") : null;
       const bottom = owner ? top : (next ?? target).getBoundingClientRect();
       const y =
         edge === "before"

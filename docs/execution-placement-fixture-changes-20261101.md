@@ -36,6 +36,8 @@ performanceFixture()だけで、既存の画面外訪問`offscreen`と最後のA
 
 操作を対応させるのは上記offscreen機能試験4件だけであり、性能測定ループ・ジェスチャー・反応/DOM/実フレーム/次操作の終了点を変更しない。新規追加の機能用スクロールhelperは性能シナリオから呼び出さない。候補フィルター2件も、選択対象・保存・再読込の期待を含め変更しない。表示ID互換guardは保存済み訪問IDの変更や基準の緩和を意味しない。
 
+計測用hover helperは実カードが未mountの場合に限り、同じ品目IDの公開`data-row-key` / `data-viewport-row-key`（`item:<JSON文字列>`）から保持中の同じ論理行の位置を取得する。訪問末尾の`a2`も同じ方法で照合し、別品目への置換・強制mount・ジェスチャー変更は行わない。カードがmount済みの経路、座標計算式、スクロール量、入力・実フレーム等の終了点、計測ループ・ウォームアップ・回数・fixtureは維持する。計測器の差分としてhashを記録し、このhelper修正前の失敗・途中runは保持する。
+
 ## 測定契約
 
 全144性能ケース・530主指標と46保存補助、completion各10回 / pr各2回、sampling policy `performance-samples-2026-10-26`、shopping 65/100ms、range/drag/transfer 160/160msを維持する。計測終了点、ウォームアップ、retry 0、地図・過去10,000品目負荷、保存の原子性・内容検証を省略しない。変更前後は同じ新fixture・同じcompletion profileを使用し、実際のsource、instrument hash、fixture hash、run IDを各runに残す。
