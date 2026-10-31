@@ -1,3 +1,4 @@
+import { flattenExecutionPlacementItems } from "../utils/executionPlacement";
 import { recordEntry } from "../utils/ownRecord";
 import { ItemGuardContext } from "../features/shopping-list/renderers/ViewportRowState";
 import type { ItemContentGuard } from "../app/ports/PersistenceCommandPort";
@@ -95,7 +96,6 @@ import { useResumeFlow } from "./focus/hooks/useResumeFlow";
 import {
   buildItemRoutingSignature,
   getHallIdForItem,
-  sortItemsByHallOrder,
 } from "../utils/hallGrouping";
 import {
   getMapPathfindingRenderingSignature,
@@ -531,10 +531,13 @@ const FocusMode: React.FC<FocusModeProps> = ({
         .filter((item): item is ShoppingItem => item !== undefined);
       const firstItem = rawItems[0];
       const sorted = firstItem
-        ? sortItemsByHallOrder(
+        ? flattenExecutionPlacementItems(
             rawItems,
-            resolveFocusDayMapData(mapData, firstItem.eventDate),
-            hallDefinitions || [],
+            {
+              mapData: resolveFocusDayMapData(mapData, firstItem.eventDate),
+              hallDefinitions: hallDefinitions || [],
+              allItems: items,
+            },
             hallOrder,
           )
         : rawItems;

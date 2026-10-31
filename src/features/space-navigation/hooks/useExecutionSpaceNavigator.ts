@@ -1,3 +1,4 @@
+import { buildExecutionPlacementVisitKey } from "../../../utils/executionPlacement";
 import { measureShoppingOperation } from "../../../utils/shoppingPerformance";
 import { observeNavigationAnchors } from "../domain/navigationAnchors";
 import { navigatorEntryIndex } from "../domain/navigatorEntryIndex";
@@ -66,6 +67,7 @@ export interface UseExecutionSpaceNavigatorOptions {
   showSpaceGroups: boolean;
   collapsedSpaces?: ReadonlySet<string>;
   onToggleSpaceCollapse?: (groupKey: string) => void;
+  getGroupKeyForItem?: (item: ShoppingItem) => string;
   deferredLimitedItemIdsByGroupKey: ReadonlyMap<string, ReadonlySet<string>>;
   disablePriceUndefinedCheck: boolean;
   disableLimitedPurchaseQuantityCheck: boolean;
@@ -202,6 +204,7 @@ export function useExecutionSpaceNavigator(
     showSpaceGroups,
     collapsedSpaces,
     onToggleSpaceCollapse,
+    getGroupKeyForItem,
     deferredLimitedItemIdsByGroupKey,
     disablePriceUndefinedCheck,
     disableLimitedPurchaseQuantityCheck,
@@ -211,8 +214,14 @@ export function useExecutionSpaceNavigator(
   const navigator = useOptionalSpaceNavigator();
   const notify = navigator?.notify;
   const readAcceptedItem = useContext(AcceptedItemContext);
-  const projectVisits = useMemo(createExecutionVisitIndex, []);
-  const projectEntries = useMemo(() => createNavigatorEntriesProjector(), []);
+  const projectVisits = useMemo(
+    () => createExecutionVisitIndex(buildExecutionPlacementVisitKey),
+    [],
+  );
+  const projectEntries = useMemo(
+    () => createNavigatorEntriesProjector(undefined, true),
+    [],
+  );
   const entries = projectEntries(projectVisits(items as ShoppingItem[]).visits);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [formalIndex, setFormalIndex] = useState(0);
@@ -361,10 +370,19 @@ export function useExecutionSpaceNavigator(
     [findAnchors, showSpaceGroups],
   );
 
+  const getGroupKeyForEntry = useCallback(
+    (entry: NavigatorEntry): string => {
+      const item = entry.items[0];
+      return getGroupKeyForItem && item
+        ? getGroupKeyForItem(item as ShoppingItem)
+        : getLegacyGroupKey(entry);
+    },
+    [getGroupKeyForItem],
+  );
   const ensureEntryExpanded = useCallback(
     async (entry: NavigatorEntry) => {
       if (!showSpaceGroups || !onToggleSpaceCollapse) return;
-      const groupKey = getLegacyGroupKey(entry);
+      const groupKey = getGroupKeyForEntry(entry);
       if (!collapsedSpaces?.has(groupKey)) return;
       if (expansionInFlightRef.current.has(groupKey)) return;
 
@@ -374,7 +392,12 @@ export function useExecutionSpaceNavigator(
       await nextFrame();
       expansionInFlightRef.current.delete(groupKey);
     },
-    [collapsedSpaces, onToggleSpaceCollapse, showSpaceGroups],
+    [
+      collapsedSpaces,
+      onToggleSpaceCollapse,
+      showSpaceGroups,
+      getGroupKeyForEntry,
+    ],
   );
 
   const revealEntry = useCallback(
@@ -461,7 +484,9 @@ export function useExecutionSpaceNavigator(
             );
       const currentEntry = latestEntries[effectiveCurrentIndex];
       const deferredIds = currentEntry
-        ? deferredLimitedItemIdsByGroupKey.get(getLegacyGroupKey(currentEntry))
+        ? deferredLimitedItemIdsByGroupKey.get(
+            getGroupKeyForEntry(currentEntry),
+          )
         : undefined;
       const guard = evaluateNavigationGuard({
         intent: request.intent,
@@ -559,6 +584,7 @@ export function useExecutionSpaceNavigator(
       beginProgrammaticNavigation,
       completeProgrammaticNavigation,
       deferredLimitedItemIdsByGroupKey,
+      getGroupKeyForEntry,
       disableLimitedPurchaseQuantityCheck,
       disablePriceUndefinedCheck,
       isCurrentProgrammaticNavigation,

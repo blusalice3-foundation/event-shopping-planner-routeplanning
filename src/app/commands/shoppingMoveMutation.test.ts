@@ -1,3 +1,4 @@
+import { ensureDayConsistency } from "../../features/consistency/domain/context";
 import { describe, expect, it, vi } from "vitest";
 import type {
   PersistenceSnapshot,
@@ -16,6 +17,8 @@ import {
 import {
   planShoppingMove,
   shoppingMoveVisitBaseline,
+  shoppingMovePlacementBaseline,
+  ShoppingPlacementChangedError,
 } from "./shoppingMoveMutation";
 
 const day = "1日目";
@@ -251,4 +254,179 @@ describe("shopping move read-only planner items", () => {
       expect(changed).not.toBe(source.eventLists.event[0]);
     }
   });
+});
+
+describe("frozen placement dependencies", () => {
+  function frozen(source: PersistenceSnapshot): ApplicationShoppingMove {
+    const input = command(source, false);
+    input.placementBaseline = shoppingMovePlacementBaseline(source, input);
+    return input;
+  }
+  it("keeps latest purchase fields and ignores an unrelated candidate priority", () => {
+    const source = fixture();
+    (source.eventLists.event as ShoppingItem[]).push(item("unrelated", "99a"));
+    const input = frozen(source);
+    const current = structuredClone(source);
+    Object.assign(current.eventLists.event[1] as ShoppingItem, {
+      quantity: 9,
+      price: 1234,
+      remarks: "最新のメモ",
+    });
+    (current.eventLists.event[2] as ShoppingItem).priorityLevel = "priority";
+    const plan = planShoppingMove(current, input);
+    expect(plan.confirmation).toBeUndefined();
+    expect(plan.snapshot.executeModeItems.event[day]).toEqual(["a", "b"]);
+    expect(plan.snapshot.eventLists.event[1]).toMatchObject({
+      quantity: 9,
+      price: 1234,
+      remarks: "最新のメモ",
+    });
+    expect(plan.snapshot.eventLists.event[2]).toBe(current.eventLists.event[2]);
+  });
+  it("aborts a changed source placement without a confirmation alternative", () => {
+    const source = fixture();
+    const input = frozen(source);
+    const current = structuredClone(source);
+    (current.eventLists.event[1] as ShoppingItem).priorityLevel = "priority";
+    expect(() => planShoppingMove(current, input)).toThrow(
+      ShoppingPlacementChangedError,
+    );
+  });
+  it("aborts when the destination visit changes", () => {
+    const source = fixture();
+    const input = frozen(source);
+    const current = structuredClone(source);
+    (current.eventLists.event[0] as ShoppingItem).number = "03a";
+    expect(() => planShoppingMove(current, input)).toThrow(
+      ShoppingPlacementChangedError,
+    );
+  });
+  it("detects a resolved hall change even when space and priority stay unchanged", () => {
+    const source = fixture();
+    source.hallDefinitions.event = {
+      [`__mapless__:${day}`]: [
+        { id: "east", name: "東館", blockNames: ["A"], vertices: [] },
+      ],
+    };
+    const input = frozen(source);
+    const current = structuredClone(source);
+    current.hallDefinitions.event = {
+      [`__mapless__:${day}`]: [
+        { id: "west", name: "西館", blockNames: ["A"], vertices: [] },
+      ],
+    };
+    expect(() => planShoppingMove(current, input)).toThrow(
+      ShoppingPlacementChangedError,
+    );
+  });
+  it("preserves unrelated item insertions and deletions", () => {
+    const source = fixture();
+    (source.eventLists.event as ShoppingItem[]).push(item("unrelated", "99a"));
+    const input = frozen(source);
+    const current = structuredClone(source);
+    current.eventLists.event = [
+      item("new", "98a"),
+      ...current.eventLists.event.filter(
+        (entry) => (entry as ShoppingItem).id !== "unrelated",
+      ),
+    ];
+    const plan = planShoppingMove(current, input);
+    expect(
+      (plan.snapshot.eventLists.event as ShoppingItem[]).map(
+        (entry) => entry.id,
+      ),
+    ).toEqual(["new", "a", "b"]);
+    expect(plan.snapshot.executeModeItems.event[day]).toEqual(["a", "b"]);
+  });
+  it("aborts when a source visit gains an implicit member", () => {
+    const source = fixture();
+    const input = frozen(source);
+    const current = structuredClone(source);
+    (current.eventLists.event as ShoppingItem[]).push(
+      item("new-member", "02a2"),
+    );
+    expect(() => planShoppingMove(current, input)).toThrow(
+      ShoppingPlacementChangedError,
+    );
+  });
+});
+
+it("aborts when a hall-order change alters the destination group's neighboring groups", () => {
+  const source = fixture();
+  const west = { ...item("west", "03a"), block: "B" };
+  (source.eventLists.event as ShoppingItem[]).push(west);
+  source.executeModeItems.event[day] = ["a", "west"];
+  source.hallDefinitions.event = {
+    [`__mapless__:${day}`]: [
+      { id: "east", name: "東館", blockNames: ["A"], vertices: [] },
+      { id: "west", name: "西館", blockNames: ["B"], vertices: [] },
+    ],
+  };
+  const input = command(source, false);
+  input.baselineExecuteIds = ["a", "west"];
+  input.executeIds = ["a", "b", "west"];
+  input.placementBaseline = shoppingMovePlacementBaseline(source, input);
+  const current = structuredClone(source);
+  ensureDayConsistency(current.eventConsistency.event, day).mapless = {
+    assignments: {},
+    hallOrder: [
+      {
+        hall: { kind: "simple", dayKey: day, hallId: "west" },
+        priority: "none",
+      },
+      {
+        hall: { kind: "simple", dayKey: day, hallId: "east" },
+        priority: "none",
+      },
+    ],
+    hallVisitLists: [],
+    route: null,
+  };
+  expect(() => planShoppingMove(current, input)).toThrow(
+    ShoppingPlacementChangedError,
+  );
+});
+
+it("saves a one-book reorder into the current visit's raw slots without losing its base position", () => {
+  const source = fixture();
+  (source.eventLists.event as ShoppingItem[]).push(
+    item("a2", "01a2"),
+    item("a3", "01a3"),
+  );
+  source.executeModeItems.event[day] = ["a", "b", "a2", "a3"];
+  const input: ApplicationShoppingMove = {
+    version: 1,
+    eventName: "event",
+    day,
+    sourceColumn: "execute",
+    targetColumn: "execute",
+    requestedIds: ["a"],
+    effectiveIds: ["a"],
+    hoverId: "a3",
+    reorderWithinVisit: true,
+    baselineItemIds: ["a", "b", "a2", "a3"],
+    itemIds: ["a", "b", "a2", "a3"],
+    baselineExecuteIds: ["a", "b", "a2", "a3"],
+    executeIds: ["a2", "b", "a", "a3"],
+    baselineVisits: shoppingMoveVisitBaseline(source, "event", day),
+  };
+  input.placementBaseline = shoppingMovePlacementBaseline(source, input);
+  const current = structuredClone(source);
+  Object.assign(current.eventLists.event[0] as ShoppingItem, {
+    quantity: 9,
+    remarks: "保存待ち中の入力",
+  });
+  const result = planShoppingMove(current, input);
+  expect(result.snapshot.executeModeItems.event[day]).toEqual([
+    "a2",
+    "b",
+    "a",
+    "a3",
+  ]);
+  expect(result.snapshot.eventLists.event[0]).toMatchObject({
+    id: "a",
+    quantity: 9,
+    remarks: "保存待ち中の入力",
+  });
+  expect(result.snapshot.eventLists.event[1]).toBe(current.eventLists.event[1]);
 });

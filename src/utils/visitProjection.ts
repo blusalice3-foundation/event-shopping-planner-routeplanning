@@ -123,18 +123,16 @@ export function removeExecutionVisitMemberPreservingBasePosition(
   itemIds: readonly string[],
   removedItem: ShoppingItem,
   allItems: readonly ShoppingItem[],
+  keyForItem: (item: ShoppingItem) => string = buildExecutionVisitProjectionKey,
 ): string[] {
   if (!itemIds.includes(removedItem.id)) return [...itemIds];
 
   const itemsById = new Map(allItems.map((item) => [item.id, item]));
-  const removedVisitKey = buildExecutionVisitProjectionKey(removedItem);
+  const removedVisitKey = keyForItem(removedItem);
   const visitMemberIds = itemIds.filter((itemId) => {
     if (itemId === removedItem.id) return true;
     const item = itemsById.get(itemId);
-    return (
-      item !== undefined &&
-      buildExecutionVisitProjectionKey(item) === removedVisitKey
-    );
+    return item !== undefined && keyForItem(item) === removedVisitKey;
   });
   const isFirstMember = visitMemberIds[0] === removedItem.id;
   const promotedItemId = visitMemberIds.find(

@@ -1,3 +1,4 @@
+import { inheritProjectedMembership } from "../../features/consistency/domain/projection";
 import {
   beginShoppingMoveLifecycle,
   endShoppingMoveLifecycle,
@@ -57,6 +58,7 @@ import {
   getCandidateSourceOrderedIds,
 } from "../../features/lists/domain/movePlan";
 import { getSpaceKey } from "../../utils/spaceGrouping";
+import { buildExecutionPlacementVisitKey } from "../../utils/executionPlacement";
 import {
   EXECUTION_VISIT_MERGE_NOTICE,
   buildExecutionVisitProjectionKey,
@@ -90,6 +92,7 @@ export interface ShoppingItemMutationStatePort {
   readonly dayModes: DayModesByEvent;
   readonly items: ShoppingItem[];
   readonly selectedItemIds: ReadonlySet<string>;
+  readonly getSelectionRevision?: () => number;
   readonly selectedBlockFilters: ReadonlySet<string>;
   readonly blockSortDirection: BlockSortDirection | null;
   readonly candidateNumberSortDirection: BlockSortDirection | null;
@@ -141,6 +144,7 @@ export interface ShoppingItemMutationSelectorPort {
 
 export interface ShoppingItemMutationAlertPort {
   notify(message: string): void;
+  placementRejected?(message: string): void;
 }
 
 export interface ShoppingItemMutationCommandPorts {
@@ -209,7 +213,7 @@ const moveExecuteSpacePriorityGroup = ({
   const itemsById = new Map(items.map((item) => [item.id, item]));
   const getVisitKey = (id: string): string => {
     const item = itemsById.get(id);
-    return item ? buildExecutionVisitProjectionKey(item) : `unknown:${id}`;
+    return item ? buildExecutionPlacementVisitKey(item) : `unknown:${id}`;
   };
   const movingGroupKeys = new Set<string>([getVisitKey(itemId)]);
   effectiveIds.forEach((id) => {
@@ -264,6 +268,13 @@ const moveExecuteSpacePriorityGroup = ({
   const movingGroups = visitGroups.filter((group) =>
     movingGroupKeys.has(group.key),
   );
+  if (
+    movingGroups.some(
+      (group) =>
+        !areBoundaryItemsInSameHall(group.itemIds[0], adjacentGroup.itemIds[0]),
+    )
+  )
+    return { handled: true };
   const remainingGroups = visitGroups.filter(
     (group) => !movingGroupKeys.has(group.key),
   );
@@ -296,7 +307,6 @@ export const useShoppingItemMutationCommands = ({
     eventListsRef,
     eventMetadata,
     dayModes,
-    items,
     selectedItemIds,
     selectedBlockFilters,
     blockSortDirection,
@@ -332,6 +342,15 @@ export const useShoppingItemMutationCommands = ({
   } = actions;
   const { areItemsInSameHall, areItemsInSameHallGroup } = selectors;
   const { notify } = alerts;
+  const placementRejected = alerts.placementRejected ?? notify;
+  const selectionRevisionReader = useRef(state.getSelectionRevision);
+  selectionRevisionReader.current = state.getSelectionRevision;
+  const selectionRef = useRef({ ids: selectedItemIds, revision: 0 });
+  if (selectionRef.current.ids !== selectedItemIds)
+    selectionRef.current = {
+      ids: selectedItemIds,
+      revision: selectionRef.current.revision + 1,
+    };
   const { commitApplicationSnapshotPatch } = persistence;
 
   const applyBulkAdd = useCallback(
@@ -556,9 +575,9 @@ export const useShoppingItemMutationCommands = ({
       eventLists,
       eventMetadata,
       eventUpdatePreviewEpochRef,
+      state,
       openDuplicateEvent,
       notify,
-      state,
     ],
   );
 
@@ -623,6 +642,8 @@ export const useShoppingItemMutationCommands = ({
         (candidate) => candidate.id === updatedItem.id,
       );
 
+      if (currentItem && finalUpdatedItem)
+        inheritProjectedMembership(currentItem, finalUpdatedItem);
       const changes = finalUpdatedItem
         ? Object.fromEntries(
             [
@@ -766,12 +787,6 @@ export const useShoppingItemMutationCommands = ({
         targetColumn,
       );
       try {
-        if (!dragContext) {
-          clearRangeSelection();
-          setSortState("Manual");
-          setBlockSortDirection(null);
-        }
-
         if (
           dragContext &&
           (!sourceColumn ||
@@ -820,7 +835,9 @@ export const useShoppingItemMutationCommands = ({
           return spaceKeys.size > 1;
         })();
         const hallCheck =
-          spaceGroupIds || selectionSpansMultipleSpaces
+          spaceGroupIds ||
+          selectionSpansMultipleSpaces ||
+          (dragContext && dragContext.placement?.kind !== "items")
             ? (firstId: string, secondId: string) =>
                 areItemsInSameHallGroup(firstId, secondId, activeEventDate)
             : (firstId: string, secondId: string) =>
@@ -849,6 +866,7 @@ export const useShoppingItemMutationCommands = ({
             eventName: activeEventName,
             day: activeEventDate,
             eventGeneration: dragContext.generation,
+            reorderWithinVisit: dragContext.placement?.kind === "items",
             baselineItemIds: currentAllItems.map((item) => item.id),
             baselineExecuteIds:
               recordEntry(
@@ -864,15 +882,47 @@ export const useShoppingItemMutationCommands = ({
             eventListItems: result.eventListItems,
             executeModeItems: result.executeModeItems,
           });
-          if (receipt.status === "blocked") return;
-          if (receipt.status === "accepted" && result.transferredItemIds) {
-            removeSelectedItemIds(result.transferredItemIds);
+          if (receipt.status === "blocked") {
+            placementRejected(receipt.reason);
+            return;
           }
+          if (receipt.status === "noop") return;
+          const selectedRevision = selectionRef.current.revision;
+          const rangeRevision = selectionRevisionReader.current?.();
+          const finishSelection = () => {
+            const latest = reorderContextRef.current;
+            if (
+              latest.activeEventName !== activeEventName ||
+              latest.activeEventDate !== activeEventDate ||
+              selectCurrentMode(latest) !== "edit" ||
+              selectionRef.current.revision !== selectedRevision ||
+              (rangeRevision !== undefined &&
+                selectionRevisionReader.current?.() !== rangeRevision)
+            )
+              return;
+            if (result.transferredItemIds)
+              removeSelectedItemIds(result.transferredItemIds);
+            if (!receipt.completion || rangeRevision !== undefined)
+              clearRangeSelection();
+            setSortState("Manual");
+            setBlockSortDirection(null);
+          };
+          spaceGroupDragItemIdsRef.current = null;
+          if (receipt.completion) {
+            void receipt.completion.then((completion) => {
+              if (completion.status === "aborted")
+                placementRejected(completion.reason);
+              else finishSelection();
+            });
+          } else finishSelection();
+        }
+        if (
+          !dragContext &&
+          (result.eventListItems || result.executeModeItems)
+        ) {
           clearRangeSelection();
           setSortState("Manual");
           setBlockSortDirection(null);
-          spaceGroupDragItemIdsRef.current = null;
-          if (receipt.status === "noop") return;
         }
         if (!dragContext && result.eventListItems) {
           setEventLists((current) => ({
@@ -904,6 +954,7 @@ export const useShoppingItemMutationCommands = ({
       clearRangeSelection,
       removeSelectedItemIds,
       queueShoppingMovePatch,
+      placementRejected,
       eventLists,
       eventListsRef,
       getEventGeneration,
@@ -919,6 +970,101 @@ export const useShoppingItemMutationCommands = ({
     ],
   );
 
+  const queuePlacementButton = useStableCallback(
+    (input: {
+      sourceColumn: ShoppingListColumn;
+      targetColumn: ShoppingListColumn;
+      requestedIds: readonly string[];
+      effectiveIds: readonly string[];
+      allItems: readonly ShoppingItem[];
+      currentExecute: ExecuteModeItems;
+      eventListItems?: readonly ShoppingItem[];
+      executeModeItems?: ExecuteModeItems;
+      reorderWithinVisit?: boolean;
+      removeTransferredSelection?: boolean;
+      mergeNotice?: boolean;
+      manualSort?: boolean;
+    }) => {
+      if (!activeEventName || !input.effectiveIds.length) return;
+      const targetDays = input.executeModeItems ?? input.currentExecute;
+      const targetExecute =
+        recordEntry(
+          targetDays,
+          existingDayKey(targetDays, activeEventDate) ?? activeEventDate,
+        ) ?? [];
+      const finalOrder =
+        input.targetColumn === "execute"
+          ? targetExecute
+          : (input.eventListItems ?? input.allItems)
+              .filter(
+                (item) =>
+                  isSameExecutionVisitDay(item.eventDate, activeEventDate) &&
+                  !targetExecute.includes(item.id),
+              )
+              .map((item) => item.id);
+      const moving = new Set(input.effectiveIds);
+      const firstMoved = finalOrder.findIndex((id) => moving.has(id));
+      const hoverId =
+        firstMoved < 0
+          ? "__END_OF_LIST__"
+          : (finalOrder.slice(firstMoved + 1).find((id) => !moving.has(id)) ??
+            "__END_OF_LIST__");
+      const receipt = queueShoppingMovePatch({
+        eventName: activeEventName,
+        day: activeEventDate,
+        eventGeneration: getEventGeneration?.(activeEventName),
+        baselineItemIds: input.allItems.map((item) => item.id),
+        baselineExecuteIds:
+          recordEntry(
+            input.currentExecute,
+            existingDayKey(input.currentExecute, activeEventDate) ??
+              activeEventDate,
+          ) ?? [],
+        sourceColumn: input.sourceColumn,
+        targetColumn: input.targetColumn,
+        requestedIds: input.requestedIds,
+        effectiveIds: input.effectiveIds,
+        hoverId,
+        eventListItems: input.eventListItems,
+        executeModeItems: input.executeModeItems,
+        reorderWithinVisit: input.reorderWithinVisit,
+      });
+      if (receipt.status === "blocked") {
+        placementRejected(receipt.reason);
+        return;
+      }
+      if (receipt.status === "noop") return;
+      const selectedRevision = selectionRef.current.revision;
+      const rangeRevision = selectionRevisionReader.current?.();
+      const finish = () => {
+        const latest = reorderContextRef.current;
+        if (
+          latest.activeEventName !== activeEventName ||
+          latest.activeEventDate !== activeEventDate ||
+          selectCurrentMode(latest) !== "edit" ||
+          selectionRef.current.revision !== selectedRevision ||
+          (rangeRevision !== undefined &&
+            selectionRevisionReader.current?.() !== rangeRevision)
+        )
+          return;
+        if (input.removeTransferredSelection)
+          removeSelectedItemIds(input.effectiveIds);
+        if (!receipt.completion || rangeRevision !== undefined)
+          clearRangeSelection();
+        if (input.manualSort) {
+          setSortState("Manual");
+          setBlockSortDirection(null);
+        }
+        if (input.mergeNotice) notify(EXECUTION_VISIT_MERGE_NOTICE);
+      };
+      if (receipt.completion)
+        void receipt.completion.then((result) => {
+          if (result.status === "aborted") placementRejected(result.reason);
+          else finish();
+        });
+      else finish();
+    },
+  );
   const moveItemVertical = useCallback(
     (
       direction: "up" | "down",
@@ -931,95 +1077,103 @@ export const useShoppingItemMutationCommands = ({
         !activeEventName ||
         latestContext.activeEventName !== activeEventName ||
         latestContext.activeEventDate !== activeEventDate ||
-        !recordEntry(eventListsRef.current, activeEventName) ||
-        mode !== "edit"
+        mode !== "edit" ||
+        !targetColumn
       )
         return;
-      clearRangeSelection();
-      setSortState("Manual");
-      setBlockSortDirection(null);
-      const currentEventExecuteItems =
-        recordEntry(executeModeItemsRef.current, activeEventName) || {};
+      const currentAllItems =
+        recordEntry(eventListsRef.current, activeEventName) ?? [];
+      const currentExecute =
+        recordEntry(executeModeItemsRef.current, activeEventName) ?? {};
+      const currentExecuteIds =
+        recordEntry(
+          currentExecute,
+          existingDayKey(currentExecute, activeEventDate) ?? activeEventDate,
+        ) ?? [];
       const spaceGroupIds = spaceGroupDragItemIdsRef.current;
-
-      if (mode === "edit" && targetColumn === "execute") {
-        const hallCheck = spaceGroupIds
-          ? (firstId: string, secondId: string) =>
-              areItemsInSameHallGroup(firstId, secondId, activeEventDate)
-          : (firstId: string, secondId: string) =>
-              areItemsInSameHall(firstId, secondId, activeEventDate);
-        const visitMoveResult = moveExecuteSpacePriorityGroup({
+      const requested =
+        spaceGroupIds ??
+        (selectedItemIds.has(itemId) ? [...selectedItemIds] : [itemId]);
+      const plan = buildMovePlan({
+        requestedIds: requested,
+        sourceOrderedIds:
+          targetColumn === "execute"
+            ? currentExecuteIds
+            : getCandidateSourceOrderedIds(
+                currentAllItems,
+                activeEventDate,
+                currentExecuteIds,
+              ),
+        allItems: currentAllItems,
+        dayName: activeEventDate,
+        expansionPolicy:
+          targetColumn === "execute" && spaceGroupIds ? "same-visit" : "exact",
+      });
+      if (!plan.effective.includes(itemId)) return;
+      if (targetColumn === "execute" && spaceGroupIds) {
+        const moved = moveExecuteSpacePriorityGroup({
           direction,
           itemId,
-          dayItems: currentEventExecuteItems[activeEventDate] || [],
-          items,
-          effectiveIds: new Set(spaceGroupIds ?? selectedItemIds),
-          areBoundaryItemsInSameHall: hallCheck,
+          dayItems: currentExecuteIds,
+          items: currentAllItems,
+          effectiveIds: new Set(plan.effective),
+          areBoundaryItemsInSameHall: (first, second) =>
+            areItemsInSameHallGroup(first, second, activeEventDate),
         });
-        if (visitMoveResult.reordered) {
-          updateExecuteModeItems((current) => ({
-            ...current,
-            [activeEventName]: {
-              ...recordEntry(current, activeEventName),
-              [activeEventDate]: visitMoveResult.reordered!,
+        if (moved.reordered)
+          queuePlacementButton({
+            sourceColumn: targetColumn,
+            targetColumn,
+            requestedIds: plan.requested,
+            effectiveIds: plan.effective,
+            allItems: currentAllItems,
+            currentExecute,
+            executeModeItems: {
+              ...currentExecute,
+              [existingDayKey(currentExecute, activeEventDate) ??
+              activeEventDate]: moved.reordered,
             },
-          }));
-        }
-        if (visitMoveResult.handled) {
-          return;
-        }
+            manualSort: true,
+          });
+        if (moved.handled) return;
       }
-
-      const effectiveSelectedIds = new Set(spaceGroupIds ?? selectedItemIds);
-      const hallCheck = spaceGroupIds
-        ? (firstId: string, secondId: string) =>
-            areItemsInSameHallGroup(firstId, secondId, activeEventDate)
-        : (firstId: string, secondId: string) =>
-            areItemsInSameHall(firstId, secondId, activeEventDate);
       const result = computeMoveItemVertical(
         direction,
         itemId,
         targetColumn,
-        mode as ViewMode | undefined,
-        effectiveSelectedIds,
-        recordEntry(eventLists, activeEventName) || [],
-        currentEventExecuteItems,
+        mode as ViewMode,
+        new Set(plan.effective),
+        currentAllItems,
+        currentExecute,
         activeEventDate,
-        hallCheck,
+        (first, second) => areItemsInSameHall(first, second, activeEventDate),
       );
-
-      if (result.eventListItems) {
-        setEventLists((current) => ({
-          ...current,
-          [activeEventName]: result.eventListItems!,
-        }));
-      }
-      if (result.executeModeItems) {
-        updateExecuteModeItems((current) => ({
-          ...current,
-          [activeEventName]: result.executeModeItems!,
-        }));
-      }
+      if (!result.eventListItems && !result.executeModeItems) return;
+      queuePlacementButton({
+        sourceColumn: targetColumn,
+        targetColumn,
+        requestedIds: plan.requested,
+        effectiveIds: plan.effective,
+        allItems: currentAllItems,
+        currentExecute,
+        eventListItems: result.eventListItems,
+        executeModeItems: result.executeModeItems,
+        reorderWithinVisit: targetColumn === "execute",
+        manualSort: true,
+      });
     },
     [
-      activeEventDate,
       activeEventName,
-      areItemsInSameHall,
-      areItemsInSameHallGroup,
-      clearRangeSelection,
-      eventLists,
+      activeEventDate,
       eventListsRef,
       executeModeItemsRef,
-      items,
-      selectedItemIds,
-      setBlockSortDirection,
-      setEventLists,
-      setSortState,
       spaceGroupDragItemIdsRef,
-      updateExecuteModeItems,
+      selectedItemIds,
+      areItemsInSameHall,
+      areItemsInSameHallGroup,
+      queuePlacementButton,
     ],
   );
-
   const moveItemUp = useCallback(
     (itemId: string, targetColumn?: ShoppingListColumn) =>
       moveItemVertical("up", itemId, targetColumn),
@@ -1033,89 +1187,115 @@ export const useShoppingItemMutationCommands = ({
 
   const moveToExecuteColumn = useCallback(
     (itemIds: string[]) => {
-      if (!activeEventName) return;
+      const latest = reorderContextRef.current;
+      if (
+        !activeEventName ||
+        latest.activeEventName !== activeEventName ||
+        latest.activeEventDate !== activeEventDate ||
+        selectCurrentMode(latest) !== "edit"
+      )
+        return;
+      const currentAllItems =
+        recordEntry(eventListsRef.current, activeEventName) ?? [];
+      const currentExecute =
+        recordEntry(executeModeItemsRef.current, activeEventName) ?? {};
       const currentExecuteIds =
-        recordEntry(executeModeItemsRef.current, activeEventName)?.[
-          activeEventDate
-        ] || [];
+        recordEntry(
+          currentExecute,
+          existingDayKey(currentExecute, activeEventDate) ?? activeEventDate,
+        ) ?? [];
       const plan = buildMovePlan({
         requestedIds: itemIds,
         sourceOrderedIds: getCandidateSourceOrderedIds(
-          items,
+          currentAllItems,
           activeEventDate,
           currentExecuteIds,
         ),
-        allItems: items,
+        allItems: currentAllItems,
         dayName: activeEventDate,
         expansionPolicy: "same-visit",
       });
-      const currentEventItems =
-        recordEntry(executeModeItemsRef.current, activeEventName) || {};
-      const moveResult = computeMoveToExecuteColumnWithResult(
+      const result = computeMoveToExecuteColumnWithResult(
         plan.effective,
         activeEventDate,
-        items,
-        currentEventItems,
+        currentAllItems,
+        currentExecute,
         new Set(),
       );
-      if (moveResult.accepted) {
-        updateExecuteModeItems((current) => ({
-          ...current,
-          [activeEventName]: moveResult.executeModeItems,
-        }));
-        if (
-          moveResult.placement === "merged-into-existing-visit" ||
-          moveResult.placement === "mixed"
-        ) {
-          notify(EXECUTION_VISIT_MERGE_NOTICE);
-        }
-      }
-      clearSelection();
+      if (!result.accepted) return;
+      queuePlacementButton({
+        sourceColumn: "candidate",
+        targetColumn: "execute",
+        requestedIds: plan.requested,
+        effectiveIds: plan.effective,
+        allItems: currentAllItems,
+        currentExecute,
+        executeModeItems: result.executeModeItems,
+        removeTransferredSelection: true,
+        mergeNotice:
+          result.placement === "merged-into-existing-visit" ||
+          result.placement === "mixed",
+      });
     },
     [
-      activeEventDate,
       activeEventName,
-      clearSelection,
+      activeEventDate,
+      eventListsRef,
       executeModeItemsRef,
-      items,
-      notify,
-      updateExecuteModeItems,
+      queuePlacementButton,
     ],
   );
 
   const removeFromExecuteColumn = useCallback(
     (itemIds: string[]) => {
-      if (!activeEventName) return;
+      const latest = reorderContextRef.current;
+      if (
+        !activeEventName ||
+        latest.activeEventName !== activeEventName ||
+        latest.activeEventDate !== activeEventDate ||
+        selectCurrentMode(latest) !== "edit"
+      )
+        return;
+      const currentAllItems =
+        recordEntry(eventListsRef.current, activeEventName) ?? [];
+      const currentExecute =
+        recordEntry(executeModeItemsRef.current, activeEventName) ?? {};
+      const currentExecuteIds =
+        recordEntry(
+          currentExecute,
+          existingDayKey(currentExecute, activeEventDate) ?? activeEventDate,
+        ) ?? [];
       const plan = buildMovePlan({
         requestedIds: itemIds,
-        sourceOrderedIds:
-          recordEntry(executeModeItemsRef.current, activeEventName)?.[
-            activeEventDate
-          ] || [],
-        allItems: items,
+        sourceOrderedIds: currentExecuteIds,
+        allItems: currentAllItems,
         dayName: activeEventDate,
         expansionPolicy: "same-visit",
       });
-      updateExecuteModeItems((current) => ({
-        ...current,
-        [activeEventName]: computeRemoveFromExecuteColumn(
+      if (!plan.effective.length) return;
+      queuePlacementButton({
+        sourceColumn: "execute",
+        targetColumn: "candidate",
+        requestedIds: plan.requested,
+        effectiveIds: plan.effective,
+        allItems: currentAllItems,
+        currentExecute,
+        executeModeItems: computeRemoveFromExecuteColumn(
           plan.effective,
-          recordEntry(current, activeEventName) || {},
+          currentExecute,
           activeEventDate,
         ),
-      }));
-      clearSelection();
+        removeTransferredSelection: true,
+      });
     },
     [
-      activeEventDate,
       activeEventName,
-      clearSelection,
+      activeEventDate,
+      eventListsRef,
       executeModeItemsRef,
-      items,
-      updateExecuteModeItems,
+      queuePlacementButton,
     ],
   );
-
   const confirmDeleteItem = useCallback(() => {
     if (!itemToDelete || !activeEventName) return;
 
@@ -1180,8 +1360,8 @@ export const useShoppingItemMutationCommands = ({
   }, [
     activeEventDate,
     activeEventName,
-    blockSortDirection,
     clearSelection,
+    blockSortDirection,
     setBlockSortDirection,
     setEventLists,
   ]);
@@ -1237,8 +1417,8 @@ export const useShoppingItemMutationCommands = ({
   }, [
     activeEventDate,
     activeEventName,
-    blockSortDirection,
     clearSelection,
+    blockSortDirection,
     executeModeItemsRef,
     setBlockSortDirection,
     setEventLists,
@@ -1295,8 +1475,8 @@ export const useShoppingItemMutationCommands = ({
   }, [
     activeEventDate,
     activeEventName,
-    candidateNumberSortDirection,
     clearSelection,
+    candidateNumberSortDirection,
     executeModeItemsRef,
     selectedBlockFilters,
     setCandidateNumberSortDirection,

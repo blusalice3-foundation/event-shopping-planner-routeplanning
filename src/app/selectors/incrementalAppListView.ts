@@ -1,3 +1,4 @@
+import { createExecutionPlacementProjector } from "../../utils/executionPlacement";
 import { recordEntry } from "../../utils/ownRecord";
 import {
   type ExecuteColumnItemsSelectorInput,
@@ -22,10 +23,7 @@ import {
   changedSetMembers,
 } from "../../utils/incrementalItems";
 import { itemPositions, stableItemIds } from "../../utils/itemIndex";
-import {
-  flattenExecutionVisitProjection,
-  normalizeExecutionVisitDay,
-} from "../../utils/visitProjection";
+import { normalizeExecutionVisitDay } from "../../utils/visitProjection";
 import { matchesPurchaseStatusFilter } from "../../utils/purchaseQuantity";
 import type { ShoppingItem } from "../../types/item";
 
@@ -36,7 +34,7 @@ const hasPriorityRemark = (item: ShoppingItem) =>
 /** Stateful projectors belong to one mounted application, never a global store. */
 export function createAppListViewProjectors() {
   const executeOrder = createOrderedItemsProjector();
-  const executeVisits = createItemProjection(flattenExecutionVisitProjection);
+  const executeVisits = createExecutionPlacementProjector();
   const dayItems = createFilteredItemsProjector();
   const baseItems = createFilteredItemsProjector();
   const temporaryItems = createFilteredItemsProjector();
@@ -61,7 +59,11 @@ export function createAppListViewProjectors() {
             input.activeEventDate
           ] ?? EMPTY_IDS)
         : EMPTY_IDS;
-      return executeVisits(executeOrder(input.items, ids));
+      return executeVisits(
+        executeOrder(input.items, ids),
+        input.placementContext,
+        input.hallOrder,
+      );
     },
     day(items: readonly ShoppingItem[], day: string, enabled: boolean) {
       const normalized = normalizeExecutionVisitDay(day);

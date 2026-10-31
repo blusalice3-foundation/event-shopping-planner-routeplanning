@@ -1,5 +1,5 @@
 import type { ShoppingItem } from "../../../types/item";
-import { getSpaceKey } from "../../../utils/spaceGrouping";
+import { buildExecutionPlacementVisitKey } from "../../../utils/executionPlacement";
 import { normalizeExecutionVisitDay } from "../../../utils/visitProjection";
 
 export type MovePlanExpansionPolicy = "exact" | "same-visit";
@@ -78,13 +78,6 @@ function uniqueIds(ids: readonly string[]): string[] {
   return [...new Set(ids)];
 }
 
-function getVisitGroupKey(item: ShoppingItem): string {
-  return JSON.stringify([
-    getSpaceKey(item.block, item.number),
-    item.priorityLevel ?? "none",
-  ]);
-}
-
 /**
  * 明示された選択から、移動前に表示・確認できる移動計画を構築する。
  *
@@ -143,14 +136,18 @@ export function buildMovePlan(input: BuildMovePlanInput): MovePlan {
   }
 
   const requestedVisitGroupKeys = new Set(
-    requested.map((id) => getVisitGroupKey(itemsById.get(id)!)),
+    requested.map((id) =>
+      buildExecutionPlacementVisitKey(itemsById.get(id)!, { allItems }),
+    ),
   );
   const effective = orderedSourceIds.filter((id) => {
     const item = itemsById.get(id);
     if (!item) return false;
     return (
       normalizeExecutionVisitDay(item.eventDate) === normalizedDayName &&
-      requestedVisitGroupKeys.has(getVisitGroupKey(item))
+      requestedVisitGroupKeys.has(
+        buildExecutionPlacementVisitKey(item, { allItems }),
+      )
     );
   });
   const implicit = effective.filter((id) => !acceptedRequestedIdSet.has(id));

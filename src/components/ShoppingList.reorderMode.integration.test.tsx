@@ -167,9 +167,18 @@ describe("shopping reorder mode boundary", () => {
     },
   );
 
-  it("keeps editing movement and selection available", () => {
+  it("keeps editing book movement inside its space and selection available", () => {
     const props = makeProps();
     const view = render(<ShoppingList {...props} />);
+    expect(
+      screen.getAllByRole("button", { name: "下に移動" })[0],
+    ).toBeDisabled();
+    view.rerender(
+      <ShoppingList
+        {...props}
+        items={[items[0], { ...items[1], number: items[0].number }]}
+      />,
+    );
     const source = row(view.container, "first");
     expect(source).toHaveAttribute("draggable", "true");
     fireEvent.click(screen.getAllByRole("button", { name: "下に移動" })[0]);

@@ -1,3 +1,12 @@
+import {
+  buildExecutionPlacementVisitKey,
+  buildCandidatePlacementVisitKey,
+  buildExecutionPlacementGroupKey,
+  buildExecutionNavigationVisitId,
+  createExecutionPlacementProjector,
+  isSameExecutionPlacementGroup,
+  isSameExecutionPlacementVisit,
+} from "../utils/executionPlacement";
 import { useShoppingDragWorkspace } from "../features/shopping-list/drag/ShoppingDragWorkspace";
 import type {
   ShoppingDragMoveContext,
@@ -44,7 +53,11 @@ import {
   PurchaseStatusControlMode,
 } from "../types/item";
 import { HallDefinition, DayMapData } from "../types/map";
-import { getSpaceKey } from "../utils/spaceGrouping";
+import { getBaseNumber, getSpaceKey } from "../utils/spaceGrouping";
+import {
+  resolveSpaceAdditionPriority,
+  type SpaceAdditionPriority,
+} from "../utils/spaceAdditionPriority";
 import {
   parseGroupId,
   buildGroupId,
@@ -84,7 +97,6 @@ import {
   type PostEventDistributionAnswer,
   upsertPostEventDistributionRemark,
 } from "../utils/postEventDistributionCheck";
-import { buildVisitId } from "../features/space-navigation/domain/visitIdentity";
 import {
   useExecutionSpaceNavigator,
   type ExecutionNavigationGuardFeedback,
@@ -480,7 +492,7 @@ export const calculateBlockColors = (
   return colorMap;
 };
 
-const getSpaceGroupKeyForItem = (
+const getLegacySpaceGroupKeyForItem = (
   item: ShoppingItem,
   columnType: "execute" | "candidate" | undefined,
 ): string => {
@@ -493,19 +505,14 @@ const getSpaceGroupKeyForItem = (
     : `${spaceKey}:${priority}`;
 };
 
-const getExecutionVisitIdForItem = (item: ShoppingItem): string =>
-  buildVisitId({
-    block: item.block,
-    number: item.number,
-    priorityLevel: item.priorityLevel,
-  });
+const getExecutionVisitIdForItem = buildExecutionNavigationVisitId;
 
 // Keep the retained strategy fixed across every grouping and empty state.
 const SHOPPING_LIST_GROUP_SLOT_MODE = "current-model" as const;
 
 const ShoppingList: React.FC<ShoppingListProps> = ({
-  items,
-  dragSourceItems = items,
+  items: inputItems,
+  dragSourceItems = inputItems,
   dragExecuteOrder,
   onUpdateItem,
   onMoveItem,
@@ -560,6 +567,51 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   appZoomLevel = 100,
   recoveryActive = false,
 }) => {
+  const placementContext = useMemo(
+    () => ({ mapData, hallDefinitions }),
+    [mapData, hallDefinitions],
+  );
+  const projectExecutionPlacement = useMemo(
+    createExecutionPlacementProjector,
+    [],
+  );
+  const items =
+    columnType === "execute"
+      ? projectExecutionPlacement(inputItems, placementContext, hallOrder)
+      : inputItems;
+  const collisionSignature = useMemo(() => {
+    const keys = new Map<string, Set<string>>();
+    for (const item of items) {
+      const key = getLegacySpaceGroupKeyForItem(item, columnType);
+      const groups = keys.get(key) ?? new Set<string>();
+      groups.add(
+        columnType === "candidate"
+          ? buildCandidatePlacementVisitKey(item, placementContext)
+          : buildExecutionPlacementVisitKey(item, placementContext),
+      );
+      keys.set(key, groups);
+    }
+    return JSON.stringify(
+      [...keys]
+        .filter(([, groups]) => groups.size > 1)
+        .map(([key]) => key)
+        .sort(),
+    );
+  }, [items, columnType, placementContext]);
+  const getSpaceGroupKeyForItem = useMemo(() => {
+    const collisions = new Set<string>(
+      collisionSignature ? (JSON.parse(collisionSignature) as string[]) : [],
+    );
+    return (
+      item: ShoppingItem,
+      column: "execute" | "candidate" | undefined,
+    ) => {
+      const legacy = getLegacySpaceGroupKeyForItem(item, column);
+      return collisions.has(legacy)
+        ? `${legacy}@${column === "candidate" ? buildCandidatePlacementVisitKey(item, placementContext) : buildExecutionPlacementVisitKey(item, placementContext)}`
+        : legacy;
+    };
+  }, [collisionSignature, placementContext]);
   const onMoveItemUp = useStableOptionalCallback(onMoveItemUpProp);
   const onMoveItemDown = useStableOptionalCallback(onMoveItemDownProp);
 
@@ -760,9 +812,14 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     },
     [showLimitedMessage],
   );
+  const getNavigatorGroupKey = useCallback(
+    (item: ShoppingItem) => getSpaceGroupKeyForItem(item, columnType),
+    [getSpaceGroupKeyForItem, columnType],
+  );
   const { isInspecting } = useExecutionSpaceNavigator({
     enabled: viewMode === "execute" && columnType === "execute",
     registrationId: `execute:${currentDay ?? "all"}`,
+    getGroupKeyForItem: getNavigatorGroupKey,
     items: displayOrderedItems,
     layoutMode,
     showSpaceGroups,
@@ -797,7 +854,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         return next;
       });
     },
-    [columnType, viewMode],
+    [columnType, viewMode, getSpaceGroupKeyForItem],
   );
 
   const clearLimitedPurchaseQuantityDeferredForItem = useCallback(
@@ -884,7 +941,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
       return mutated ? next : previous;
     });
-  }, [items, columnType]);
+  }, [items, columnType, getSpaceGroupKeyForItem]);
 
   useEffect(() => {
     if (!limitedMessage) return;
@@ -1404,7 +1461,14 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   const [addDialogDefaults, setAddDialogDefaults] = useState({
     block: "",
     number: "",
+    eventDate: "",
   });
+  const addDialogContextRef = useRef<{
+    eventDate: string;
+    columnType: typeof columnType;
+    rangeScopeId: typeof rangeScopeId;
+    viewMode: typeof viewMode;
+  } | null>(null);
   const [addDialogCircleSuggestions, setAddDialogCircleSuggestions] = useState<
     string[]
   >([]);
@@ -1418,6 +1482,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     block: "",
     number: "",
     purchaseStatus: "None" as "None" | "Purchased" | "Postpone" | "Late",
+    priorityLevel: "none" as SpaceAdditionPriority | "",
   });
   const addDialogBaseId = React.useId();
   const addDialogRef = useRef<HTMLDivElement>(null);
@@ -1440,6 +1505,8 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     quickPrice: `${addDialogBaseId}-quick-price`,
     quantity: `${addDialogBaseId}-quantity`,
     purchaseStatus: `${addDialogBaseId}-purchase-status`,
+    priorityLevel: `${addDialogBaseId}-priority-level`,
+    priorityDescription: `${addDialogBaseId}-priority-description`,
     remarks: `${addDialogBaseId}-remarks`,
     url: `${addDialogBaseId}-url`,
   };
@@ -1457,6 +1524,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     number: string,
     circleSuggestions: string[] = [],
     returnFocusTarget?: HTMLElement,
+    spaceItems: readonly ShoppingItem[] = [],
   ) => {
     if (isInspecting) return;
     addDialogReturnFocusRef.current =
@@ -1465,7 +1533,14 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null);
-    setAddDialogDefaults({ block, number });
+    const eventDate = currentDay || "";
+    addDialogContextRef.current = {
+      eventDate,
+      columnType,
+      rangeScopeId,
+      viewMode,
+    };
+    setAddDialogDefaults({ block, number, eventDate });
     setAddDialogCircleSuggestions(circleSuggestions);
     setNewItemForm({
       circle: "",
@@ -1477,6 +1552,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       block,
       number,
       purchaseStatus: "None",
+      priorityLevel: resolveSpaceAdditionPriority(spaceItems),
     });
     setAddDialogOpen(true);
   };
@@ -1525,11 +1601,28 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   };
 
   const handleAddItemSubmit = () => {
-    if (isInspecting || !onAddItem || !newItemForm.circle.trim()) return;
+    if (
+      isInspecting ||
+      !onAddItem ||
+      !newItemForm.circle.trim() ||
+      newItemForm.priorityLevel === ""
+    )
+      return;
+    const context = addDialogContextRef.current;
+    if (
+      !context ||
+      context.eventDate !== (currentDay || "") ||
+      context.columnType !== columnType ||
+      context.rangeScopeId !== rangeScopeId ||
+      context.viewMode !== viewMode
+    ) {
+      closeAddDialog();
+      return;
+    }
     const price =
       newItemForm.price === "" ? null : parseInt(newItemForm.price, 10) || 0;
     onAddItem({
-      eventDate: currentDay || "",
+      eventDate: context.eventDate,
       block: newItemForm.block,
       number: newItemForm.number,
       circle: newItemForm.circle,
@@ -1539,6 +1632,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       remarks: newItemForm.remarks,
       url: newItemForm.url || undefined,
       purchaseStatus: newItemForm.purchaseStatus,
+      priorityLevel: newItemForm.priorityLevel,
     });
     closeAddDialog();
   };
@@ -1560,6 +1654,20 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       }
     };
   }, [addDialogOpen]);
+
+  useEffect(() => {
+    const context = addDialogContextRef.current;
+    if (
+      addDialogOpen &&
+      context &&
+      (context.eventDate !== (currentDay || "") ||
+        context.columnType !== columnType ||
+        context.rangeScopeId !== rangeScopeId ||
+        context.viewMode !== viewMode)
+    ) {
+      setAddDialogOpen(false);
+    }
+  }, [addDialogOpen, currentDay, columnType, rangeScopeId, viewMode]);
 
   useEffect(() => {
     if (!isInspecting) return;
@@ -1586,15 +1694,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       ];
     }
     // ホール定義なしでも groupItemsByHallOrder 内で priority 別に 3 バケットに分けて返す
-    const firstIndex = new Map(items.map((item, index) => [item.id, index]));
-    return groupItemsByHallOrder(
-      items,
-      mapData,
-      hallDefinitions,
-      hallOrder,
-    ).sort(
-      (a, b) => firstIndex.get(a.items[0].id)! - firstIndex.get(b.items[0].id)!,
-    );
+    return groupItemsByHallOrder(items, mapData, hallDefinitions, hallOrder);
   }, [items, showHallGroups, hallDefinitions, hallOrder, mapData]);
 
   const projectRoutingItems = useMemo(createRoutingItemsProjector, []);
@@ -1609,7 +1709,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       createExecutionVisitIndex((item) =>
         getSpaceGroupKeyForItem(item, columnType),
       ),
-    [columnType],
+    [columnType, getSpaceGroupKeyForItem],
   );
   const executionVisits = projectExecutionVisits(items).visits;
   const spaceGroupCache = useRef(
@@ -1651,7 +1751,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           ? "none"
           : ((item.priorityLevel || "none") as PriorityLevel);
       const hallId =
-        columnType !== "candidate" && hallDefinitions.length > 0 && mapData
+        columnType !== "candidate"
           ? getHallIdForItem(item, mapData, hallDefinitions)
           : null;
       const group: SpaceGroup = {
@@ -1673,6 +1773,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     columnType,
     collapsedSpaces,
     executionVisits,
+    getSpaceGroupKeyForItem,
     hallDefinitions,
     mapData,
     showSpaceGroups,
@@ -1788,6 +1889,21 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     [listControllerState.selectedItemIds],
   );
 
+  const selectedPlacement = useMemo(() => {
+    const selected = items.filter((item) => selectedItemIds.has(item.id));
+    return {
+      groups: new Set(
+        selected.map((item) =>
+          buildExecutionPlacementGroupKey(item, placementContext),
+        ),
+      ).size,
+      visits: new Set(
+        selected.map((item) =>
+          buildExecutionPlacementVisitKey(item, placementContext),
+        ),
+      ).size,
+    };
+  }, [items, selectedItemIds, placementContext]);
   const listReadModel = useMemo(
     () =>
       selectedItemIds.size === 0
@@ -2393,6 +2509,19 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         )
       : listReadModel.itemRows.map((row) => row.itemId),
   );
+  const resolveDragMembership = useStableCallback((itemId: string) => {
+    const item = getLatestItemById(itemId);
+    if (item) latestCardCrudCallbacksRef.current.onEditRequest(item);
+  });
+  const revealDragTarget = useStableCallback((itemId: string) => {
+    const group = listRowGroups?.find((entry) =>
+      entry.items.some((item) => item.id === itemId),
+    );
+    const rowKey = group?.collapsed
+      ? `group:${JSON.stringify(group.key)}`
+      : `item:${JSON.stringify(itemId)}`;
+    dispatchListController(shoppingListCommand.requestScroll(rowKey));
+  });
   useLayoutEffect(() => {
     if (!columnType || !dragWorkspace || !allowReorder) return;
     return dragWorkspace.register(columnType, {
@@ -2403,6 +2532,8 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       presentation: dragPresentation,
       root: () => containerRef.current,
       move: handleDragMove,
+      reveal: revealDragTarget,
+      resolveMembership: resolveDragMembership,
       candidateNumberSort: candidateNumberSortDirection,
     });
   }, [
@@ -2416,6 +2547,8 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     dragDisplayOrder,
     listRowGroups,
     handleDragMove,
+    revealDragTarget,
+    resolveDragMembership,
     candidateNumberSortDirection,
   ]);
 
@@ -2455,6 +2588,11 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
             : [item.id],
           selectedItemIds.has(item.id) ? "selection" : "single",
         ) ?? null;
+    if (dragWorkspace && columnType && !dragToken.current) {
+      e.preventDefault();
+      cleanUp();
+      return;
+    }
     if (columnType) {
       e.dataTransfer.setData("sourceColumn", columnType);
     }
@@ -2543,11 +2681,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     e.stopPropagation();
 
     const sharedDrag = dragWorkspace?.active();
-    if (
-      columnType &&
-      sharedDrag &&
-      sharedDrag.context.sourceColumn !== columnType
-    ) {
+    if (columnType && sharedDrag) {
       dragWorkspace?.drop(columnType);
       cleanUp();
       return;
@@ -2759,6 +2893,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                 : "single",
           ) ?? null;
 
+      if (dragWorkspace && columnType && !dragToken.current) {
+        touchCleanUp();
+        return;
+      }
       // ブラウザのネイティブドラッグゴーストを防止
       sourceEl.setAttribute("draggable", "false");
       touchDragSourceEl.current = sourceEl;
@@ -2954,11 +3092,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     }
 
     if (!touchDragActive.current) return;
-    if (
-      touchTargetColumn.current &&
-      touchTargetColumn.current !== columnType &&
-      dragWorkspace?.active()
-    ) {
+    if (touchTargetColumn.current && dragWorkspace?.active()) {
       dragWorkspace.drop(touchTargetColumn.current);
       touchCleanUp();
       return;
@@ -3133,7 +3267,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       const isGroupInSelection = group.items.some((item) =>
         selectedItemIds.has(item.id),
       );
-      if (isGroupInSelection && selectedItemIds.size > groupIds.size) {
+      if (
+        isGroupInSelection &&
+        [...selectedItemIds].some((id) => !groupIds.has(id))
+      ) {
         // 選択中のアイテムがこのグループ以外にもある→チェーン選択されたアイテム全て含める
         return Array.from(selectedItemIds);
       }
@@ -3162,6 +3299,11 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
             "space-group",
           ) ?? null;
       dragSourceColumn.current = columnType || null;
+      if (dragWorkspace && columnType && !dragToken.current) {
+        e.preventDefault();
+        cleanUp();
+        return;
+      }
       if (columnType) {
         e.dataTransfer.setData("sourceColumn", columnType);
       }
@@ -3271,8 +3413,26 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       );
 
       // 上下移動の可否
-      const canMoveGroupUp = groupIndex > 0;
-      const canMoveGroupDown = groupIndex < spaceGroups.length - 1;
+      const canMoveGroupUp =
+        groupIndex > 0 &&
+        (columnType !== "execute" ||
+          (isSameExecutionPlacementGroup(
+            group.items[0],
+            spaceGroups[groupIndex - 1].items[0],
+            placementContext,
+          ) &&
+            (!group.items.some((item) => selectedItemIds.has(item.id)) ||
+              selectedPlacement.groups <= 1)));
+      const canMoveGroupDown =
+        groupIndex < spaceGroups.length - 1 &&
+        (columnType !== "execute" ||
+          (isSameExecutionPlacementGroup(
+            group.items[0],
+            spaceGroups[groupIndex + 1].items[0],
+            placementContext,
+          ) &&
+            (!group.items.some((item) => selectedItemIds.has(item.id)) ||
+              selectedPlacement.groups <= 1)));
 
       // スペースグループのチェックボックスクリック
       const handleSpaceCheckbox = (e: React.MouseEvent | React.ChangeEvent) => {
@@ -3522,11 +3682,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          const spaceBlock = group.spaceKey.split("-")[0];
-                          const spaceNumber = group.spaceKey
-                            .split("-")
-                            .slice(1)
-                            .join("-");
+                          const spaceBlock = group.items[0].block;
+                          const spaceNumber = getBaseNumber(
+                            group.items[0].number,
+                          );
                           const circles = [
                             ...new Set(
                               group.items
@@ -3539,6 +3698,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                             spaceNumber,
                             circles,
                             e.currentTarget,
+                            group.items,
                           );
                         }}
                         className="px-1.5 py-0.5 mr-1 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30 rounded transition-colors"
@@ -3918,11 +4078,8 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      const spaceBlock = group.spaceKey.split("-")[0];
-                      const spaceNumber = group.spaceKey
-                        .split("-")
-                        .slice(1)
-                        .join("-");
+                      const spaceBlock = group.items[0].block;
+                      const spaceNumber = getBaseNumber(group.items[0].number);
                       const circles = [
                         ...new Set(
                           group.items
@@ -3935,6 +4092,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                         spaceNumber,
                         circles,
                         e.currentTarget,
+                        group.items,
                       );
                     }}
                     className={`text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30 rounded transition-colors ${
@@ -4173,8 +4331,28 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                         onMoveDown={
                           onMoveItemDown ? handleCardMoveDown : undefined
                         }
-                        canMoveUp={globalIndex > 0}
-                        canMoveDown={globalIndex < items.length - 1}
+                        canMoveUp={
+                          globalIndex > 0 &&
+                          (columnType !== "execute" ||
+                            (isSameExecutionPlacementVisit(
+                              item,
+                              items[globalIndex - 1],
+                              placementContext,
+                            ) &&
+                              (!selectedItemIds.has(item.id) ||
+                                selectedPlacement.visits <= 1)))
+                        }
+                        canMoveDown={
+                          globalIndex < items.length - 1 &&
+                          (columnType !== "execute" ||
+                            (isSameExecutionPlacementVisit(
+                              item,
+                              items[globalIndex + 1],
+                              placementContext,
+                            ) &&
+                              (!selectedItemIds.has(item.id) ||
+                                selectedPlacement.visits <= 1)))
+                        }
                         isDuplicateCircle={duplicateCircleItemIds.has(item.id)}
                         isSearchMatch={highlightedItemId === item.id}
                         layoutMode={layoutMode}
@@ -4551,7 +4729,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                     新規アイテム追加
                   </h2>
                   <p id={addDialogIds.description} className="text-sm mt-1">
-                    {currentDay} {addDialogDefaults.block}-
+                    {addDialogDefaults.eventDate} {addDialogDefaults.block}-
                     {addDialogDefaults.number}
                   </p>
                 </div>
@@ -4624,7 +4802,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                       <input
                         id={addDialogIds.eventDate}
                         type="text"
-                        value={currentDay || ""}
+                        value={addDialogDefaults.eventDate}
                         readOnly
                         className={`${formInputClass} bg-slate-100 dark:bg-slate-700`}
                       />
@@ -4671,6 +4849,47 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                         placeholder="01a"
                       />
                     </div>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor={addDialogIds.priorityLevel}
+                      className={labelClass}
+                    >
+                      優先度
+                    </label>
+                    <select
+                      id={addDialogIds.priorityLevel}
+                      value={newItemForm.priorityLevel}
+                      required
+                      aria-describedby={
+                        newItemForm.priorityLevel === ""
+                          ? addDialogIds.priorityDescription
+                          : undefined
+                      }
+                      onChange={(e) =>
+                        setNewItemForm((prev) => ({
+                          ...prev,
+                          priorityLevel: e.target
+                            .value as SpaceAdditionPriority,
+                        }))
+                      }
+                      className={formInputClass}
+                    >
+                      <option value="" disabled>
+                        優先度を選択してください
+                      </option>
+                      <option value="highest">最優先</option>
+                      <option value="priority">優先</option>
+                      <option value="none">通常</option>
+                    </select>
+                    {newItemForm.priorityLevel === "" && (
+                      <p
+                        id={addDialogIds.priorityDescription}
+                        className="mt-1 text-sm text-slate-600 dark:text-slate-300"
+                      >
+                        このスペースには異なる優先度の本があります。追加する本の優先度を選んでください。
+                      </p>
+                    )}
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                     <div className="relative">
@@ -4844,7 +5063,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                   <button
                     type="button"
                     onClick={handleAddItemSubmit}
-                    disabled={!newItemForm.circle.trim()}
+                    disabled={
+                      !newItemForm.circle.trim() ||
+                      newItemForm.priorityLevel === ""
+                    }
                     className="flex-1 py-2 px-4 bg-green-700 hover:bg-green-800 disabled:bg-slate-400 text-white rounded-lg font-medium transition-colors"
                   >
                     リストに追加
@@ -4983,8 +5205,28 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                     blockBackgroundColor={blockColorMap.get(item.id)}
                     onMoveUp={onMoveItemUp ? handleCardMoveUp : undefined}
                     onMoveDown={onMoveItemDown ? handleCardMoveDown : undefined}
-                    canMoveUp={globalIndex > 0}
-                    canMoveDown={globalIndex < items.length - 1}
+                    canMoveUp={
+                      globalIndex > 0 &&
+                      (columnType !== "execute" ||
+                        (isSameExecutionPlacementVisit(
+                          item,
+                          items[globalIndex - 1],
+                          placementContext,
+                        ) &&
+                          (!selectedItemIds.has(item.id) ||
+                            selectedPlacement.visits <= 1)))
+                    }
+                    canMoveDown={
+                      globalIndex < items.length - 1 &&
+                      (columnType !== "execute" ||
+                        (isSameExecutionPlacementVisit(
+                          item,
+                          items[globalIndex + 1],
+                          placementContext,
+                        ) &&
+                          (!selectedItemIds.has(item.id) ||
+                            selectedPlacement.visits <= 1)))
+                    }
                     isDuplicateCircle={duplicateCircleItemIds.has(item.id)}
                     isSearchMatch={highlightedItemId === item.id}
                     layoutMode={layoutMode}
@@ -5301,8 +5543,28 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           blockBackgroundColor={blockColorMap.get(item.id)}
           onMoveUp={onMoveItemUp ? handleCardMoveUp : undefined}
           onMoveDown={onMoveItemDown ? handleCardMoveDown : undefined}
-          canMoveUp={index > 0}
-          canMoveDown={index < items.length - 1}
+          canMoveUp={
+            index > 0 &&
+            (columnType !== "execute" ||
+              (isSameExecutionPlacementVisit(
+                item,
+                items[index - 1],
+                placementContext,
+              ) &&
+                (!selectedItemIds.has(item.id) ||
+                  selectedPlacement.visits <= 1)))
+          }
+          canMoveDown={
+            index < items.length - 1 &&
+            (columnType !== "execute" ||
+              (isSameExecutionPlacementVisit(
+                item,
+                items[index + 1],
+                placementContext,
+              ) &&
+                (!selectedItemIds.has(item.id) ||
+                  selectedPlacement.visits <= 1)))
+          }
           isDuplicateCircle={duplicateCircleItemIds.has(item.id)}
           isSearchMatch={highlightedItemId === item.id}
           layoutMode={layoutMode}

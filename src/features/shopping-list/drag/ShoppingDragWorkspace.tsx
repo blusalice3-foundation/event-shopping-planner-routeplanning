@@ -1,20 +1,25 @@
+import { projectedMembership } from "../../consistency/domain/projection";
 import React, {
   createContext,
   useContext,
   useLayoutEffect,
   useMemo,
+  useState,
 } from "react";
 import type { ShoppingItem } from "../../../types/item";
-import { getSpaceKey } from "../../../utils/spaceGrouping";
+import ReactDOM from "react-dom";
 import { buildMovePlan } from "../../lists/domain/movePlan";
 import {
-  buildExecutionVisitProjectionKey,
-  projectItemsToExecutionVisits,
-} from "../../../utils/visitProjection";
+  buildExecutionPlacementVisitKey,
+  projectExecutionPlacementVisits,
+} from "../../../utils/executionPlacement";
 import {
   buildShoppingDragLayout,
   resolveShoppingDragColumnPlacement,
   resolveShoppingDragPlacement,
+  resolveShoppingBookPlacement,
+  shoppingDragHasSingleGroup,
+  shoppingPlacementContext,
   type ShoppingDragColumn,
   type ShoppingDragLayout,
   type ShoppingDragMoveContext,
@@ -36,12 +41,15 @@ interface DragList {
     source: ShoppingDragColumn,
     context?: ShoppingDragMoveContext,
   ) => void;
+  readonly reveal?: (itemId: string) => void;
+  readonly resolveMembership?: (itemId: string) => void;
   readonly candidateNumberSort: "asc" | "desc" | null;
 }
 interface ActiveDrag {
   readonly context: ShoppingDragMoveContext;
   readonly dragId: string;
   readonly moving: readonly ShoppingItem[];
+  readonly requested: readonly ShoppingItem[];
 }
 export interface ShoppingDragWorkspace {
   readonly active: () => ActiveDrag | null;
@@ -131,6 +139,7 @@ function createWorkspace(
   eventName: string,
   day: string,
   generation: number,
+  reportRejection: (message: string) => void,
 ): ShoppingDragWorkspace {
   const lists = new Map<ShoppingDragColumn, DragList>();
   const listeners = new Set<(active: boolean) => void>();
@@ -139,6 +148,7 @@ function createWorkspace(
     list: DragList;
     layout: ShoppingDragLayout;
     columnPlacement?: ShoppingDragPlacement | null;
+    moving?: readonly ShoppingItem[];
   } | null = null;
   let hoverPoint: {
     column: ShoppingDragColumn;
@@ -165,6 +175,44 @@ function createWorkspace(
     return { list, ids, index: new Map(ids.map((id, index) => [id, index])) };
   };
   let hitTestRejected = false;
+  let rejectionReason = "";
+  let guidedTarget = "";
+  let highlightedIds: readonly ShoppingItem[] | null = null;
+  const highlights = new Map<HTMLElement, boolean>();
+  const clearHighlights = () => {
+    highlights.forEach((wasDimmed, element) => {
+      delete element.dataset.shoppingDragEffective;
+      if (!wasDimmed) element.classList.remove("opacity-40");
+    });
+    highlights.clear();
+    highlightedIds = null;
+    document.querySelector("[data-shopping-drag-count]")?.remove();
+  };
+  const highlightMoving = (moving: readonly ShoppingItem[]) => {
+    if (highlightedIds === moving) return;
+    clearHighlights();
+    highlightedIds = moving;
+    const root = active && lists.get(active.context.sourceColumn)?.root();
+    if (root)
+      moving.forEach((item) => {
+        const element = root.querySelector<HTMLElement>(
+          `[data-item-id=${JSON.stringify(item.id)}]`,
+        );
+        if (!element) return;
+        highlights.set(element, element.classList.contains("opacity-40"));
+        element.dataset.shoppingDragEffective = "true";
+        element.classList.add("opacity-40");
+      });
+    const clone = document.querySelector(".esp-shopping-touch-clone");
+    if (clone) {
+      const badge = document.createElement("span");
+      badge.dataset.shoppingDragCount = "true";
+      badge.className =
+        "absolute right-0 top-0 rounded bg-blue-700 px-2 py-1 text-white";
+      badge.textContent = `${moving.length}件`;
+      clone.append(badge);
+    }
+  };
   const clearDecorations = () => {
     decorations.splice(0).forEach((element) => element.remove());
     decorationKey = "";
@@ -222,11 +270,21 @@ function createWorkspace(
     const root = list.root();
     const item = layout.itemsById.get(id);
     if (!root || !item) return null;
-    const key = buildExecutionVisitProjectionKey(item);
+    const key = buildExecutionPlacementVisitKey(
+      item,
+      shoppingPlacementContext(list.presentation),
+    );
     const visit = layout.visitsByKey.get(key);
     if (!visit) return null;
     if (list.presentation.spaceGroups) {
-      const rowKey = `group:${JSON.stringify(getSpaceGroupKey(item))}`;
+      const headingById = root.querySelector<HTMLElement>(
+        `[data-shopping-drag-reference-id=${JSON.stringify(visit.itemIds[0])}]`,
+      );
+      const headingOwner = headingById?.closest<HTMLElement>(
+        "[data-viewport-row-key], [data-row-key]",
+      );
+      if (headingOwner) return { first: headingOwner, last: headingOwner };
+      const rowKey = `group:${JSON.stringify(getSpaceGroupKey(item, list.presentation))}`;
       const layoutOwner =
         root.querySelector<HTMLElement>(
           `[data-viewport-row-key=${JSON.stringify(rowKey)}]`,
@@ -240,7 +298,7 @@ function createWorkspace(
       if (group) return { first: group, last: group };
       // Expanded headers do not expose an item ID; their stable visit ID identifies the owner.
       const heading = root.querySelector<HTMLElement>(
-        `[data-space-group-key=${JSON.stringify(getSpaceGroupKey(item))}]`,
+        `[data-space-group-key=${JSON.stringify(getSpaceGroupKey(item, list.presentation))}]`,
       );
       const owner = heading?.closest<HTMLElement>("[data-row-key]");
       if (owner) return { first: owner, last: owner };
@@ -329,22 +387,53 @@ function createWorkspace(
     },
     start(column, dragId, requestedIds, operation) {
       workspace.clear();
+      reportRejection("");
       const list = lists.get(column);
       if (!list) return null;
       const visibleIds = new Set(list.items.map((item) => item.id));
-      const sourceItems = (list.sourceItems ?? list.items).filter((item) =>
-        visibleIds.has(item.id),
-      );
+      const sourceItems = (
+        column === "execute"
+          ? rawExecuteItems(list)
+          : (list.sourceItems ?? list.items)
+      ).filter((item) => visibleIds.has(item.id));
       const plan = buildMovePlan({
         requestedIds,
         sourceOrderedIds: sourceItems.map((item) => item.id),
         allItems: sourceItems,
         dayName: day,
-        expansionPolicy: "same-visit",
+        expansionPolicy: "exact",
       });
       if (!plan.effective.includes(dragId)) return null;
       const ids = new Set(plan.effective);
-      const moving = sourceItems.filter((item) => ids.has(item.id));
+      const requested = sourceItems.filter((item) => ids.has(item.id));
+      const unresolved = requested.find((item) => {
+        const membership = projectedMembership(item);
+        return (
+          membership &&
+          (membership.status === "confirmation-required" ||
+            membership.status === "map-selection-required")
+        );
+      });
+      if (unresolved) {
+        reportRejection(
+          "所属の確認が必要です。品目の編集画面で所属を確認してから、もう一度ドラッグしてください。",
+        );
+        list.resolveMembership?.(unresolved.id);
+        return null;
+      }
+      const placementContext = shoppingPlacementContext(list.presentation);
+      const visitKeys = new Set(
+        requested.map((item) =>
+          buildExecutionPlacementVisitKey(item, placementContext),
+        ),
+      );
+      const moving = sourceItems.filter((item) =>
+        visitKeys.has(buildExecutionPlacementVisitKey(item, placementContext)),
+      );
+      rejectionReason = shoppingDragHasSingleGroup(requested, list.presentation)
+        ? ""
+        : "異なるホール・優先度の品目をまとめてドラッグできません。同じ所属・優先度で選び直してください。";
+      if (rejectionReason) reportRejection(rejectionReason);
       const token = Symbol("shopping-drag");
       const context: ShoppingDragMoveContext = {
         token,
@@ -353,15 +442,18 @@ function createWorkspace(
         generation,
         sourceColumn: column,
         requestedIds: plan.requested,
-        effectiveIds: plan.effective,
-        sourceVisits: projectItemsToExecutionVisits(moving).map((visit) => ({
+        effectiveIds: moving.map((item) => item.id),
+        sourceVisits: projectExecutionPlacementVisits(
+          moving,
+          placementContext,
+        ).map((visit) => ({
           key: visit.key,
           ids: visit.itemIds,
         })),
         operation,
         isCurrent: () => active?.context.token === token,
       };
-      active = { context, dragId, moving };
+      active = { context, dragId, moving, requested };
       const candidates = lists.get("candidate");
       if (candidates)
         candidateNavigation = prepareCandidateNavigation(candidates);
@@ -388,13 +480,7 @@ function createWorkspace(
     hover(column, targetId, clientY, clientX) {
       if (!active) return false;
       hitTestRejected = false;
-      if (active.context.sourceColumn === column) {
-        hitTestRejected = true;
-        accepted = null;
-        hoverPoint = null;
-        clearDecorations();
-        return false;
-      }
+
       hoverPoint = { column, id: targetId, y: clientY, x: clientX };
       const list = lists.get(column);
       accepted = null;
@@ -402,7 +488,16 @@ function createWorkspace(
         clearDecorations();
         return true;
       }
+      if (rejectionReason) {
+        decorate(list, "mixed-group", rejectionReason, []);
+        return true;
+      }
       if (column === "candidate") {
+        highlightMoving(
+          active.context.sourceColumn === column
+            ? active.requested
+            : active.moving,
+        );
         if (candidateNavigation?.list !== list)
           candidateNavigation = prepareCandidateNavigation(list);
         let hoverId = targetId ?? "__END_OF_LIST__";
@@ -428,7 +523,20 @@ function createWorkspace(
         accepted = {
           column,
           hoverId,
-          context: { ...active.context, targetColumn: column },
+          context: {
+            ...active.context,
+            targetColumn: column,
+            sourceVisits: projectExecutionPlacementVisits(
+              active.context.sourceColumn === column
+                ? active.requested
+                : active.moving,
+              shoppingPlacementContext(list.presentation),
+            ).map((visit) => ({ key: visit.key, ids: visit.itemIds })),
+            effectiveIds:
+              active.context.sourceColumn === column
+                ? active.requested.map((item) => item.id)
+                : active.moving.map((item) => item.id),
+          },
         };
         decorate(
           list,
@@ -440,16 +548,45 @@ function createWorkspace(
         );
         return true;
       }
-      if (layoutCache?.list !== list)
+      const placementContext = shoppingPlacementContext(list.presentation);
+      const sourceIsExecute =
+        active.context.sourceColumn === "execute" && column === "execute";
+      const reference =
+        targetId && list.items.find((item) => item.id === targetId);
+      const isBookReorder = Boolean(
+        sourceIsExecute &&
+        active.context.operation !== "space-group" &&
+        reference &&
+        active.requested.every(
+          (item) =>
+            buildExecutionPlacementVisitKey(item, placementContext) ===
+            buildExecutionPlacementVisitKey(reference, placementContext),
+        ),
+      );
+      const moving = isBookReorder ? active.requested : active.moving;
+      highlightMoving(moving);
+      if (layoutCache?.list !== list || layoutCache.moving !== moving) {
+        const ids = new Set(
+          sourceIsExecute ? moving.map((item) => item.id) : [],
+        );
         layoutCache = {
           list,
+          moving,
           layout: buildShoppingDragLayout(
-            rawExecuteItems(list),
+            rawExecuteItems(list).filter((item) => !ids.has(item.id)),
             list.presentation,
           ),
         };
+      }
       const layout = layoutCache.layout;
-      const elements = targetId ? visitElements(list, layout, targetId) : null;
+      const elements = targetId
+        ? isBookReorder
+          ? (() => {
+              const element = itemElement(list.root()!, targetId);
+              return element ? { first: element, last: element } : null;
+            })()
+          : visitElements(list, layout, targetId)
+        : null;
       const firstRect = elements?.first.getBoundingClientRect();
       const lastRect = elements?.last.getBoundingClientRect();
       const boundary = targetId
@@ -460,31 +597,100 @@ function createWorkspace(
           : "after"
         : "end";
       const placement = targetId
-        ? resolveShoppingDragPlacement(
-            layout,
-            active.moving,
-            targetId,
-            boundary,
-          )
+        ? isBookReorder
+          ? resolveShoppingBookPlacement(
+              layout,
+              moving,
+              targetId,
+              boundary === "end" ? "after" : boundary,
+            )
+          : resolveShoppingDragPlacement(layout, moving, targetId, boundary)
         : layoutCache.columnPlacement === undefined
           ? (layoutCache.columnPlacement = resolveShoppingDragColumnPlacement(
               layout,
-              active.moving,
+              moving,
             ))
           : layoutCache.columnPlacement;
-      if (!placement) {
+      const mergeOnly =
+        placement &&
+        placement.positionedIds.length === 0 &&
+        placement.mergeTargetIds.length > 0;
+      const referenceKey =
+        reference &&
+        buildExecutionPlacementVisitKey(reference, placementContext);
+      const validMergeHover =
+        !mergeOnly ||
+        Boolean(
+          referenceKey &&
+          boundary === "after" &&
+          placement!.mergeVisits.some((visit) => visit.key === referenceKey),
+        );
+      const tail = layout.items.at(-1);
+      const tailElements = tail ? visitElements(list, layout, tail.id) : null;
+      const validBlank = Boolean(
+        targetId ||
+        layout.items.length === 0 ||
+        (placement &&
+          placement.insertVisitIndex === layout.visits.length &&
+          placement.mergeTargetIds.length === 0 &&
+          tailElements &&
+          clientY >= tailElements.last.getBoundingClientRect().bottom),
+      );
+      if (!placement || !validMergeHover || !validBlank) {
+        const suggestion =
+          layoutCache.columnPlacement === undefined
+            ? (layoutCache.columnPlacement = resolveShoppingDragColumnPlacement(
+                layout,
+                moving,
+              ))
+            : layoutCache.columnPlacement;
+        const target =
+          suggestion?.mergeTargetIds[0] ??
+          (suggestion &&
+            layout.visits[suggestion.insertVisitIndex - 1]?.itemIds.at(-1)) ??
+          (suggestion &&
+            layout.visits[suggestion.insertVisitIndex]?.itemIds[0]);
+        if (target && guidedTarget !== target) {
+          guidedTarget = target;
+          list.reveal?.(target);
+        }
+        const guideBefore = Boolean(
+          suggestion &&
+          !suggestion.mergeTargetIds.length &&
+          suggestion.insertVisitIndex === 0,
+        );
+        const destination = target ? visitElements(list, layout, target) : null;
         decorate(
           list,
-          "rejected",
-          "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
-          [],
+          `guide:${target ?? "none"}`,
+          suggestion
+            ? `${suggestion.mergeVisits.length ? `既存の${suggestion.mergeVisits.length}訪問の末尾へ合流します。${!destination || destination.last.getBoundingClientRect().top > window.innerHeight || destination.last.getBoundingClientRect().bottom < 0 ? "画面外の合流先を含みます。" : ""}` : ""}正しい所属・優先度の挿入先へ案内しています。表示された位置へドラッグしてから離してください。`
+            : "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          destination
+            ? [
+                {
+                  element: guideBefore ? destination.first : destination.last,
+                  edge: guideBefore ? "before" : "after",
+                  kind: "suggestion",
+                },
+              ]
+            : [],
         );
         return true;
       }
       accepted = {
         column,
         hoverId: placement.anchorId,
-        context: { ...active.context, targetColumn: column, placement },
+        context: {
+          ...active.context,
+          targetColumn: column,
+          effectiveIds: moving.map((item) => item.id),
+          sourceVisits: projectExecutionPlacementVisits(
+            moving,
+            placementContext,
+          ).map((visit) => ({ key: visit.key, ids: visit.itemIds })),
+          placement,
+        },
       };
       const lines: {
         element: HTMLElement;
@@ -557,7 +763,7 @@ function createWorkspace(
           placement.mergeTargetIds,
           offscreen,
         ]),
-        text,
+        `${moving.length}件を移動します。${text}`,
         lines,
       );
       return true;
@@ -598,18 +804,36 @@ function createWorkspace(
       }
     },
     drop(column) {
-      if (!active || active.context.sourceColumn === column) return;
+      if (!active) return;
+      if (rejectionReason) {
+        reportRejection(rejectionReason);
+        workspace.clear(active.context.token);
+        return;
+      }
+      if (hitTestRejected) {
+        workspace.clear(active.context.token);
+        return;
+      }
+      workspace.refresh();
       if (hitTestRejected) {
         workspace.clear(active.context.token);
         return;
       }
       const point = hoverPoint;
-      if (point && point.column !== column) return;
-      if (!point || point.column !== column)
-        workspace.hover(column, undefined, 0);
-      else workspace.hover(column, point.id, point.y, point.x);
+      if (!point || point.column !== column) {
+        reportRejection(
+          "配置先を確認できませんでした。品目は移動していません。有効な位置でもう一度ドラッグしてください。",
+        );
+        workspace.clear(active.context.token);
+        return;
+      }
+      workspace.hover(column, point.id, point.y, point.x);
       const target = accepted;
       const source = active;
+      if (!target)
+        reportRejection(
+          "配置先を確認できませんでした。品目は移動していません。有効な位置でもう一度ドラッグしてください。",
+        );
       if (target?.column === column)
         lists
           .get(column)
@@ -639,33 +863,47 @@ function createWorkspace(
       hoverPoint = null;
       layoutCache = null;
       candidateNavigation = null;
+      rejectionReason = "";
+      guidedTarget = "";
+      clearHighlights();
       clearDecorations();
       if (wasActive) listeners.forEach((listener) => listener(false));
     },
   };
   return workspace;
 }
-function getSpaceGroupKey(item: ShoppingItem): string {
-  const space = getSpaceKey(item.block, item.number);
-  // Match the existing space identity normalizer rather than display labels.
-  return item.priorityLevel && item.priorityLevel !== "none"
-    ? `${space}:${item.priorityLevel}`
-    : space;
+function getSpaceGroupKey(
+  item: ShoppingItem,
+  presentation: ShoppingDragPresentation,
+): string {
+  return buildExecutionPlacementVisitKey(
+    item,
+    shoppingPlacementContext(presentation),
+  );
 }
 export function ShoppingDragProvider({
   eventName,
   day,
   generation,
+  onPlacementRejected,
   children,
 }: {
   eventName: string;
   day: string;
   generation: number;
+  onPlacementRejected?: (message: string) => void;
   children: React.ReactNode;
 }): React.ReactElement {
+  const [rejection, setRejection] = useState<string | null>(null);
   const workspace = useMemo(
-    () => createWorkspace(eventName, day, generation),
-    [eventName, day, generation],
+    () =>
+      createWorkspace(
+        eventName,
+        day,
+        generation,
+        onPlacementRejected ?? setRejection,
+      ),
+    [eventName, day, generation, onPlacementRejected],
   );
   useLayoutEffect(() => {
     const refresh = () => workspace.refresh();
@@ -677,5 +915,27 @@ export function ShoppingDragProvider({
       workspace.clear();
     };
   }, [workspace]);
-  return <Context.Provider value={workspace}>{children}</Context.Provider>;
+  return (
+    <Context.Provider value={workspace}>
+      {children}
+      {rejection &&
+        ReactDOM.createPortal(
+          <div
+            role="alert"
+            data-shopping-placement-rejection
+            className="fixed left-4 right-4 top-20 z-[100] rounded bg-red-700 p-3 text-white shadow-lg"
+          >
+            {rejection}
+            <button
+              type="button"
+              className="ml-4 underline"
+              onClick={() => setRejection(null)}
+            >
+              閉じる
+            </button>
+          </div>,
+          document.body,
+        )}
+    </Context.Provider>
+  );
 }

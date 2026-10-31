@@ -424,7 +424,8 @@ describe("itemOps regressions", () => {
     );
 
     expect(result.insertedItemIds).toEqual(["a1", "a2"]);
-    expect(result.executeModeItems[dayName]).toEqual(["a1", "a2", "b1"]);
+    // The configured normal groups precede this unlisted priority group.
+    expect(result.executeModeItems[dayName]).toEqual(["b1", "a1", "a2"]);
   });
 
   it("adds only uninserted same-space siblings when the clicked map item is already inserted", () => {

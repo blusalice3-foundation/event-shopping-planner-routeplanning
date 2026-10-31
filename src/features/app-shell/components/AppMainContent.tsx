@@ -408,6 +408,7 @@ export type AppMainContentActions = {
 
 export type AppMainContentProps = {
   readonly eventGeneration?: number;
+  readonly onPlacementRejected?: (message: string) => void;
   readonly model: AppMainContentModel;
   readonly actions: AppMainContentActions;
 };
@@ -416,6 +417,7 @@ const AppMainContent: React.FC<AppMainContentProps> = ({
   model,
   actions,
   eventGeneration = 0,
+  onPlacementRejected,
 }) => {
   const {
     navigation: {
@@ -697,6 +699,7 @@ const AppMainContent: React.FC<AppMainContentProps> = ({
               eventName={activeEventName}
               day={activeEventDate}
               generation={eventGeneration}
+              onPlacementRejected={onPlacementRejected}
             >
               {/* Reserve 40px chain targets with 2px clearance on both sides. */}
               <div className="grid min-h-[calc(100dvh-var(--app-header-height,0px)-var(--footer-height,0px)-var(--app-main-content-padding,1rem)*2)] grid-cols-2 gap-x-11 gap-y-4">

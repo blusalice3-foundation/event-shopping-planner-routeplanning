@@ -1,3 +1,8 @@
+import {
+  buildExecutionPlacementVisitKey as buildExecutionVisitProjectionKey,
+  isSameExecutionPlacementGroup,
+  findExecutionPlacementGroupTailAnchor,
+} from "../../../utils/executionPlacement";
 import { recordEntry } from "../../../utils/ownRecord";
 import type {
   DayMapData,
@@ -7,13 +12,11 @@ import type {
 import type { ExecuteModeItems, ShoppingItem } from "../../../types/item";
 import { getSpaceKey } from "../../../utils/spaceGrouping";
 import {
-  buildExecutionVisitProjectionKey,
   findExecutionDayBucketKey,
   normalizeExecutionVisitDay,
   projectItemsToExecutionVisits,
   removeExecutionVisitMemberPreservingBasePosition,
 } from "../../../utils/visitProjection";
-import { findItemHallId } from "./geometry";
 
 export type ExecuteInsertPlacement =
   | "positioned"
@@ -136,6 +139,7 @@ export function expandSameSpacePriorityItemIds(
         continue;
       if (getSpaceKey(sibling.block, sibling.number) !== spaceKey) continue;
       if ((sibling.priorityLevel || "none") !== priorityLevel) continue;
+      if (!isSameExecutionPlacementGroup(item, sibling, { allItems })) continue;
       addIfAvailable(sibling.id);
     }
   }
@@ -180,7 +184,10 @@ function groupInsertItemIdsByVisit(
   const knownItems = itemIds
     .map((itemId) => itemsMap.get(itemId))
     .filter((item): item is ShoppingItem => item !== undefined);
-  const knownGroups = projectItemsToExecutionVisits(knownItems);
+  const knownGroups = projectItemsToExecutionVisits(
+    knownItems,
+    buildExecutionVisitProjectionKey,
+  );
   const groupByItemId = new Map<string, InsertVisitGroup>();
   knownGroups.forEach((visit) => {
     const group = { key: visit.key, itemIds: [...visit.itemIds] };
@@ -294,6 +301,7 @@ export function repositionExecuteItemAfterIdentityChangeWithResult(
         sourceIds,
         previousItem,
         updatedAllItems,
+        buildExecutionVisitProjectionKey,
       );
   });
 
@@ -411,12 +419,32 @@ export function computeInsertIntoExecuteAtPosition(
           (itemId) => !options.canInsertWithReference!(itemId, mergeTargetId),
         ),
     );
+    const reference = itemsMap.get(referenceItemId);
+    const referenceKey = reference
+      ? buildExecutionVisitProjectionKey(reference)
+      : undefined;
+    const visitFirstIndex = referenceKey
+      ? currentDayItems.findIndex((id) => {
+          const item = itemsMap.get(id);
+          return (
+            item && buildExecutionVisitProjectionKey(item) === referenceKey
+          );
+        })
+      : refIndex;
+    const beforeIndex = position === "before" ? visitFirstIndex : refIndex + 1;
+    const neighbours = [
+      currentDayItems[beforeIndex - 1],
+      currentDayItems[beforeIndex],
+    ].filter((id): id is string => !!id);
     const rejectedPosition =
       refIndex >= 0 &&
-      positionedGroups.some((group) =>
-        group.itemIds.some(
-          (itemId) => !options.canInsertWithReference!(itemId, referenceItemId),
-        ),
+      positionedGroups.some(
+        (group) =>
+          !neighbours.some((anchorId) =>
+            group.itemIds.every((itemId) =>
+              options.canInsertWithReference!(itemId, anchorId),
+            ),
+          ),
       );
     if (rejectedMerge || rejectedPosition) {
       return { accepted: false, executeModeItems, insertedItemIds: [] };
@@ -561,50 +589,19 @@ export function computeAddToExecuteListFromMapWithResult(
     if (!item) continue;
     hallOrderedGroupCount++;
 
-    const itemHallId = findItemHallId(item, halls, mapData);
-
-    if (!itemHallId || halls.length === 0) {
-      dayItems.push(...insertGroup.itemIds);
-      continue;
-    }
-
-    const hallOrder =
-      hallRouteSettingsForMap.hallOrder.length > 0
-        ? hallRouteSettingsForMap.hallOrder
-        : halls.map((h) => h.id);
-
-    const getHallIdForItem = (id: string): string | null => {
-      const targetItem = itemsMap.get(id);
-      if (!targetItem) return null;
-      return findItemHallId(targetItem, halls, mapData);
-    };
-
-    let insertIndex = dayItems.length;
-    const itemHallIndex = hallOrder.indexOf(itemHallId);
-
-    if (itemHallIndex >= 0) {
-      let lastSameHallIndex = -1;
-      let firstLaterHallIndex = -1;
-
-      for (let i = 0; i < dayItems.length; i++) {
-        const existingItemHallId = getHallIdForItem(dayItems[i]);
-        if (existingItemHallId === itemHallId) {
-          lastSameHallIndex = i;
-        } else if (existingItemHallId) {
-          const existingHallIndex = hallOrder.indexOf(existingItemHallId);
-          if (existingHallIndex > itemHallIndex && firstLaterHallIndex === -1) {
-            firstLaterHallIndex = i;
-          }
-        }
-      }
-
-      if (lastSameHallIndex >= 0) {
-        insertIndex = lastSameHallIndex + 1;
-      } else if (firstLaterHallIndex >= 0) {
-        insertIndex = firstLaterHallIndex;
-      }
-    }
-
+    const existingItems = dayItems.flatMap((id) => itemsMap.get(id) ?? []);
+    const anchor = findExecutionPlacementGroupTailAnchor(
+      item,
+      existingItems,
+      {
+        mapData: mapData ?? null,
+        hallDefinitions: halls,
+        allItems,
+      },
+      hallRouteSettingsForMap.hallOrder,
+    );
+    const anchorIndex = dayItems.indexOf(anchor);
+    const insertIndex = anchorIndex >= 0 ? anchorIndex : dayItems.length;
     dayItems.splice(insertIndex, 0, ...insertGroup.itemIds);
   }
 
@@ -928,7 +925,8 @@ export function reorderExecuteIdsForSpaceAdjacency(
     if (!item) continue;
     if (
       getSpaceKey(item.block, item.number) === targetSpaceKey &&
-      (item.priorityLevel || "none") === targetPriority
+      (item.priorityLevel || "none") === targetPriority &&
+      isSameExecutionPlacementGroup(targetItem, item, { allItems })
     ) {
       siblingIndices.push(i);
     }

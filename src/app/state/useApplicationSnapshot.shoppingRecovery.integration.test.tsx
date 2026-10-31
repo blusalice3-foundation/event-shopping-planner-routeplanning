@@ -1,3 +1,4 @@
+import { buildExecutionPlacementVisitKey } from "../../utils/executionPlacement";
 import { useMemo, useRef } from "react";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -275,7 +276,10 @@ async function recoveryHarness(invalidFull = false) {
       targetColumn,
       requestedIds: [id],
       effectiveIds: [id],
-      sourceVisits: projectItemsToExecutionVisits(source).map((visit) => ({
+      sourceVisits: projectItemsToExecutionVisits(
+        source.filter((item) => item.id === id),
+        buildExecutionPlacementVisitKey,
+      ).map((visit) => ({
         key: visit.key,
         ids: visit.itemIds,
       })),
@@ -333,7 +337,9 @@ describe("committed shopping recovery across accepted application input", () => 
       expect(
         h.result.current.application.raw.executeModeItems.event[firstDay],
       ).toEqual(["1"]);
-      expect(h.result.current.selection.selectedItemIds.size).toBe(0);
+      expect(h.result.current.selection.selectedItemIds).toEqual(
+        new Set(["1"]),
+      );
       const durableA = await db.readApplicationSnapshot();
       expect(durableA.snapshot.executeModeItems.event[firstDay]).toEqual([]);
       expect(
@@ -381,6 +387,9 @@ describe("committed shopping recovery across accepted application input", () => 
             : "3";
       act(() => h.select(selectedId));
       const endpoint = h.result.current.selection.rangeStart;
+      const finalSelection = new Set(
+        h.result.current.selection.selectedItemIds,
+      );
       expect(
         h.result.current.application.values.eventLists[eventName].find(
           (entry) => entry.id === editId,
@@ -398,7 +407,7 @@ describe("committed shopping recovery across accepted application input", () => 
       expect(h.result.current.eventName).toBe(eventName);
       expect(h.result.current.day).toBe(day);
       expect(h.result.current.selection.selectedItemIds).toEqual(
-        new Set([selectedId]),
+        finalSelection,
       );
       expect(h.result.current.selection.rangeStart).toEqual(endpoint);
       expect(h.result.current.application.confirmations).toEqual([]);

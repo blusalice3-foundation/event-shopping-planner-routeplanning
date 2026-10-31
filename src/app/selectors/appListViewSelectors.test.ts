@@ -84,7 +84,7 @@ describe("appListViewSelectors", () => {
         },
         items: [a1, b, a2, priority],
       }).map(({ id }) => id),
-    ).toEqual(["a1", "a2", "b", "priority"]);
+    ).toEqual(["priority", "a1", "a2", "b"]);
   });
 
   it("keeps execute order while applying status and temporary-visibility filters", () => {

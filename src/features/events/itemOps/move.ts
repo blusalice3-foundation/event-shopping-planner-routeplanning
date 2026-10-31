@@ -1,4 +1,11 @@
 import {
+  buildExecutionPlacementVisitKey as buildExecutionVisitProjectionKey,
+  isSameExecutionPlacementGroup,
+  isSameExecutionPlacementVisit,
+  canPlaceExecutionItemsAtBoundary,
+  applyExecutionBookOrder,
+} from "../../../utils/executionPlacement";
+import {
   sameDragIds,
   validateShoppingDragPlacement,
   type ShoppingDragMoveContext,
@@ -12,7 +19,6 @@ import type {
   ViewMode,
 } from "../../../types/item";
 import {
-  buildExecutionVisitProjectionKey,
   normalizeExecutionVisitDay,
   projectItemsToExecutionVisits,
 } from "../../../utils/visitProjection";
@@ -92,13 +98,36 @@ export function computeMoveItem(params: {
             (selectedBlockFilters.size === 0 ||
               selectedBlockFilters.has(item.block))),
     );
+    if (sourceColumn === "execute") {
+      const positions = new Map(
+        (recordEntry(executeModeItems, savedDayName) || []).map((id, index) => [
+          id,
+          index,
+        ]),
+      );
+      sourceItems.sort((a, b) => positions.get(a.id)! - positions.get(b.id)!);
+    }
     const plan = buildMovePlan({
       requestedIds: dragContext.requestedIds,
       sourceOrderedIds: sourceItems.map((item) => item.id),
       allItems,
       dayName,
       expansionPolicy:
-        sourceColumn === "candidate" && targetColumn === "candidate"
+        dragContext.placement?.kind === "items" ||
+        (sourceColumn === "candidate" && targetColumn === "candidate") ||
+        (sourceColumn === "execute" &&
+          targetColumn === "execute" &&
+          dragContext.requestedIds.every((id) => {
+            const item = allItems.find((candidate) => candidate.id === id);
+            const hover = allItems.find(
+              (candidate) => candidate.id === hoverId,
+            );
+            return (
+              item &&
+              hover &&
+              isSameExecutionPlacementVisit(item, hover, { allItems })
+            );
+          }))
           ? "exact"
           : "same-visit",
     });
@@ -109,10 +138,12 @@ export function computeMoveItem(params: {
     )
       return {};
     const currentVisits = new Map(
-      projectItemsToExecutionVisits(sourceItems).map((visit) => [
-        visit.key,
-        visit,
-      ]),
+      projectItemsToExecutionVisits(
+        sourceItems.filter((item) =>
+          dragContext.effectiveIds.includes(item.id),
+        ),
+        buildExecutionVisitProjectionKey,
+      ).map((visit) => [visit.key, visit]),
     );
     if (
       dragContext.sourceVisits.some((expected) => {
@@ -180,14 +211,23 @@ export function computeMoveItem(params: {
         }
       }
 
-      if (itemsToMove.length === 0) return {};
+      if (
+        itemsToMove.length === 0 ||
+        !itemsToMove.every((item) =>
+          isSameExecutionPlacementGroup(itemsToMove[0], item, { allItems }),
+        )
+      )
+        return {};
 
       const dayItems = [...(recordEntry(executeModeItems, savedDayName) || [])];
       const itemsMap = new Map(allItems.map((item) => [item.id, item]));
       const positionedItemIds: string[] = [];
       const mergedIntoVisitItemIds: string[] = [];
 
-      projectItemsToExecutionVisits(itemsToMove).forEach((visit) => {
+      projectItemsToExecutionVisits(
+        itemsToMove,
+        buildExecutionVisitProjectionKey,
+      ).forEach((visit) => {
         let firstExistingItemId: string | null = null;
         let lastExistingIndex = -1;
         for (let index = 0; index < dayItems.length; index++) {
@@ -321,7 +361,13 @@ export function computeMoveItem(params: {
         }
       }
 
-      if (itemsToMove.length === 0) return {};
+      if (
+        itemsToMove.length === 0 ||
+        !itemsToMove.every((item) =>
+          isSameExecutionPlacementGroup(itemsToMove[0], item, { allItems }),
+        )
+      )
+        return {};
 
       const itemIdsToMove = itemsToMove.map((item) => item.id);
 
@@ -380,75 +426,130 @@ export function computeMoveItem(params: {
 
   // ---- editモード同列リオーダー: execute列内 ----
   if (mode === "edit" && targetColumn === "execute") {
-    // ホール・優先度境界チェック（isAppendToEndでもスキップしない）
-    if (
-      areItemsInSameHall &&
-      !isAppendToEnd &&
-      !areItemsInSameHall(dragId, hoverId)
-    ) {
-      return {};
-    }
-    // 末尾追加時もチェック: ドラッグ元の末尾隣接アイテムと比較してスペース分断を防止
-    if (areItemsInSameHall && isAppendToEnd) {
-      const dayItemsCurrent = recordEntry(executeModeItems, savedDayName) || [];
-      if (dayItemsCurrent.length > 0) {
-        const lastId = dayItemsCurrent[dayItemsCurrent.length - 1];
-        if (lastId !== dragId && !areItemsInSameHall(dragId, lastId)) {
-          return {};
-        }
-      }
-    }
-
     const dayItems = [...(recordEntry(executeModeItems, savedDayName) || [])];
-
-    // 同一スペース+同一優先度キー取得ヘルパー
-    const getIdSpacePriorityKey = (id: string): string => {
-      const item = allItems.find((i) => i.id === id);
-      return item ? buildExecutionVisitProjectionKey(item) : `unknown:${id}`;
-    };
-
-    // 選択を同一スペース+同一優先度グループ全体に展開
-    const expandedSelection = new Set(
-      expandSameSpacePriorityItemIds(
-        isDragInEffectiveSelection
-          ? Array.from(effectiveSelectedIds)
-          : [dragId],
-        allItems,
-        { dayName, sourceIds: new Set(dayItems) },
-      ),
+    const itemsById = new Map(allItems.map((item) => [item.id, item]));
+    const requestedIds = isDragInEffectiveSelection
+      ? [...effectiveSelectedIds]
+      : [dragId];
+    const requestedItems = requestedIds.flatMap((id) => {
+      const item = itemsById.get(id);
+      return item &&
+        executeIdsSet.has(id) &&
+        normalizeExecutionVisitDay(item.eventDate) === normalizedDayName
+        ? [item]
+        : [];
+    });
+    const first = requestedItems[0];
+    if (
+      !first ||
+      !requestedItems.every((item) =>
+        isSameExecutionPlacementGroup(first, item, { allItems }),
+      )
+    )
+      return {};
+    const hover = itemsById.get(hoverId);
+    const reorderBooks =
+      dragContext?.placement?.kind === "items" ||
+      (!!hover &&
+        requestedItems.every((item) =>
+          isSameExecutionPlacementVisit(item, hover, { allItems }),
+        ));
+    const movedIds = new Set(
+      dragContext?.effectiveIds ??
+        (reorderBooks
+          ? requestedItems.map((item) => item.id)
+          : expandSameSpacePriorityItemIds(requestedIds, allItems, {
+              dayName,
+              sourceIds: executeIdsSet,
+            })),
     );
-
-    const selectedBlock = dayItems.filter((id) => expandedSelection.has(id));
-    const listWithoutSelection = dayItems.filter(
-      (id) => !expandedSelection.has(id),
-    );
-
-    if (isAppendToEnd) {
-      return {
-        executeModeItems: {
-          ...executeModeItems,
-          [savedDayName]: [...listWithoutSelection, ...selectedBlock],
-        },
-      };
+    const selectedBlock = dayItems.filter((id) => movedIds.has(id));
+    const movingItems = selectedBlock.flatMap((id) => itemsById.get(id) ?? []);
+    if (
+      !movingItems.length ||
+      !movingItems.every((item) =>
+        isSameExecutionPlacementGroup(first, item, { allItems }),
+      )
+    )
+      return {};
+    const remaining = dayItems.filter((id) => !movedIds.has(id));
+    let beforeId = dragContext?.placement?.anchorId ?? hoverId;
+    if (!dragContext?.placement && !isAppendToEnd && !reorderBooks && hover) {
+      beforeId =
+        remaining.find((id) => {
+          const item = itemsById.get(id);
+          return (
+            item && isSameExecutionPlacementVisit(item, hover, { allItems })
+          );
+        }) ?? hoverId;
     }
-
-    // hoverIdのExecution訪問のglobal先頭へスナップ（非連続memberにも割り込まない）
-    const hoverGroupKey = getIdSpacePriorityKey(hoverId);
-    const targetIndex = listWithoutSelection.findIndex(
-      (id) => getIdSpacePriorityKey(id) === hoverGroupKey,
-    );
-    if (targetIndex === -1) return {};
-
-    listWithoutSelection.splice(targetIndex, 0, ...selectedBlock);
-
+    const index =
+      beforeId === "__END_OF_LIST__"
+        ? remaining.length
+        : remaining.indexOf(beforeId);
+    if (index < 0) return {};
+    const remainingItems = remaining.flatMap((id) => itemsById.get(id) ?? []);
+    if (reorderBooks) {
+      if (
+        dragContext?.placement?.kind !== "items" &&
+        (!hover || movedIds.has(hoverId))
+      )
+        return {};
+    } else if (
+      !canPlaceExecutionItemsAtBoundary({
+        movingItems,
+        remainingItems,
+        beforeId,
+        context: { allItems },
+      })
+    )
+      return {};
+    if (areItemsInSameHall && !reorderBooks) {
+      const neighbours = [remaining[index - 1], remaining[index]].filter(
+        (id): id is string => !!id,
+      );
+      if (
+        !neighbours.some((id) =>
+          movingItems.every((item) => areItemsInSameHall(item.id, id)),
+        )
+      )
+        return {};
+    }
+    const before = remaining.flatMap((id) => itemsById.get(id) ?? []);
+    remaining.splice(index, 0, ...selectedBlock);
+    let resultIds = remaining;
+    if (reorderBooks) {
+      const bookIds = new Set(
+        dayItems.filter((id) => {
+          const item = itemsById.get(id);
+          return (
+            item && isSameExecutionPlacementVisit(first, item, { allItems })
+          );
+        }),
+      );
+      const desired = (
+        dragContext?.placement?.expectedItemIds ?? remaining
+      ).filter((id) => bookIds.has(id));
+      if (
+        desired.length !== bookIds.size ||
+        new Set(desired).size !== bookIds.size
+      )
+        return {};
+      resultIds = applyExecutionBookOrder(dayItems, desired);
+    }
+    if (
+      dragContext?.placement &&
+      !validateShoppingDragPlacement(
+        dragContext.placement,
+        before,
+        resultIds.flatMap((id) => itemsById.get(id) ?? []),
+      )
+    )
+      return {};
     return {
-      executeModeItems: {
-        ...executeModeItems,
-        [savedDayName]: listWithoutSelection,
-      },
+      executeModeItems: { ...executeModeItems, [savedDayName]: resultIds },
     };
   }
-
   // ---- editモード同列リオーダー: candidate列内 ----
   if (mode === "edit" && targetColumn === "candidate") {
     const candidateItems = allItems.filter(
@@ -551,104 +652,53 @@ export function computeMoveItemVertical(
   // ---- editモード execute列 ----
   if (mode === "edit" && targetColumn === "execute") {
     const dayItems = [...(recordEntry(executeModeItems, savedDayName) || [])];
-    const currentIndex = dayItems.findIndex((id) => id === itemId);
-
-    if (direction === "up") {
-      if (currentIndex <= 0) return {};
-      const targetId = dayItems[currentIndex - 1];
-      if (!areItemsInSameHall(itemId, targetId)) return {};
-
-      if (isDragInEffectiveSelection) {
-        const selectedIds = dayItems.filter((id) =>
-          effectiveSelectedIds.has(id),
+    const itemsById = new Map(allItems.map((item) => [item.id, item]));
+    const selected = new Set(
+      isDragInEffectiveSelection ? effectiveSelectedIds : [itemId],
+    );
+    const selectedIds = dayItems.filter((id) => selected.has(id));
+    if (!selectedIds.length) return {};
+    const first = itemsById.get(selectedIds[0]);
+    if (
+      !first ||
+      !selectedIds.every((id) => {
+        const item = itemsById.get(id);
+        return (
+          item &&
+          isSameExecutionPlacementVisit(first, item, { allItems }) &&
+          areItemsInSameHall(first.id, id)
         );
-        const listWithoutSelection = dayItems.filter(
-          (id) => !effectiveSelectedIds.has(id),
-        );
-        const firstSelectedIndex = dayItems.findIndex((id) =>
-          effectiveSelectedIds.has(id),
-        );
-        if (firstSelectedIndex > 0) {
-          const targetIdForGroup = dayItems[firstSelectedIndex - 1];
-          if (!areItemsInSameHall(selectedIds[0], targetIdForGroup)) return {};
-          const newTargetIndex = firstSelectedIndex - 1;
-          listWithoutSelection.splice(newTargetIndex, 0, ...selectedIds);
-          return {
-            executeModeItems: {
-              ...executeModeItems,
-              [savedDayName]: listWithoutSelection,
-            },
-          };
-        }
-        return {};
-      } else {
-        [dayItems[currentIndex - 1], dayItems[currentIndex]] = [
-          dayItems[currentIndex],
-          dayItems[currentIndex - 1],
-        ];
-        return {
-          executeModeItems: { ...executeModeItems, [savedDayName]: dayItems },
-        };
-      }
-    } else {
-      // down
-      if (currentIndex < 0 || currentIndex >= dayItems.length - 1) return {};
-      const targetId = dayItems[currentIndex + 1];
-      if (!areItemsInSameHall(itemId, targetId)) return {};
-
-      if (isDragInEffectiveSelection) {
-        const selectedIds = dayItems.filter((id) =>
-          effectiveSelectedIds.has(id),
-        );
-        const listWithoutSelection = dayItems.filter(
-          (id) => !effectiveSelectedIds.has(id),
-        );
-
-        let lastSelectedIndex = -1;
-        dayItems.forEach((id, index) => {
-          if (effectiveSelectedIds.has(id)) lastSelectedIndex = index;
-        });
-
-        if (lastSelectedIndex >= 0 && lastSelectedIndex < dayItems.length - 1) {
-          const jumpOverItemId = dayItems[lastSelectedIndex + 1];
-          if (
-            !areItemsInSameHall(
-              selectedIds[selectedIds.length - 1],
-              jumpOverItemId,
-            )
-          )
-            return {};
-
-          const targetIndexInListWithout = listWithoutSelection.findIndex(
-            (id) => id === jumpOverItemId,
-          );
-          if (targetIndexInListWithout !== -1) {
-            listWithoutSelection.splice(
-              targetIndexInListWithout + 1,
-              0,
-              ...selectedIds,
-            );
-            return {
-              executeModeItems: {
-                ...executeModeItems,
-                [savedDayName]: listWithoutSelection,
-              },
-            };
-          }
-        }
-        return {};
-      } else {
-        [dayItems[currentIndex], dayItems[currentIndex + 1]] = [
-          dayItems[currentIndex + 1],
-          dayItems[currentIndex],
-        ];
-        return {
-          executeModeItems: { ...executeModeItems, [savedDayName]: dayItems },
-        };
-      }
-    }
+      })
+    )
+      return {};
+    const visitIds = dayItems.filter((id) => {
+      const item = itemsById.get(id);
+      return item && isSameExecutionPlacementVisit(first, item, { allItems });
+    });
+    const firstIndex = visitIds.indexOf(selectedIds[0]);
+    const lastIndex = visitIds.indexOf(selectedIds[selectedIds.length - 1]);
+    const targetId =
+      visitIds[direction === "up" ? firstIndex - 1 : lastIndex + 1];
+    const target = targetId ? itemsById.get(targetId) : undefined;
+    if (
+      !target ||
+      !selectedIds.every((id) => areItemsInSameHall(id, targetId)) ||
+      !isSameExecutionPlacementVisit(first, target, { allItems })
+    )
+      return {};
+    const remainingBooks = visitIds.filter((id) => !selected.has(id));
+    const targetIndex = remainingBooks.indexOf(targetId);
+    if (targetIndex < 0) return {};
+    remainingBooks.splice(
+      targetIndex + (direction === "down" ? 1 : 0),
+      0,
+      ...selectedIds,
+    );
+    const remaining = applyExecutionBookOrder(dayItems, remainingBooks);
+    return {
+      executeModeItems: { ...executeModeItems, [savedDayName]: remaining },
+    };
   }
-
   // ---- editモード candidate列 ----
   if (mode === "edit" && targetColumn === "candidate") {
     const candidateItems = allItems.filter(

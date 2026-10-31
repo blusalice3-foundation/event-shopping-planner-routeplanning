@@ -165,7 +165,7 @@ describe("appMapViewSelectors", () => {
     ).toBe(false);
     expect(
       selectItemsInSameHallVisit({ ...base, secondItemId: "missing" }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("derives view mode and focus-session keys without mutating persisted state", () => {

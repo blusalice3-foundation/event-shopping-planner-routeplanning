@@ -452,9 +452,9 @@ describe("useMapEditorCommands", () => {
     });
     expect(inserted).toEqual(["b1"]);
     expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual([
+      "b1",
       "a1",
       "a2",
-      "b1",
     ]);
     expect(harness.spies.commitExecuteModeItemsForEvent).toHaveBeenCalledTimes(
       2,
@@ -488,9 +488,9 @@ describe("useMapEditorCommands", () => {
       ["a1"],
     );
     expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual([
+      "b1",
       "a1",
       "a2",
-      "b1",
     ]);
   });
 

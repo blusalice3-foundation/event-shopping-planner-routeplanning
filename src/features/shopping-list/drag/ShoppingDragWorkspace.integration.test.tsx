@@ -1,3 +1,8 @@
+import { emptyApplicationSnapshot } from "../../../app/state/useApplicationSnapshot";
+import {
+  projectConsistencySnapshot,
+  projectedMembership,
+} from "../../consistency/domain/projection";
 import { act, fireEvent, render, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useState } from "react";
@@ -6,6 +11,10 @@ import type { ShoppingItem } from "../../../types/item";
 import { computeMoveItem } from "../../events/itemOps";
 import { ShoppingDragProvider } from "./ShoppingDragWorkspace";
 import type { ShoppingDragMoveContext } from "./shoppingDrag";
+const originalElementFromPoint = Object.getOwnPropertyDescriptor(
+  document,
+  "elementFromPoint",
+);
 const item = (
   id: string,
   number: string,
@@ -32,21 +41,25 @@ function Harness({
   sort = null,
   generation = 0,
   onMove = vi.fn(),
+  onEditRequest = vi.fn(),
   selectedIds = new Set<string>(),
   collapsedCandidate = false,
   initialCandidate = [x1, x2],
+  initialExecute = [a1, a2],
 }: {
   grouped?: boolean;
   sort?: "asc" | "desc" | null;
   generation?: number;
   onMove?: (...args: unknown[]) => void;
+  onEditRequest?: (item: ShoppingItem) => void;
   selectedIds?: Set<string>;
   collapsedCandidate?: boolean;
   initialCandidate?: ShoppingItem[];
+  initialExecute?: ShoppingItem[];
 }) {
-  const [execute, setExecute] = useState([a1, a2]);
+  const [execute, setExecute] = useState(initialExecute);
   const [candidate, setCandidate] = useState(initialCandidate);
-  const allItems = [a1, a2, ...initialCandidate];
+  const allItems = [...initialExecute, ...initialCandidate];
   const move = (
     dragId: string,
     hoverId: string,
@@ -68,8 +81,9 @@ function Harness({
       selectedBlockFilters: new Set(),
       dragContext,
     });
-    if (result.executeModeItems) {
-      const ids = result.executeModeItems.Day1;
+    if (result.executeModeItems || result.eventListItems) {
+      const ids =
+        result.executeModeItems?.Day1 ?? execute.map((value) => value.id);
       const values = result.eventListItems ?? allItems;
       setExecute(ids.map((id) => values.find((value) => value.id === id)!));
       setCandidate(values.filter((value) => !ids.includes(value.id)));
@@ -78,7 +92,7 @@ function Harness({
   const common = {
     onUpdateItem: vi.fn(),
     onMoveItem: move,
-    onEditRequest: vi.fn(),
+    onEditRequest,
     onDeleteRequest: vi.fn(),
     selectedItemIds: selectedIds,
     onSelectItem: vi.fn(),
@@ -146,6 +160,13 @@ function dragLeave(element: HTMLElement, relatedTarget: Element | null) {
   fireEvent(element, event);
 }
 afterEach(() => {
+  if (originalElementFromPoint)
+    Object.defineProperty(
+      document,
+      "elementFromPoint",
+      originalElementFromPoint,
+    );
+  else Reflect.deleteProperty(document, "elementFromPoint");
   vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -543,3 +564,340 @@ describe("workspace cross-column drag", () => {
     ).toBeNull();
   });
 });
+
+describe("execution placement movement units", () => {
+  it("reorders one book within its own space without expanding its peers", async () => {
+    const onMove = vi.fn();
+    const view = render(
+      <Harness grouped={false} onMove={onMove} initialCandidate={[]} />,
+    );
+    const row = (id: string) =>
+      view.container.querySelector<HTMLElement>(`[data-item-id="${id}"]`)!;
+    vi.spyOn(row("a2"), "getBoundingClientRect").mockReturnValue(
+      rect(100, 200),
+    );
+    const transfer = { setData: vi.fn(), getData: () => "execute" };
+    fireEvent.dragStart(row("a1"), { dataTransfer: transfer });
+    dragOver(row("a2"), 175, transfer);
+    fireEvent.drop(row("a2"), { dataTransfer: transfer });
+    expect(onMove).toHaveBeenCalledTimes(1);
+    expect(onMove.mock.calls[0][4].effectiveIds).toEqual(["a1"]);
+    expect(onMove.mock.calls[0][4].placement.kind).toBe("items");
+    await waitFor(() =>
+      expect(
+        [
+          ...view.container.querySelectorAll(
+            '[data-shopping-drag-column="execute"] [data-item-id]',
+          ),
+        ].map((el) => el.getAttribute("data-item-id")),
+      ).toEqual(["a2", "a1"]),
+    );
+  });
+  it("moves the whole source space when one book is dropped after another space", async () => {
+    const onMove = vi.fn();
+    const view = render(
+      <Harness
+        grouped={false}
+        onMove={onMove}
+        initialExecute={[a1, a2, x1]}
+        initialCandidate={[]}
+      />,
+    );
+    const row = (id: string) =>
+      view.container.querySelector<HTMLElement>(`[data-item-id="${id}"]`)!;
+    vi.spyOn(row("x1"), "getBoundingClientRect").mockReturnValue(
+      rect(100, 200),
+    );
+    const transfer = { setData: vi.fn(), getData: () => "execute" };
+    fireEvent.dragStart(row("a1"), { dataTransfer: transfer });
+    dragOver(row("x1"), 175, transfer);
+    fireEvent.drop(row("x1"), { dataTransfer: transfer });
+    expect(onMove).toHaveBeenCalledTimes(1);
+    expect(onMove.mock.calls[0][4].effectiveIds).toEqual(["a1", "a2"]);
+    await waitFor(() =>
+      expect(
+        [
+          ...view.container.querySelectorAll(
+            '[data-shopping-drag-column="execute"] [data-item-id]',
+          ),
+        ].map((el) => el.getAttribute("data-item-id")),
+      ).toEqual(["x1", "a1", "a2"]),
+    );
+  });
+  it("refuses a mixed-priority candidate heading and retains the selected items", () => {
+    const onMove = vi.fn();
+    const selectedIds = new Set(["x1", "x2"]);
+    const view = render(
+      <Harness
+        grouped
+        onMove={onMove}
+        selectedIds={selectedIds}
+        collapsedCandidate
+        initialCandidate={[{ ...x1, priorityLevel: "highest" }, x2]}
+      />,
+    );
+    const heading = view.container.querySelector<HTMLElement>(
+      '[data-space-group-key="A-02a"]',
+    )!;
+    const destination = view.container.querySelector<HTMLElement>(
+      '[data-item-id="a1"]',
+    )!;
+    const transfer = { setData: vi.fn(), getData: () => "candidate" };
+    fireEvent.dragStart(heading, { dataTransfer: transfer });
+    dragOver(destination, 200, transfer);
+    fireEvent.drop(destination, { dataTransfer: transfer });
+    expect(onMove).not.toHaveBeenCalled();
+    expect(
+      document.querySelector("[data-shopping-placement-rejection]")
+        ?.textContent,
+    ).toContain("異なるホール・優先度");
+    expect([...selectedIds]).toEqual(["x1", "x2"]);
+  });
+});
+
+describe("placement guidance and release validation", () => {
+  it.each(["native", "touch"] as const)(
+    "keeps a candidate partial same-space reorder limited to the requested book: %s",
+    async (input) => {
+      const previousHitTest = Object.getOwnPropertyDescriptor(
+        document,
+        "elementFromPoint",
+      );
+      try {
+        const s = setup(false);
+        const source = s.row("x1");
+        const destination = s.row("x2");
+        vi.spyOn(destination, "getBoundingClientRect").mockReturnValue(
+          rect(100, 200),
+        );
+        Object.defineProperty(document, "elementFromPoint", {
+          configurable: true,
+          value: () => destination,
+        });
+        if (input === "native") {
+          fireEvent.dragStart(source, { dataTransfer: s.transfer });
+          dragOver(destination, 175, s.transfer);
+          fireEvent.drop(destination, { dataTransfer: s.transfer });
+        } else {
+          vi.useFakeTimers();
+          vi.stubGlobal("scrollBy", vi.fn());
+          fireEvent.touchStart(source, {
+            touches: [{ clientX: 10, clientY: 150 }],
+          });
+          act(() => vi.advanceTimersByTime(250));
+          fireEvent.touchMove(source, {
+            touches: [{ clientX: 10, clientY: 175 }],
+          });
+          fireEvent.touchEnd(source, {
+            changedTouches: [{ clientX: 10, clientY: 175 }],
+          });
+          vi.useRealTimers();
+        }
+        expect(s.onMove).toHaveBeenCalledTimes(1);
+        const context = s.onMove.mock.calls[0][4] as ShoppingDragMoveContext;
+        expect(context.effectiveIds).toEqual(["x1"]);
+        expect(context.sourceVisits.flatMap((visit) => visit.ids)).toEqual([
+          "x1",
+        ]);
+        await waitFor(() =>
+          expect(
+            [
+              ...s
+                .root("candidate")
+                .querySelectorAll<HTMLElement>("[data-item-id]"),
+            ].map((element) => element.dataset.itemId),
+          ).toEqual(["x2", "x1"]),
+        );
+      } finally {
+        if (previousHitTest)
+          Object.defineProperty(document, "elementFromPoint", previousHitTest);
+        else Reflect.deleteProperty(document, "elementFromPoint");
+      }
+    },
+  );
+
+  it("rejects a drop when its final hit-test leaves the surface after an accepted hover", () => {
+    const previousHitTest = Object.getOwnPropertyDescriptor(
+      document,
+      "elementFromPoint",
+    );
+    try {
+      const s = setup(false);
+      const hitTest = vi.fn((): Element | null => s.row("a1"));
+      Object.defineProperty(document, "elementFromPoint", {
+        configurable: true,
+        value: hitTest,
+      });
+      fireEvent.dragStart(s.row("x1"), { dataTransfer: s.transfer });
+      dragOver(s.row("a1"), 100, s.transfer);
+      expect(
+        s.root("execute").querySelector('[data-shopping-drag-guide="insert"]'),
+      ).not.toBeNull();
+      hitTest.mockReturnValue(null);
+      fireEvent.drop(s.row("a1"), { dataTransfer: s.transfer });
+      expect(s.onMove).not.toHaveBeenCalled();
+      expect(
+        s.view.container.querySelector("[data-shopping-drag-guide]"),
+      ).toBeNull();
+    } finally {
+      if (previousHitTest)
+        Object.defineProperty(document, "elementFromPoint", previousHitTest);
+      else Reflect.deleteProperty(document, "elementFromPoint");
+    }
+  });
+
+  it.each(["native", "touch"] as const)(
+    "guides a wrong priority hover without moving until a valid boundary receives a new drop: %s",
+    (input) => {
+      const previousHitTest = Object.getOwnPropertyDescriptor(
+        document,
+        "elementFromPoint",
+      );
+      try {
+        const onMove = vi.fn();
+        const upper = item("upper", "03a", { priorityLevel: "highest" });
+        const view = render(
+          <Harness
+            grouped={false}
+            onMove={onMove}
+            initialExecute={[upper, a1, a2]}
+          />,
+        );
+        const row = (id: string) =>
+          view.container.querySelector<HTMLElement>(`[data-item-id="${id}"]`)!;
+        const source = row("x1"),
+          wrong = row("upper"),
+          valid = row("a2");
+        vi.spyOn(wrong, "getBoundingClientRect").mockReturnValue(
+          rect(100, 200),
+        );
+        vi.spyOn(valid, "getBoundingClientRect").mockReturnValue(
+          rect(300, 400),
+        );
+        const hitTest = vi.fn((): Element | null => wrong);
+        Object.defineProperty(document, "elementFromPoint", {
+          configurable: true,
+          value: hitTest,
+        });
+        const transfer = { setData: vi.fn(), getData: () => "candidate" };
+        const start = () => {
+          if (input === "native")
+            fireEvent.dragStart(source, { dataTransfer: transfer });
+          else {
+            fireEvent.touchStart(source, {
+              touches: [{ clientX: 10, clientY: 250 }],
+            });
+            act(() => vi.advanceTimersByTime(250));
+          }
+        };
+        const hover = (target: HTMLElement, y: number) => {
+          hitTest.mockReturnValue(target);
+          if (input === "native") dragOver(target, y, transfer);
+          else
+            fireEvent.touchMove(source, {
+              touches: [{ clientX: 10, clientY: y }],
+            });
+        };
+        const drop = (target: HTMLElement, y: number) => {
+          if (input === "native")
+            fireEvent.drop(target, { dataTransfer: transfer });
+          else
+            fireEvent.touchEnd(source, {
+              changedTouches: [{ clientX: 10, clientY: y }],
+            });
+        };
+        if (input === "touch") {
+          vi.useFakeTimers();
+          vi.stubGlobal("scrollBy", vi.fn());
+        }
+        start();
+        hover(wrong, 125);
+        expect(
+          view.container.querySelector(
+            '[data-shopping-drag-guide="suggestion"]',
+          ),
+        ).not.toBeNull();
+        expect(onMove).not.toHaveBeenCalled();
+        drop(wrong, 125);
+        expect(onMove).not.toHaveBeenCalled();
+        expect(
+          view.container.querySelector("[data-shopping-drag-guide]"),
+        ).toBeNull();
+        expect(document.querySelector(".esp-shopping-touch-clone")).toBeNull();
+        expect(document.body).not.toHaveClass("esp-body-scroll-lock");
+        start();
+        hover(valid, 375);
+        expect(onMove).not.toHaveBeenCalled();
+        drop(valid, 375);
+        expect(onMove).toHaveBeenCalledTimes(1);
+      } finally {
+        if (previousHitTest)
+          Object.defineProperty(document, "elementFromPoint", previousHitTest);
+        else Reflect.deleteProperty(document, "elementFromPoint");
+      }
+    },
+  );
+});
+
+it.each(["native-card", "native-heading", "touch"] as const)(
+  "opens existing membership editing before a pending source can move: %s",
+  (input) => {
+    const raw = {
+      ...emptyApplicationSnapshot(),
+      eventLists: { Event: [x1, x2] },
+      hallDefinitions: {
+        Event: {
+          "__mapless__:Day1": [
+            { id: "east", name: "東館", blockNames: ["A"], vertices: [] },
+            { id: "west", name: "西館", blockNames: ["A"], vertices: [] },
+          ],
+        },
+      },
+    };
+    const pending = projectConsistencySnapshot(raw, "Event", "Day1").eventLists
+      .Event as ShoppingItem[];
+    expect(projectedMembership(pending[0])?.status).toBe(
+      "confirmation-required",
+    );
+    const onEditRequest = vi.fn(),
+      onMove = vi.fn();
+    const selectedIds = new Set(["x1"]);
+    const view = render(
+      <Harness
+        onMove={onMove}
+        onEditRequest={onEditRequest}
+        selectedIds={selectedIds}
+        initialExecute={[]}
+        initialCandidate={pending}
+        collapsedCandidate={input === "native-heading"}
+      />,
+    );
+    const source = view.container.querySelector<HTMLElement>(
+      input === "native-heading"
+        ? '[data-space-group-key="A-02a"]'
+        : '[data-item-id="x1"]:not([data-space-group-key])',
+    )!;
+    expect(source).not.toBeNull();
+    if (input === "touch") {
+      vi.useFakeTimers();
+      vi.stubGlobal("scrollBy", vi.fn());
+      fireEvent.touchStart(source, {
+        touches: [{ clientX: 10, clientY: 150 }],
+      });
+      act(() => vi.advanceTimersByTime(250));
+      fireEvent.touchEnd(source);
+    } else {
+      const transfer = { setData: vi.fn(), getData: () => "candidate" };
+      fireEvent.dragStart(source, { dataTransfer: transfer });
+      fireEvent.drop(
+        view.container.querySelector('[data-shopping-drag-column="execute"]')!,
+        { dataTransfer: transfer },
+      );
+    }
+    expect(onEditRequest).toHaveBeenCalledExactlyOnceWith(pending[0]);
+    expect(onMove).not.toHaveBeenCalled();
+    expect([...selectedIds]).toEqual(["x1"]);
+    expect(document.querySelector(".esp-shopping-touch-clone")).toBeNull();
+    expect(document.body).not.toHaveClass("esp-body-scroll-lock");
+  },
+);

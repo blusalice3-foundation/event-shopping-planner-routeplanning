@@ -642,7 +642,7 @@ describe("ShoppingList execution space navigator integration", () => {
     expect(screen.getByTestId("temporary-mode")).toHaveTextContent("none");
   });
 
-  it("keeps navigator visits in the same incoming order as rendered space groups", async () => {
+  it("keeps navigator visits in the same hall and priority order as rendered space groups", async () => {
     render(
       <SpaceNavigatorProvider>
         <ShoppingListHarness
@@ -655,7 +655,7 @@ describe("ShoppingList execution space navigator integration", () => {
       </SpaceNavigatorProvider>,
     );
 
-    const expectedOrder = "A-01a:none|B-02a:priority|C-03a:highest";
+    const expectedOrder = "C-03a:highest|B-02a:priority|A-01a:none";
     await waitFor(() =>
       expect(screen.getByTestId("entry-order")).toHaveTextContent(
         expectedOrder,

@@ -150,7 +150,19 @@ export interface ApplicationShoppingMove {
   effectiveIds: readonly string[];
   hoverId: string;
   candidateSortMode?: string;
+  reorderWithinVisit?: boolean;
   baselineVisits: readonly { id: string; key: string }[];
+  placementBaseline?: {
+    entries: readonly {
+      id: string;
+      key: string;
+      column: "execute" | "candidate";
+    }[];
+    groupNeighbors?: readonly (readonly (string | null)[])[];
+    tailGroups?: readonly string[];
+    sourceOrder: readonly string[];
+    targetOrder: readonly string[];
+  };
   baselineItemIds: readonly string[];
   itemIds: readonly string[];
   baselineExecuteIds: readonly string[];

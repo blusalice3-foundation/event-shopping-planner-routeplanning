@@ -111,6 +111,22 @@ function fixture(count = 150, candidateOrder = false) {
 }
 function performanceFixture(count: number) {
   const backup = fixture(count);
+  // Placement rules 2026-11-01: successful multi-space drags share one hall.
+  // Exchange two existing execution addresses so item count, both halls, and
+  // the map's distinct numeric cells/geometry remain exactly the same load.
+  const items = backup.data.eventLists[eventName];
+  const farA = items.find(
+    (item) => item.id === `execute-${Math.floor(count / 2) - 6}`,
+  )!;
+  const offscreen = items.find((item) => item.id === "offscreen")!;
+  const mergeOffscreen = items.find((item) => item.id === "merge-offscreen")!;
+  const farANumber = farA.number;
+  farA.block = offscreen.block;
+  farA.number = offscreen.number;
+  offscreen.block = "A";
+  offscreen.number = `${farANumber}a`;
+  mergeOffscreen.block = "A";
+  mergeOffscreen.number = `${farANumber}a2`;
   // One visible priority visit keeps all pointer cases inside the real viewport; both hall and priority constraints remain active.
   backup.data.eventLists[eventName].forEach((item) => {
     if (item.id.startsWith("execute-")) item.priorityLevel = "none";
@@ -167,6 +183,77 @@ function performanceFixture(count: number) {
   order.unshift("priority");
   return backup;
 }
+// Independent load guard for the narrowly authorized fixture revision.
+for (const count of [150, 500])
+  test(`same-hall drag fixture preserves original load: ${count}`, () => {
+    const original = fixture(count);
+    const revised = performanceFixture(count);
+    const originalItems = original.data.eventLists[eventName];
+    const revisedItems = revised.data.eventLists[eventName];
+    expect(revisedItems).toHaveLength(count);
+    expect(revised.data.executeModeItems).toEqual({
+      [eventName]: {
+        [day]: [
+          "priority",
+          ...original.data.executeModeItems[eventName][day].filter(
+            (id) => id !== "priority",
+          ),
+        ],
+      },
+    });
+    const expectedNumberCells = (block: string) =>
+      [
+        ...new Set(
+          originalItems
+            .filter((item) => item.block === block)
+            .map((item) => Number.parseInt(item.number, 10)),
+        ),
+      ].sort((a, b) => a - b);
+    const map = (
+      revised.data.mapData as Record<
+        string,
+        Record<
+          string,
+          {
+            blocks: Array<{
+              name: string;
+              numberCells: Array<{ value: number }>;
+            }>;
+            maxRow: number;
+            maxCol: number;
+          }
+        >
+      >
+    )[eventName][`${day}マップ`];
+    expect(map.blocks.map((block) => block.name)).toEqual(["A", "B"]);
+    for (const block of map.blocks)
+      expect(block.numberCells.map((cell) => cell.value)).toEqual(
+        expectedNumberCells(block.name),
+      );
+    expect(map.maxCol).toBe(27);
+    expect(map.maxRow).toBe(
+      Math.max(
+        ...["A", "B"].map(
+          (block) => Math.ceil(expectedNumberCells(block).length / 10) + 2,
+        ),
+      ),
+    );
+    expect(
+      revisedItems
+        .filter((item) =>
+          ["merge-a", "merge-b", "merge-offscreen", "offscreen"].includes(
+            item.id,
+          ),
+        )
+        .every((item) => item.block === "A" && item.priorityLevel === "none"),
+    ).toBe(true);
+    expect(originalItems.find((item) => item.id === "offscreen")!.block).toBe(
+      "B",
+    );
+    expect(
+      originalItems.find((item) => item.id === "merge-offscreen")!.block,
+    ).toBe("B");
+  });
 async function restore(
   page: Page,
   value: ReturnType<typeof fixture>,
@@ -1315,14 +1402,40 @@ for (const input of ["native", "touch"] as const)
       await reopen(page);
       await expect.poll(() => ids(page, "candidate")).not.toContain("merge-a");
     });
-    test(`offscreen merge follows its own destination: ${input} grouping ${grouped}`, async ({
+    test(`mixed-hall offscreen selection rejects atomically: ${input} grouping ${grouped}`, async ({
       page,
     }) => {
       await restore(page, fixture());
       await grouping(page, grouped);
+      const beforeOrder = (await stored(page, "executeModeItems"))[eventName];
+      const beforeItems = (await stored(page, "eventLists"))[eventName];
       await select(page, ["merge-a", "merge-offscreen"]);
       await start(page, input, "merge-a");
       const result = await hover(page, input, "a1", "before", grouped);
+      // Preserve the original cross-hall success expectation as a before-only
+      // observation. It is never timing evidence for the new same-hall success.
+      if (process.env.ESP_EVIDENCE_PHASE !== "before") {
+        expect(result.status).toBe("rejected");
+        expect(result.guides).toHaveLength(0);
+        expect(result.text).toMatch(/ホール|所属/);
+        await finish(page, input, true);
+        for (const id of ["merge-a", "merge-offscreen"])
+          await expect(selectionBox(page, id)).toBeChecked();
+        expect((await stored(page, "executeModeItems"))[eventName]).toEqual(
+          beforeOrder,
+        );
+        expect((await stored(page, "eventLists"))[eventName]).toEqual(
+          beforeItems,
+        );
+        await reopen(page);
+        expect((await stored(page, "executeModeItems"))[eventName]).toEqual(
+          beforeOrder,
+        );
+        expect((await stored(page, "eventLists"))[eventName]).toEqual(
+          beforeItems,
+        );
+        return;
+      }
       expect(
         result.guides.filter((line) => line.kind === "merge"),
       ).toHaveLength(2);
@@ -2761,7 +2874,9 @@ for (const count of [150, 500])
                 expectedGuides.push({
                   kind: "merge",
                   edge: "after",
-                  owner: grouped ? 'group:"B-999a"' : "offscreen",
+                  owner: grouped
+                    ? `group:"A-${Math.floor(count / 2) + 4}a"`
+                    : "offscreen",
                 });
             }
             const identity = (line: {
@@ -2808,7 +2923,11 @@ for (const count of [150, 500])
               );
               expect(response.guides.map((line) => line.owner).sort()).toEqual(
                 (grouped
-                  ? ['group:"A-01a"', 'group:"A-02a"', 'group:"B-999a"']
+                  ? [
+                      'group:"A-01a"',
+                      'group:"A-02a"',
+                      `group:"A-${Math.floor(count / 2) + 4}a"`,
+                    ]
                   : ["a2", "b1", "offscreen"]
                 ).sort(),
               );
@@ -3044,6 +3163,10 @@ for (const count of [150, 500])
           build: "npm run build:app",
           fixture: {
             count,
+            revision: "execution-placement-same-hall-2026-11-01",
+            previousFixtureSource: "19c7541175b2a60076807dd17469127d67f8407d",
+            offscreenSpace: `A-${Math.floor(count / 2) + 4}a`,
+            addressExchangeId: `execute-${Math.floor(count / 2) - 6}`,
             halls: ["A", "B"],
             priorities: ["none", "priority"],
           },

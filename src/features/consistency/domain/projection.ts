@@ -87,6 +87,24 @@ type PreviousProjectedEvent = {
 export const projectedMembership = (
   item: ShoppingItem,
 ): Membership | undefined => membershipByItem.get(item);
+/** Carry resolved membership only across content edits in the same immutable context.
+ * Routing edits and a later projection must resolve membership afresh. */
+export function inheritProjectedMembership(
+  before: ShoppingItem,
+  after: ShoppingItem,
+): void {
+  const membership = membershipByItem.get(before);
+  if (
+    membership &&
+    !membershipByItem.has(after) &&
+    before.id === after.id &&
+    before.eventDate === after.eventDate &&
+    before.block === after.block &&
+    before.number === after.number &&
+    before.manualHallId === after.manualHallId
+  )
+    membershipByItem.set(after, membership);
+}
 export const isCompleteHallOrder = (
   settings: HallRouteSettings | undefined,
 ): boolean => !!settings && fullOrderSettings.has(settings);

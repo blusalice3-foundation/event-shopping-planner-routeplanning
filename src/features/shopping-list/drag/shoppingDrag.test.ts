@@ -1,3 +1,12 @@
+import type { PersistenceSnapshot } from "../../../app/ports/PersistenceCommandPort";
+import {
+  createDayConsistency,
+  createEventConsistency,
+  createVisitContext,
+} from "../../../types/consistency";
+import { projectConsistencySnapshot } from "../../consistency/domain/projection";
+import { parseGroupId } from "../../../utils/hallGrouping";
+import { buildExecutionPlacementVisitKey } from "../../../utils/executionPlacement";
 import { describe, expect, it } from "vitest";
 import type { ShoppingItem } from "../../../types/item";
 import { computeMoveItem } from "../../events/itemOps";
@@ -36,6 +45,80 @@ const presentation = (spaceGroups = true): ShoppingDragPresentation => ({
   hallOrder: [],
   map: null,
 });
+/** Exercise the same shared/confirmed membership projection supplied to the UI. */
+function prepare(
+  existing: ShoppingItem[],
+  moving: ShoppingItem[],
+  p: ShoppingDragPresentation,
+) {
+  const mapKey = `${day}マップ`;
+  const all = [...existing, ...moving];
+  const route = createVisitContext();
+  const hallRef = (hallId: string) =>
+    p.map
+      ? { kind: "map" as const, mapKey, hallId }
+      : { kind: "simple" as const, dayKey: day, hallId };
+  route.assignments = Object.fromEntries(
+    all.flatMap((value) =>
+      value.manualHallId ? [[value.id, hallRef(value.manualHallId)]] : [],
+    ),
+  );
+  route.hallOrder = p.hallOrder.map((key) => {
+    const parts = parseGroupId(key);
+    return {
+      hall: parts.hallId ? hallRef(parts.hallId) : null,
+      priority: parts.priority,
+    };
+  });
+  const consistency = createEventConsistency();
+  const dayState = createDayConsistency();
+  if (p.map) {
+    dayState.selectedMapKey = mapKey;
+    dayState.maps[mapKey] = route;
+  } else dayState.mapless = route;
+  consistency.days[day] = dayState;
+  const key = p.map ? mapKey : `__mapless__:${day}`;
+  const snapshot: PersistenceSnapshot = {
+    eventLists: { Event: all },
+    eventMetadata: {},
+    executeModeItems: { Event: { [day]: existing.map((value) => value.id) } },
+    dayModes: {},
+    mapData: p.map ? { Event: { [mapKey]: p.map } } : {},
+    mapRotationSettings: {},
+    mapViewportSettings: {},
+    routeSettings: {},
+    hallDefinitions: { Event: { [key]: p.halls } },
+    hallRouteSettings: {},
+    eventConsistency: { Event: consistency },
+  };
+  const projected = projectConsistencySnapshot(snapshot, "Event", day);
+  const byId = new Map(
+    (projected.eventLists.Event as ShoppingItem[]).map((value) => [
+      value.id,
+      value,
+    ]),
+  );
+  return {
+    existing: existing.map((value) => byId.get(value.id)!),
+    moving: moving.map((value) => byId.get(value.id)!),
+    p: {
+      ...p,
+      halls: (
+        projected.hallDefinitions.Event as Record<
+          string,
+          ShoppingDragPresentation["halls"]
+        >
+      )[key],
+      hallOrder:
+        (
+          projected.hallRouteSettings.Event as Record<
+            string,
+            { hallOrder: string[] }
+          >
+        )[key]?.hallOrder ?? [],
+    },
+  };
+}
 const context = (
   moving: ShoppingItem[],
   p?: ShoppingDragMoveContext["placement"],
@@ -48,7 +131,10 @@ const context = (
   targetColumn: "execute",
   requestedIds: moving.map((value) => value.id),
   effectiveIds: moving.map((value) => value.id),
-  sourceVisits: projectItemsToExecutionVisits(moving).map((visit) => ({
+  sourceVisits: projectItemsToExecutionVisits(
+    moving,
+    buildExecutionPlacementVisitKey,
+  ).map((visit) => ({
     key: visit.key,
     ids: visit.itemIds,
   })),
@@ -63,6 +149,7 @@ function move(
   p = presentation(),
   referenceId = existing[0]?.id,
 ) {
+  ({ existing, moving, p } = prepare(existing, moving, p));
   const layout = buildShoppingDragLayout(existing, p);
   const placement = resolveShoppingDragPlacement(
     layout,
@@ -86,6 +173,17 @@ function move(
     dragContext: context(moving, placement),
   });
   const ids = result.executeModeItems?.[day];
+  expect(
+    ids,
+    JSON.stringify({
+      existing: existing.map((value) => value.id),
+      moving: moving.map((value) => value.id),
+      boundary,
+      referenceId,
+      anchor: placement.anchorId,
+      keys: placement.baseVisitKeys,
+    }),
+  ).toBeDefined();
   return {
     result,
     ids,
@@ -175,8 +273,8 @@ describe("execution cross-column drag placement", () => {
         "after",
         p,
         "b",
-      ),
-    ).toBeNull();
+      )?.display,
+    ).toEqual(["b", "x", "a1", "a2"]);
     expect(
       move(
         [a1, b, a2],
@@ -185,9 +283,9 @@ describe("execution cross-column drag placement", () => {
         p,
         "b",
       )?.display,
-    ).toEqual(["a1", "b", "x", "a2"]);
+    ).toEqual(["b", "x", "a1", "a2"]);
   });
-  it("resolves each OFF merge endpoint within its existing hall segment", () => {
+  it("refuses a shared visit with conflicting assignments instead of guessing a merge endpoint", () => {
     const p = {
       ...presentation(false),
       map: { maxRow: 1, maxCol: 1, cells: [], blocks: [], mergedCells: [] },
@@ -201,28 +299,16 @@ describe("execution cross-column drag placement", () => {
       a2 = item("a2", "01a2", { manualHallId: "two" }),
       b = item("b", "02", { manualHallId: "two" }),
       x = item("x", "01a3", { manualHallId: "one" });
-    const placement = resolveShoppingDragPlacement(
-      buildShoppingDragLayout([a1, c, a2, b], p),
-      [x],
-      "b",
-      "after",
-    );
-    expect(placement?.mergeTargetIds).toEqual(["a1"]);
-    expect(move([a1, c, a2, b], [x], "after", p, "b")?.display).toEqual([
-      "a1",
-      "x",
-      "c",
-      "a2",
-      "b",
-    ]);
+    const prepared = prepare([a1, c, a2, b], [x], p);
     expect(
       resolveShoppingDragPlacement(
-        buildShoppingDragLayout([a1, c, b], p),
-        [item("other", "01a3", { manualHallId: "two" })],
+        buildShoppingDragLayout(prepared.existing, prepared.p),
+        prepared.moving,
         "b",
         "after",
       ),
     ).toBeNull();
+    expect(move([a1, c, a2, b], [x], "after", p, "b")).toBeNull();
   });
   it("rejects an OFF selection whose hall buckets reverse at a shared boundary", () => {
     const p = {
@@ -237,12 +323,7 @@ describe("execution cross-column drag placement", () => {
     const x = item("x", "03", { block: "B" });
     const y = item("y", "04", { block: "A" });
     expect(move([a, b], [x, y], "after", p, "a")).toBeNull();
-    expect(move([a, b], [y, x], "after", p, "a")?.display).toEqual([
-      "a",
-      "y",
-      "x",
-      "b",
-    ]);
+    expect(move([a, b], [y, x], "after", p, "a")).toBeNull();
   });
   it("keeps new hall buckets between the leading and trailing existing segments", () => {
     const p = {
@@ -261,13 +342,7 @@ describe("execution cross-column drag placement", () => {
       item("new", "04", { block: "C" }),
       item("tail", "05", { block: "B" }),
     ];
-    expect(move([a, b], moving, "after", p, "a")?.display).toEqual([
-      "a",
-      "lead",
-      "new",
-      "tail",
-      "b",
-    ]);
+    expect(move([a, b], moving, "after", p, "a")).toBeNull();
     expect(move([a, b], moving.slice(1).reverse(), "after", p, "a")).toBeNull();
     expect(move([a, b], [moving[1], moving[0]], "after", p, "a")).toBeNull();
     expect(
@@ -353,7 +428,11 @@ describe("execution cross-column drag placement", () => {
         const existing = buckets.map((bucket, index) =>
           bucketItem(`existing-${index}`, String(index + 1), bucket),
         );
-        const display = projectShoppingDragDisplay(existing, p);
+        // Independent oracle: configured normal A, normal B, then unlisted A priority.
+        const display = existing
+          .map((value, index) => ({ value, bucket: buckets[index] }))
+          .sort((first, second) => first.bucket - second.bucket)
+          .map(({ value }) => value);
         const layout = buildShoppingDragLayout(existing, p);
         for (const incoming of incomingBuckets) {
           const moving = incoming.map((bucket, index) =>
@@ -362,17 +441,14 @@ describe("execution cross-column drag placement", () => {
           for (let slot = 0; slot <= display.length; slot++) {
             const referenceId = display[slot]?.id;
             const edge = referenceId ? "before" : "end";
-            const anchorIndex = referenceId
-              ? existing.findIndex((value) => value.id === referenceId)
-              : existing.length;
-            const after = [...existing];
-            after.splice(anchorIndex, 0, ...moving);
-            const expected = [...display];
-            expected.splice(slot, 0, ...moving);
-            const actual = projectShoppingDragDisplay(after, p);
-            const preservesSequence = actual.every(
-              (value, index) => value.id === expected[index].id,
-            );
+            const oneGroup = incoming.every((bucket) => bucket === incoming[0]);
+            const lower = buckets.filter(
+              (bucket) => bucket < incoming[0],
+            ).length;
+            const upper = buckets.filter(
+              (bucket) => bucket <= incoming[0],
+            ).length;
+            const expectedAllowed = oneGroup && slot >= lower && slot <= upper;
             const placement = resolveShoppingDragPlacement(
               layout,
               moving,
@@ -387,7 +463,7 @@ describe("execution cross-column drag placement", () => {
                 incoming,
                 slot,
               }),
-            ).toBe(preservesSequence);
+            ).toBe(expectedAllowed);
           }
         }
       }
@@ -457,7 +533,7 @@ describe("drop placement validation with reused visit membership", () => {
     "preserves membership and raw non-contiguous visits with $label",
     ({ p }) => {
       const a1 = item("a1", "01a", { manualHallId: "one" });
-      const a2 = item("a2", "01a2", { manualHallId: "two" });
+      const a2 = item("a2", "01a2", { manualHallId: "one" });
       const b = item("b", "02", { manualHallId: "one" });
       const x = item("x", "03", { manualHallId: "one" });
       const merged = item("merged", "01a3", { manualHallId: "one" });
@@ -477,12 +553,7 @@ describe("drop placement validation with reused visit membership", () => {
       expect(validateShoppingDragPlacement(placement, [a1, a2, b], after)).toBe(
         true,
       );
-      if (!p.spaceGroups && p.hallGroups) {
-        // Hall grouping splits the same visit into two displayed segments.
-        // Its repeated display key must survive the validation fast path.
-        expect(placement.baseVisitKeys).toHaveLength(3);
-        expect(placement.baseVisitKeys[0]).toBe(placement.baseVisitKeys[2]);
-      }
+      expect(placement.baseVisitKeys).toHaveLength(2);
       for (const [label, staleBefore] of [
         ["missing merge member", [a1, b]],
         ["duplicate merge member", [a1, b, a2, a2]],
@@ -562,6 +633,7 @@ describe("execution column blank-area placement", () => {
     moving: ShoppingItem[],
     p: ShoppingDragPresentation,
   ) {
+    ({ existing, moving, p } = prepare(existing, moving, p));
     const placement = resolveShoppingDragColumnPlacement(
       buildShoppingDragLayout(existing, p),
       moving,
@@ -597,16 +669,28 @@ describe("execution column blank-area placement", () => {
       display: projectShoppingDragDisplay(after, p).map((value) => value.id),
     };
   }
+  function rejectColumn(
+    existing: ShoppingItem[],
+    moving: ShoppingItem[],
+    p: ShoppingDragPresentation,
+  ) {
+    const sourceIds = existing.map((value) => value.id);
+    const prepared = prepare(existing, moving, p);
+    expect(
+      resolveShoppingDragColumnPlacement(
+        buildShoppingDragLayout(prepared.existing, prepared.p),
+        prepared.moving,
+      ),
+    ).toBeNull();
+    expect(existing.map((value) => value.id)).toEqual(sourceIds);
+  }
   describe.each([true, false])("space groups %s", (grouped) => {
     const p = columnPresentation(grouped);
     it("inserts into an empty execution column in source visit order", () => {
-      const moved = columnMove(
-        [],
-        [item("x", "10", { block: "B" }), item("y", "11")],
-        p,
-      );
+      const moved = columnMove([], [item("x", "10"), item("y", "11")], p);
       expect(moved.ids).toEqual(["x", "y"]);
       expect(moved.display).toEqual(["x", "y"]);
+      rejectColumn([], [item("x", "10", { block: "B" }), item("y", "11")], p);
     });
     it("uses the moving item's hall tail before a later hall", () => {
       const a1 = item("a1", "01"),
@@ -628,7 +712,7 @@ describe("execution column blank-area placement", () => {
       expect(moved.ids).toEqual(["priority", "x", "normal", "b"]);
       expect(moved.display).toEqual(["priority", "x", "normal", "b"]);
     });
-    it("places a new priority segment at its existing hall tail", () => {
+    it("places a new priority segment at its configured group position", () => {
       const a = item("a", "01"),
         b = item("b", "02", { block: "B" });
       const moved = columnMove(
@@ -636,13 +720,13 @@ describe("execution column blank-area placement", () => {
         [item("x", "10", { priorityLevel: "priority" })],
         p,
       );
-      expect(moved.ids).toEqual(["a", "x", "b"]);
-      expect(moved.display).toEqual(["a", "x", "b"]);
+      expect(moved.ids).toEqual(["x", "a", "b"]);
+      expect(moved.display).toEqual(["x", "a", "b"]);
     });
-    it("extends an existing priority segment before a new segment at the same hall tail", () => {
+    it("rejects a mixed priority selection without placing either part", () => {
       const a = item("a", "01"),
         b = item("b", "02", { block: "B" });
-      const moved = columnMove(
+      rejectColumn(
         [a, b],
         [
           item("new-priority", "10", { priorityLevel: "priority" }),
@@ -650,11 +734,6 @@ describe("execution column blank-area placement", () => {
         ],
         p,
       );
-      expect(moved.display).toEqual(["a", "new-normal", "new-priority", "b"]);
-      expect(moved.ids?.filter((id) => id === "a" || id === "b")).toEqual([
-        "a",
-        "b",
-      ]);
     });
     it("appends a hall that does not yet appear in the execution column", () => {
       const a = item("a", "01"),
@@ -672,12 +751,12 @@ describe("execution column blank-area placement", () => {
         p,
       );
       expect(moved.ids).toEqual(["unassigned", "x", "b"]);
-      expect(moved.display).toEqual(["unassigned", "x", "b"]);
+      expect(moved.display).toEqual(["b", "unassigned", "x"]);
     });
-    it("distributes a mixed selection to each hall tail without reordering existing visits", () => {
+    it("rejects a mixed hall selection without placing any part", () => {
       const a = item("a", "01"),
         b = item("b", "02", { block: "B" });
-      const moved = columnMove(
+      rejectColumn(
         [a, b],
         [
           item("b-new-1", "10", { block: "B" }),
@@ -688,17 +767,6 @@ describe("execution column blank-area placement", () => {
         ],
         p,
       );
-      expect(moved.ids).toEqual([
-        "a",
-        "a-new-1",
-        "a-new-2",
-        "b",
-        "b-new-1",
-        "b-new-2",
-        "c-new",
-      ]);
-      expect(moved.display).toEqual(moved.ids);
-      expect(moved.result.transferredItemIds).toHaveLength(5);
     });
     it("merges an existing visit before placing the remaining visits at hall tails", () => {
       const a = item("a", "01a"),
@@ -737,7 +805,7 @@ describe("execution column blank-area placement", () => {
       {
         blocks: ["B", "A", "B"],
         groupedIds: ["existing-0", "existing-1", "x", "existing-2"],
-        hallIds: ["existing-0", "existing-2", "existing-1", "x"],
+        hallIds: ["existing-1", "x", "existing-0", "existing-2"],
       },
       {
         blocks: ["A", "B", "B"],
@@ -746,23 +814,23 @@ describe("execution column blank-area placement", () => {
       },
       {
         blocks: ["B", "B", "B"],
-        groupedIds: ["existing-0", "existing-1", "existing-2", "x"],
-        hallIds: ["existing-0", "existing-1", "existing-2", "x"],
+        groupedIds: ["x", "existing-0", "existing-1", "existing-2"],
+        hallIds: ["x", "existing-0", "existing-1", "existing-2"],
       },
     ])(
       "finds the displayed hall tail for interleaved raw halls $blocks",
-      ({ blocks, groupedIds, hallIds }) => {
+      ({ blocks, hallIds }) => {
         const existing = blocks.map((block, index) =>
           item(`existing-${index}`, String(index + 1), { block }),
         );
         const moved = columnMove(existing, [item("x", "10")], p);
-        expect(moved.display).toEqual(grouped ? groupedIds : hallIds);
+        expect(moved.display).toEqual(hallIds);
         expect(moved.ids?.filter((id) => id !== "x")).toEqual(
           existing.map((value) => value.id),
         );
       },
     );
-    it("keeps a new same-space visit coherent across its members' hall tails", () => {
+    it("refuses a same-space selection with conflicting shared assignments", () => {
       const a = item("a", "01", { manualHallId: "A" }),
         b = item("b", "02", { block: "B", manualHallId: "B" }),
         x1 = item("x1", "10a", { manualHallId: "A" }),
@@ -771,22 +839,24 @@ describe("execution column blank-area placement", () => {
         ...p,
         halls: p.halls.map((hall) => ({ ...hall, blockNames: ["A", "B"] })),
       };
-      const moved = columnMove([a, b], [x1, x2], sharedBlockPresentation);
-      expect(moved.display).toEqual(
-        grouped ? ["a", "b", "x1", "x2"] : ["a", "x1", "b", "x2"],
-      );
-      expect(moved.ids?.filter((id) => id !== "x1" && id !== "x2")).toEqual([
-        "a",
-        "b",
-      ]);
+      rejectColumn([a, b], [x1, x2], sharedBlockPresentation);
     });
-    it("rejects a stale destination order or added destination visit", () => {
+    it("validates logical destination order and newly added visits", () => {
       const a = item("a", "01"),
         b = item("b", "02", { block: "B" });
       const moved = columnMove([a, b], [item("x", "10")], p);
+      const aTail = item("a-tail", "03");
+      const withTail = columnMove([a, aTail, b], [item("x", "10")], p);
+      expect(
+        validateShoppingDragPlacement(
+          withTail.placement,
+          [aTail, a, b],
+          withTail.after,
+        ),
+      ).toBe(false);
       expect(
         validateShoppingDragPlacement(moved.placement, [b, a], moved.after),
-      ).toBe(false);
+      ).toBe(true);
       expect(
         validateShoppingDragPlacement(
           moved.placement,

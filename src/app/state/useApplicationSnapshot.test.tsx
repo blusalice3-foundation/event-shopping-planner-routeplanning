@@ -2098,7 +2098,7 @@ it("keeps both frozen moves and prior edits when a physical batch uses the gener
     await h.result.current.flush();
   });
   expect(dedicated).not.toHaveBeenCalled();
-  expect(h.commit).toHaveBeenCalledOnce();
+  expect(h.commit).toHaveBeenCalledTimes(2);
   expect(h.durable().executeModeItems.event["1日目"]).toEqual(["1", "2"]);
   expect(h.durable().eventMetadata.event).toEqual({
     spreadsheetUrl: "",
@@ -2339,3 +2339,137 @@ it.each(["same task", "pending save"])(
     expect(h.commit).toHaveBeenCalledOnce();
   },
 );
+
+it("aborts only the changed placement in a shared save and retains another move and a later edit", async () => {
+  const h = harness();
+  hydrateShopping(h);
+  const firstItem = shoppingItem("1");
+  const secondItem = {
+    ...shoppingItem("2"),
+    priorityLevel: "highest" as const,
+  };
+  const anchor = shoppingItem("3");
+  const upperAnchor = {
+    ...shoppingItem("4"),
+    priorityLevel: "highest" as const,
+  };
+  h.durable().eventLists.event = [firstItem, secondItem, anchor, upperAnchor];
+  h.durable().executeModeItems.event["1日目"] = ["4", "3"];
+  act(() => {
+    h.result.current.hydrationSetters.setEventLists(
+      structuredClone(h.durable().eventLists) as never,
+    );
+    h.result.current.hydrationSetters.setExecuteModeItems(
+      structuredClone(h.durable().executeModeItems),
+    );
+  });
+  let first!: ReturnType<typeof h.result.current.queueShoppingMovePatch>;
+  let second!: ReturnType<typeof h.result.current.queueShoppingMovePatch>;
+  act(() => {
+    first = h.result.current.queueShoppingMovePatch(
+      moveInput({
+        baselineItemIds: ["1", "2", "3", "4"],
+        baselineExecuteIds: ["4", "3"],
+        executeModeItems: { "1日目": ["4", "3", "1"] },
+      }),
+    );
+    second = h.result.current.queueShoppingMovePatch(
+      moveInput({
+        baselineItemIds: ["1", "2", "3", "4"],
+        baselineExecuteIds: ["4", "3", "1"],
+        requestedIds: ["2"],
+        effectiveIds: ["2"],
+        hoverId: "4",
+        executeModeItems: { "1日目": ["2", "4", "3", "1"] },
+      }),
+    );
+    // A preceding operation changes the first move's placement before this batch plans.
+    Object.assign(h.durable().eventLists.event[0] as object, {
+      priorityLevel: "priority",
+    });
+    h.result.current.updateItemFields({
+      eventName: "event",
+      itemId: "3",
+      baseline: anchor,
+      changes: { remarks: "その後の入力" },
+    });
+  });
+  expect(first.status).toBe("accepted");
+  expect(second.status).toBe("accepted");
+  if (first.status !== "accepted" || second.status !== "accepted")
+    throw new Error("not accepted");
+  expect(first.operationId).toBe(second.operationId);
+  await act(async () => {
+    await h.result.current.flush();
+  });
+  await expect(first.completion).resolves.toMatchObject({ status: "aborted" });
+  await expect(second.completion).resolves.toEqual({ status: "committed" });
+  expect(h.durable().executeModeItems.event["1日目"]).toEqual(["2", "4", "3"]);
+  expect(
+    h
+      .durable()
+      .eventLists.event.find((entry) => (entry as typeof anchor).id === "3"),
+  ).toMatchObject({ remarks: "その後の入力" });
+  expect(h.result.current.confirmations).toEqual([]);
+  expect(h.result.current.retryableFailures).toEqual([]);
+});
+
+it("ends an obsolete placement with no write or retry while preserving the items", async () => {
+  const h = harness();
+  hydrateShopping(h);
+  let receipt!: ReturnType<typeof h.result.current.queueShoppingMovePatch>;
+  act(() => {
+    receipt = h.result.current.queueShoppingMovePatch(moveInput());
+    Object.assign(h.durable().eventLists.event[0] as object, {
+      priorityLevel: "highest",
+    });
+  });
+  await act(async () => {
+    await h.result.current.flush();
+  });
+  if (receipt.status !== "accepted") throw new Error("not accepted");
+  await expect(receipt.completion).resolves.toMatchObject({
+    status: "aborted",
+    reason: expect.stringContaining("中止"),
+  });
+  expect(h.commit).not.toHaveBeenCalled();
+  expect(h.durable().eventLists.event).toHaveLength(3);
+  expect(h.durable().executeModeItems.event["1日目"]).toEqual([]);
+  expect(h.result.current.confirmations).toEqual([]);
+  expect(h.result.current.retryableFailures).toEqual([]);
+});
+
+it("accepts a quantity edit then move using the same resolved hall context as durable validation", async () => {
+  const h = harness();
+  hydrateShopping(h);
+  h.durable().hallDefinitions = {
+    event: {
+      "__mapless__:1日目": [
+        { id: "east", name: "東館", blockNames: ["A"], vertices: [] },
+      ],
+    },
+  };
+  act(() =>
+    h.result.current.hydrationSetters.setHallDefinitions(
+      structuredClone(h.durable().hallDefinitions) as never,
+    ),
+  );
+  let receipt!: ReturnType<typeof h.result.current.queueShoppingMovePatch>;
+  act(() => {
+    h.result.current.updateItemFields({
+      eventName: "event",
+      itemId: "1",
+      baseline: shoppingItem("1"),
+      changes: { quantity: 7 },
+    });
+    receipt = h.result.current.queueShoppingMovePatch(moveInput());
+  });
+  expect(receipt.status).toBe("accepted");
+  await act(async () => {
+    await h.result.current.flush();
+  });
+  if (receipt.status !== "accepted") throw new Error("not accepted");
+  await expect(receipt.completion).resolves.toEqual({ status: "committed" });
+  expect(h.durable().executeModeItems.event["1日目"]).toEqual(["1"]);
+  expect(h.durable().eventLists.event[0]).toMatchObject({ quantity: 7 });
+});

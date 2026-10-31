@@ -1,3 +1,5 @@
+import type { ShoppingItem } from "../../../types/item";
+import { buildExecutionNavigationVisitId } from "../../../utils/executionPlacement";
 import { registerNavigatorEntryChanges } from "./navigatorEntryIndex";
 import { buildNavigatorEntries } from "./buildNavigatorEntries";
 import { buildVisitIdentity } from "./visitIdentity";
@@ -16,6 +18,7 @@ import {
 const identityForSource = (
   source: NavigatorBuildSource,
   phase?: NavigatorPhase,
+  executionPlacement = false,
 ) => {
   const visit = "items" in source ? source : null;
   const item = visit
@@ -24,6 +27,8 @@ const identityForSource = (
   const block = visit?.block ?? item?.block,
     number = visit?.number ?? item?.number;
   if (block === undefined || number === undefined) return null;
+  if (executionPlacement && item && "eventDate" in item)
+    return buildExecutionNavigationVisitId(item as ShoppingItem);
   return buildVisitIdentity({
     phase: phase ?? visit?.phase,
     block,
@@ -33,7 +38,10 @@ const identityForSource = (
 };
 
 /** Content changes rebuild the affected entry, preserving other visits and indexes. */
-export function createNavigatorEntriesProjector(phase?: NavigatorPhase) {
+export function createNavigatorEntriesProjector(
+  phase?: NavigatorPhase,
+  executionPlacement = false,
+) {
   let previous: readonly NavigatorBuildSource[] | undefined;
   let sourceKeys: (string | null)[] = [];
   let groups = new Map<
@@ -48,10 +56,13 @@ export function createNavigatorEntriesProjector(phase?: NavigatorPhase) {
       changes === null ||
       changes.some(
         (index) =>
-          identityForSource(sources[index], phase) !== sourceKeys[index],
+          identityForSource(sources[index], phase, executionPlacement) !==
+          sourceKeys[index],
       )
     ) {
-      sourceKeys = sources.map((source) => identityForSource(source, phase));
+      sourceKeys = sources.map((source) =>
+        identityForSource(source, phase, executionPlacement),
+      );
       groups = new Map();
       sourceKeys.forEach((id, index) => {
         if (id === null) return;
@@ -67,7 +78,7 @@ export function createNavigatorEntriesProjector(phase?: NavigatorPhase) {
       for (const group of groups.values()) {
         const entry = buildNavigatorEntries(
           group.sourceIndices.map((index) => sources[index]),
-          { phase },
+          { phase, executionPlacement },
         )[0];
         if (!entry) continue;
         const phaseIndex = counts.get(entry.phase) ?? 0;
@@ -87,7 +98,7 @@ export function createNavigatorEntriesProjector(phase?: NavigatorPhase) {
         const before = result[group.entryIndex];
         const entry = buildNavigatorEntries(
           group.sourceIndices.map((index) => sources[index]),
-          { phase },
+          { phase, executionPlacement },
         )[0];
         const sameMembers =
           entry.itemIds.length === before.itemIds.length &&
