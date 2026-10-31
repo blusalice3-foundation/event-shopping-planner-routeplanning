@@ -7,14 +7,14 @@ const row = (id: string) =>
 
 test.use({ serviceWorkers: "block", video: "off", trace: "off" });
 
-async function restore(page: Page) {
+async function restore(page: Page, sameVisitBooks = false) {
   const items = ["1", "2", "3"].map((id) => ({
     id,
     eventDate: day,
     circle: "ユーザー登録" + id,
     title: "新刊" + id,
     block: "A",
-    number: id,
+    number: sameVisitBooks && id !== "3" ? (id === "1" ? "01a" : "01a2") : id,
     price: 500,
     quantity: 1,
     purchaseStatus: "None",
@@ -191,7 +191,7 @@ test("editing still changes the execution order and retains it after reload", as
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await restore(page);
+  await restore(page, true);
   await page.locator('button[title="編集モード"]').click();
   const execute = page.locator('[data-shopping-drag-column="execute"]');
   const first = execute.locator(row("1"));
