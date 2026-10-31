@@ -206,12 +206,14 @@ async function ensureRow(page: Page, id: string) {
         `[data-viewport-row-key=${JSON.stringify(groupKey)}], [data-row-key=${JSON.stringify(groupKey)}]`,
       )
       .first();
-    await (
-      (await itemOwner.count()) ? itemOwner : groupOwner
-    ).scrollIntoViewIfNeeded();
+    await ((await itemOwner.count()) ? itemOwner : groupOwner).evaluate(
+      (element) => element.scrollIntoView({ block: "center" }),
+    );
     await expect(row(page, id)).toBeAttached();
   }
-  await row(page, id).scrollIntoViewIfNeeded();
+  await row(page, id).evaluate((element) =>
+    element.scrollIntoView({ block: "center" }),
+  );
 }
 async function begin(page: Page, id: string, touch: boolean) {
   await ensureRow(page, id);
@@ -278,7 +280,7 @@ async function hover(
       bounds = owner.getBoundingClientRect();
       const rect = target.getBoundingClientRect();
       const point = {
-        clientX: rect.left + 5,
+        clientX: rect.left + (id === "a3" ? 15 : 5),
         clientY: edge === "before" ? bounds.top + 8 : bounds.bottom - 8,
       };
       const hit = document.elementFromPoint(point.clientX, point.clientY);
@@ -334,9 +336,11 @@ async function finish(page: Page, touch: boolean) {
     const source = document.querySelector<HTMLElement>(
       `[data-item-id=${JSON.stringify(state.__placementSource)}]:not([data-space-group-key])`,
     )!;
-    const target = document.querySelector<HTMLElement>(
-      `[data-item-id=${JSON.stringify(state.__placementTarget)}]:not([data-space-group-key])`,
-    )!;
+    const target =
+      document.elementFromPoint(
+        state.__placementPoint.clientX,
+        state.__placementPoint.clientY,
+      ) ?? source;
     if (touch) {
       const finger = new Touch({
         identifier: 73,
@@ -464,14 +468,17 @@ for (const touch of [false, true])
           page.locator('[data-shopping-drag-guide="suggestion"]'),
         ).toBeAttached();
         expect(await saved(page)).toEqual(before);
-        // Revisit the invalid surface after guidance; releasing here must not accept a new location.
-        await hover(page, "hall-b", touch, "after", grouped);
+        // Scrolling a valid destination under a stationary pointer cannot confirm the move.
         await finish(page, touch);
         expect(await saved(page)).toEqual(before);
         await expect(
           page.locator("[data-shopping-placement-rejection]"),
         ).toBeVisible();
         await begin(page, "merge-a", touch);
+        await hover(page, "hall-b", touch, "after", grouped);
+        await expect(
+          page.locator('[data-shopping-drag-guide="suggestion"]'),
+        ).toBeAttached();
         await hover(page, "a3", touch, "after", grouped);
         await finish(page, touch);
         await expect

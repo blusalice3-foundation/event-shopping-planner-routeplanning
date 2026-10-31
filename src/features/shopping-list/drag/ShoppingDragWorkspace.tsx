@@ -177,6 +177,8 @@ function createWorkspace(
   let hitTestRejected = false;
   let rejectionReason = "";
   let guidedTarget = "";
+  let guidedPoint: { x?: number; y: number } | null = null;
+  let refreshing = false;
   let highlightedIds: readonly ShoppingItem[] | null = null;
   const highlights = new Map<HTMLElement, boolean>();
   const clearHighlights = () => {
@@ -347,6 +349,17 @@ function createWorkspace(
       decorations.push(line);
     });
   };
+  const refreshHover = (
+    ...args: Parameters<ShoppingDragWorkspace["hover"]>
+  ) => {
+    const previous = refreshing;
+    refreshing = true;
+    try {
+      return workspace.hover(...args);
+    } finally {
+      refreshing = previous;
+    }
+  };
   const workspace: ShoppingDragWorkspace = {
     active: () => active,
     moveContext(target) {
@@ -479,6 +492,15 @@ function createWorkspace(
     },
     hover(column, targetId, clientY, clientX) {
       if (!active) return false;
+      if (
+        guidedPoint &&
+        !refreshing &&
+        (Math.abs(clientY - guidedPoint.y) > 1 ||
+          (clientX !== undefined &&
+            guidedPoint.x !== undefined &&
+            Math.abs(clientX - guidedPoint.x) > 1))
+      )
+        guidedPoint = null;
       hitTestRejected = false;
 
       hoverPoint = { column, id: targetId, y: clientY, x: clientX };
@@ -639,7 +661,8 @@ function createWorkspace(
           tailElements &&
           clientY >= tailElements.last.getBoundingClientRect().bottom),
       );
-      if (!placement || !validMergeHover || !validBlank) {
+      if (!placement || !validMergeHover || !validBlank || guidedPoint) {
+        guidedPoint ??= { x: clientX, y: clientY };
         const suggestion =
           layoutCache.columnPlacement === undefined
             ? (layoutCache.columnPlacement = resolveShoppingDragColumnPlacement(
@@ -681,6 +704,7 @@ function createWorkspace(
         );
         return true;
       }
+      guidedTarget = "";
       accepted = {
         column,
         hoverId: placement.anchorId,
@@ -788,7 +812,7 @@ function createWorkspace(
         const reference = element?.closest<HTMLElement>(
           "[data-item-id], [data-shopping-drag-reference-id]",
         );
-        workspace.hover(
+        refreshHover(
           column,
           reference?.dataset.itemId ??
             reference?.dataset.shoppingDragReferenceId,
@@ -799,7 +823,7 @@ function createWorkspace(
         point.x === undefined ||
         typeof document.elementFromPoint !== "function"
       )
-        workspace.hover(point.column, point.id, point.y);
+        refreshHover(point.column, point.id, point.y);
       else {
         hitTestRejected = true;
         accepted = null;
@@ -868,6 +892,8 @@ function createWorkspace(
       candidateNavigation = null;
       rejectionReason = "";
       guidedTarget = "";
+      guidedPoint = null;
+      refreshing = false;
       clearHighlights();
       clearDecorations();
       if (wasActive) listeners.forEach((listener) => listener(false));

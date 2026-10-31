@@ -953,3 +953,113 @@ describe("book preview retains an interleaved raw visit base", () => {
     },
   );
 });
+
+describe("guidance requires subsequent pointer movement", () => {
+  for (const input of ["native", "touch"] as const) {
+    it.each([false, true])(
+      `keeps refresh under a stationary ${input} pointer provisional; explicit move=%s`,
+      (explicitMove) => {
+        const previousHitTest = Object.getOwnPropertyDescriptor(
+          document,
+          "elementFromPoint",
+        );
+        try {
+          const onMove = vi.fn();
+          const upper = item("upper", "03a", { priorityLevel: "highest" });
+          const view = render(
+            <Harness
+              grouped={false}
+              onMove={onMove}
+              initialExecute={[upper, a1, a2]}
+            />,
+          );
+          const row = (id: string) =>
+            view.container.querySelector<HTMLElement>(
+              `[data-item-id="${id}"]`,
+            )!;
+          const source = row("x1"),
+            wrong = row("upper"),
+            destination = row("a2");
+          vi.spyOn(wrong, "getBoundingClientRect").mockReturnValue(
+            rect(100, 200),
+          );
+          const firstRect = vi
+            .spyOn(row("a1"), "getBoundingClientRect")
+            .mockReturnValue(rect(300, 350));
+          const destinationRect = vi
+            .spyOn(destination, "getBoundingClientRect")
+            .mockReturnValue(rect(350, 400));
+          const hitTest = vi.fn((): Element | null => wrong);
+          Object.defineProperty(document, "elementFromPoint", {
+            configurable: true,
+            value: hitTest,
+          });
+          const transfer = { setData: vi.fn(), getData: () => "candidate" };
+          vi.stubGlobal("scrollBy", vi.fn());
+          if (input === "native") {
+            fireEvent.dragStart(source, { dataTransfer: transfer });
+            dragOver(wrong, 125, transfer);
+          } else {
+            vi.useFakeTimers();
+            fireEvent.touchStart(source, {
+              touches: [{ identifier: 1, clientX: 80, clientY: 250 }],
+            });
+            act(() => vi.advanceTimersByTime(250));
+            fireEvent.touchMove(source, {
+              touches: [{ identifier: 1, clientX: 10, clientY: 125 }],
+            });
+          }
+          expect(
+            view.container.querySelector(
+              '[data-shopping-drag-guide="suggestion"]',
+            ),
+          ).not.toBeNull();
+          expect(onMove).not.toHaveBeenCalled();
+          // A guided scroll brings the valid visit below the unchanged pointer.
+          // Scroll/layout notifications are observations, not a new drag gesture.
+          firstRect.mockReturnValue(rect(70, 100));
+          destinationRect.mockReturnValue(rect(100, 150));
+          hitTest.mockReturnValue(destination);
+          fireEvent.scroll(window);
+          expect(onMove).not.toHaveBeenCalled();
+          const releaseY = explicitMove ? 129 : 125;
+          if (explicitMove) {
+            if (input === "native") dragOver(destination, releaseY, transfer);
+            else
+              fireEvent.touchMove(source, {
+                touches: [{ identifier: 1, clientX: 10, clientY: releaseY }],
+              });
+          }
+          if (input === "native")
+            fireEvent.drop(destination, {
+              dataTransfer: transfer,
+              clientX: 10,
+              clientY: releaseY,
+            });
+          else
+            fireEvent.touchEnd(source, {
+              changedTouches: [
+                { identifier: 1, clientX: 10, clientY: releaseY },
+              ],
+            });
+          expect(onMove).toHaveBeenCalledTimes(explicitMove ? 1 : 0);
+          expect(
+            view.container.querySelector("[data-shopping-drag-guide]"),
+          ).toBeNull();
+          expect(
+            document.querySelector(".esp-shopping-touch-clone"),
+          ).toBeNull();
+          expect(document.body).not.toHaveClass("esp-body-scroll-lock");
+        } finally {
+          if (previousHitTest)
+            Object.defineProperty(
+              document,
+              "elementFromPoint",
+              previousHitTest,
+            );
+          else Reflect.deleteProperty(document, "elementFromPoint");
+        }
+      },
+    );
+  }
+});
