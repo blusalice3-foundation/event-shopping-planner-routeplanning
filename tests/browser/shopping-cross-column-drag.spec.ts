@@ -433,29 +433,88 @@ async function hover(
           `[data-row-key=${JSON.stringify(rowKey)}], [data-viewport-row-key=${JSON.stringify(rowKey)}]`,
         );
       };
-      const target = itemElement(id);
-      if (!target)
+      const readTarget = () => {
+        const target = itemElement(id);
+        if (!target) return null;
+        const root = target.closest<HTMLElement>("[data-shopping-drag-column]");
+        if (!root) return null;
+        const header = grouped
+          ? root.querySelector<HTMLElement>(`[data-space-group-key]`)
+          : null;
+        const owner = grouped
+          ? target.closest<HTMLElement>(
+              '[data-row-key^="group:"], [data-viewport-row-key^="group:"]',
+            )
+          : null;
+        const top = (owner ?? target).getBoundingClientRect();
+        const next = id === "a1" ? itemElement("a2") : null;
+        const bottom = owner ? top : (next ?? target).getBoundingClientRect();
+        const y =
+          edge === "before"
+            ? top.top + Math.max(4, (bottom.bottom - top.top) * 0.25)
+            : top.top + Math.max(6, (bottom.bottom - top.top) * 0.75);
+        const x = top.left + 20;
+        return { target, root, header, owner, top, next, bottom, x, y };
+      };
+      const pointVisible = (
+        value: NonNullable<ReturnType<typeof readTarget>>,
+      ) =>
+        value.x >= 0 &&
+        value.x < window.innerWidth &&
+        value.y >= 0 &&
+        value.y < window.innerHeight;
+      let ready = readTarget();
+      if (!ready)
         throw new Error(
-          `Hover target ${id} has no card or retained logical item slot.`,
+          `Hover target ${id} has no card or retained logical item slot in a shopping column.`,
         );
-      const root = target.closest<HTMLElement>("[data-shopping-drag-column]");
-      if (!root) throw new Error(`Hover target ${id} has no shopping column.`);
-      const header = grouped
-        ? root.querySelector<HTMLElement>(`[data-space-group-key]`)
-        : null;
-      const owner = grouped
-        ? target.closest<HTMLElement>(
-            '[data-row-key^="group:"], [data-viewport-row-key^="group:"]',
-          )
-        : null;
-      const top = (owner ?? target).getBoundingClientRect();
-      const next = id === "a1" ? itemElement("a2") : null;
-      const bottom = owner ? top : (next ?? target).getBoundingClientRect();
-      const y =
-        edge === "before"
-          ? top.top + Math.max(4, (bottom.bottom - top.top) * 0.25)
-          : top.top + Math.max(6, (bottom.bottom - top.top) * 0.75);
-      const x = top.left + 20;
+      let visibilityPreparation: {
+        frames: number;
+        before: { x: number; y: number; scrollY: number };
+        after: { x: number; y: number; scrollY: number };
+      } | null = null;
+      if (!pointVisible(ready)) {
+        const before = { x: ready.x, y: ready.y, scrollY: window.scrollY };
+        const rowKey = `item:${JSON.stringify(id)}`;
+        const slot = document.querySelector<HTMLElement>(
+          `[data-row-key=${JSON.stringify(rowKey)}], [data-viewport-row-key=${JSON.stringify(rowKey)}]`,
+        );
+        (slot ?? ready.target).scrollIntoView({
+          block: "center",
+          inline: "nearest",
+          behavior: "instant",
+        });
+        let previousPoint: { x: number; y: number } | null = null;
+        let stable = false;
+        for (let frame = 1; frame <= 60; frame++) {
+          await new Promise(requestAnimationFrame);
+          const current = readTarget();
+          if (!current || !pointVisible(current)) {
+            previousPoint = null;
+            continue;
+          }
+          if (
+            previousPoint &&
+            Math.abs(previousPoint.x - current.x) <= 1 &&
+            Math.abs(previousPoint.y - current.y) <= 1
+          ) {
+            ready = current;
+            visibilityPreparation = {
+              frames: frame,
+              before,
+              after: { x: current.x, y: current.y, scrollY: window.scrollY },
+            };
+            stable = true;
+            break;
+          }
+          previousPoint = { x: current.x, y: current.y };
+        }
+        if (!stable)
+          throw new Error(
+            `Hover target ${id} did not expose its requested ${edge} point in the viewport within 60 animation frames.`,
+          );
+      }
+      const { target, root, header, owner, top, next, bottom, x, y } = ready;
       const scrollBefore = window.scrollY;
       const began = performance.now();
       if (scroll) window.scrollBy(0, scroll);
@@ -495,6 +554,7 @@ async function hover(
       const response = {
         ms,
         viewportScroll: { before: scrollBefore, after: window.scrollY },
+        visibilityPreparation,
         status: root.querySelector<HTMLElement>("[data-shopping-drag-status]")
           ?.dataset.shoppingDragStatus,
         text: root.querySelector("[data-shopping-drag-status]")?.textContent,

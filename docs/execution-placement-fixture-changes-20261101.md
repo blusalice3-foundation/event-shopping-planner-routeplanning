@@ -38,6 +38,8 @@ performanceFixture()だけで、既存の画面外訪問`offscreen`と最後のA
 
 計測用hover helperは実カードが未mountの場合に限り、同じ品目IDの公開`data-row-key` / `data-viewport-row-key`（`item:<JSON文字列>`）から保持中の同じ論理行の位置を取得する。訪問末尾の`a2`も同じ方法で照合し、別品目への置換・強制mount・ジェスチャー変更は行わない。カードがmount済みの経路、座標計算式、スクロール量、入力・実フレーム等の終了点、計測ループ・ウォームアップ・回数・fixtureは維持する。計測器の差分としてhashを記録し、このhelper修正前の失敗・途中runは保持する。
 
+計測前提として、要求した同じ品目ID・同じ挿入辺の入力点が実viewportの外にある場合だけ、計測時計を開始する前に同じ公開論理行を`scrollIntoView`で表示する。公開行の位置を最大60 animation framesの範囲で再取得し、同じ入力点がviewport内で2フレーム安定してから、従来と同じ座標式・入力を実行する。入力点が既にviewport内ならスクロールや待機を追加しない。別品目への置換・強制mount・受付状態の擬装を行わず、準備前後の点・scroll位置・待機frame数を応答へ記録する。これは画面外への合成入力を防ぐ計測器の前提整備であり、変更前後の双方へ同じhelperを適用し、対象ID・挿入辺・測定ループ・ウォームアップ・回数・終了点・期待結果を保持する。修正前の失敗runとその数値観測（695756dのpriority-afterはy=19059.84375、viewport高1000、elementFromPoint=null）も保持する。
+
 ## 測定契約
 
 全144性能ケース・530主指標と46保存補助、completion各10回 / pr各2回、sampling policy `performance-samples-2026-10-26`、shopping 65/100ms、range/drag/transfer 160/160msを維持する。計測終了点、ウォームアップ、retry 0、地図・過去10,000品目負荷、保存の原子性・内容検証を省略しない。変更前後は同じ新fixture・同じcompletion profileを使用し、実際のsource、instrument hash、fixture hash、run IDを各runに残す。
