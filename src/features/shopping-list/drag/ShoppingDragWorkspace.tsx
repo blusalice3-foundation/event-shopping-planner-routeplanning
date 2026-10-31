@@ -19,6 +19,7 @@ import {
   resolveShoppingDragPlacement,
   resolveShoppingBookPlacement,
   shoppingDragHasSingleGroup,
+  isShoppingDragGroupSlot,
   shoppingPlacementContext,
   type ShoppingDragColumn,
   type ShoppingDragLayout,
@@ -643,12 +644,18 @@ function createWorkspace(
       const referenceKey =
         reference &&
         buildExecutionPlacementVisitKey(reference, placementContext);
+      const referenceRange = referenceKey
+        ? layout.ranges.get(referenceKey)
+        : undefined;
+      const pointerSlot = referenceRange
+        ? boundary === "before"
+          ? referenceRange.first
+          : referenceRange.last + 1
+        : layout.items.length;
+      // Existing joins have fixed tails. Any valid position in the same placement
+      // group accepts that real merge; a corrective guide remains provisional.
       const validMergeHover =
-        !mergeOnly ||
-        Boolean(
-          referenceKey &&
-          placement!.mergeVisits.some((visit) => visit.key === referenceKey),
-        );
+        !mergeOnly || isShoppingDragGroupSlot(layout, moving[0], pointerSlot);
       const tail = layout.items.at(-1);
       const tailElements = tail ? visitElements(list, layout, tail.id) : null;
       const validBlank = Boolean(
@@ -656,7 +663,6 @@ function createWorkspace(
         layout.items.length === 0 ||
         (placement &&
           placement.insertVisitIndex === layout.visits.length &&
-          placement.mergeTargetIds.length === 0 &&
           tailElements &&
           clientY >= tailElements.last.getBoundingClientRect().bottom),
       );

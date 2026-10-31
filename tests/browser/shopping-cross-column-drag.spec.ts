@@ -1322,63 +1322,78 @@ for (const input of ["native", "touch"] as const)
       await grouping(page, grouped);
       const currentRules = process.env.ESP_EVIDENCE_PHASE !== "before";
       const beforeOrder = (await stored(page, "executeModeItems"))[eventName];
-      await start(page, input, "merge-a");
-      await page.evaluate(async (input) => {
-        const root = document.querySelector<HTMLElement>(
-          '[data-shopping-drag-column="execute"]',
-        )!;
-        const target = Array.from(
-          root.querySelectorAll<HTMLElement>(
-            "[data-item-id]:not([data-space-group-key])",
-          ),
-        ).find((element) => {
-          const rect = element.getBoundingClientRect();
-          const x = rect.left + 20;
-          const y = Math.max(180, rect.top + 30);
-          return (
-            rect.bottom > y + 10 &&
-            y < window.innerHeight - 150 &&
-            document
-              .elementFromPoint(x, y)
-              ?.closest("[data-shopping-drag-column]") === root
-          );
-        });
-        if (!target)
-          throw new Error("No visible execution target after scrolling");
-        const rect = target.getBoundingClientRect();
-        const point = {
-          clientX: rect.left + 20,
-          clientY: Math.max(180, rect.top + 30),
-        };
-        const state = window as unknown as {
-          __dragTransfer: DataTransfer;
-          __dragSource: string;
-        };
-        if (input === "native")
-          target.dispatchEvent(
-            new DragEvent("dragover", {
-              bubbles: true,
-              cancelable: true,
-              dataTransfer: state.__dragTransfer,
-              ...point,
-            }),
-          );
-        else {
-          const source = document.querySelector<HTMLElement>(
-            `[data-item-id=${JSON.stringify(state.__dragSource)}]:not([data-space-group-key])`,
+      const sourceId = currentRules ? "merge-offscreen" : "merge-a";
+      await start(page, input, sourceId);
+      if (currentRules) {
+        // Source B must point at A explicitly; another space in B is already valid.
+        await revealFunctionalTarget(page, "a1");
+        const wrong = await hover(page, input, "a1", "after", grouped);
+        expect(wrong.status).toBe("rejected");
+        expect(wrong.guides.some((line) => line.kind === "suggestion")).toBe(
+          true,
+        );
+      } else {
+        await page.evaluate(async (input) => {
+          const root = document.querySelector<HTMLElement>(
+            '[data-shopping-drag-column="execute"]',
           )!;
-          const touch = new Touch({ identifier: 1, target: source, ...point });
-          source.dispatchEvent(
-            new TouchEvent("touchmove", {
-              bubbles: true,
-              cancelable: true,
-              touches: [touch],
-              changedTouches: [touch],
-            }),
-          );
-        }
-        await new Promise(requestAnimationFrame);
-      }, input);
+          const target = Array.from(
+            root.querySelectorAll<HTMLElement>(
+              "[data-item-id]:not([data-space-group-key])",
+            ),
+          ).find((element) => {
+            const rect = element.getBoundingClientRect();
+            const x = rect.left + 20;
+            const y = Math.max(180, rect.top + 30);
+            return (
+              rect.bottom > y + 10 &&
+              y < window.innerHeight - 150 &&
+              document
+                .elementFromPoint(x, y)
+                ?.closest("[data-shopping-drag-column]") === root
+            );
+          });
+          if (!target)
+            throw new Error("No visible execution target after scrolling");
+          const rect = target.getBoundingClientRect();
+          const point = {
+            clientX: rect.left + 20,
+            clientY: Math.max(180, rect.top + 30),
+          };
+          const state = window as unknown as {
+            __dragTransfer: DataTransfer;
+            __dragSource: string;
+          };
+          if (input === "native")
+            target.dispatchEvent(
+              new DragEvent("dragover", {
+                bubbles: true,
+                cancelable: true,
+                dataTransfer: state.__dragTransfer,
+                ...point,
+              }),
+            );
+          else {
+            const source = document.querySelector<HTMLElement>(
+              `[data-item-id=${JSON.stringify(state.__dragSource)}]:not([data-space-group-key])`,
+            )!;
+            const touch = new Touch({
+              identifier: 1,
+              target: source,
+              ...point,
+            });
+            source.dispatchEvent(
+              new TouchEvent("touchmove", {
+                bubbles: true,
+                cancelable: true,
+                touches: [touch],
+                changedTouches: [touch],
+              }),
+            );
+          }
+          await new Promise(requestAnimationFrame);
+        }, input);
+      }
       const status = page.locator(
         `[data-shopping-drag-column="execute"] [data-shopping-drag-status="${currentRules ? "rejected" : "accepted"}"]`,
       );
@@ -1409,14 +1424,13 @@ for (const input of ["native", "touch"] as const)
         expect((await stored(page, "executeModeItems"))[eventName]).toEqual(
           beforeOrder,
         );
-        // Inspect the readable guide while scrolling; scrolling alone never commits.
-        await page.evaluate(async () => {
-          scrollBy(0, 1000);
-          await new Promise(requestAnimationFrame);
-        });
-        await expectVisibleNotice();
       }
-      expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
+      if (currentRules)
+        await expect
+          .poll(() => page.evaluate(() => scrollY))
+          .toBeGreaterThan(500);
+      else
+        expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
       const beforeScroll = await page.evaluate(() => window.scrollY);
       await page.evaluate(() => window.scrollBy(0, -120));
       await expect
@@ -1431,8 +1445,8 @@ for (const input of ["native", "touch"] as const)
         expect((await stored(page, "executeModeItems"))[eventName]).toEqual(
           beforeOrder,
         );
-        await revealFunctionalTarget(page, "a2");
-        const valid = await hover(page, input, "a2", "after", grouped);
+        await revealFunctionalTarget(page, "offscreen");
+        const valid = await hover(page, input, "offscreen", "after", grouped);
         expect(valid.status).toBe("accepted");
         expect(valid.guides.some((line) => line.kind === "merge")).toBe(true);
       }
@@ -1448,11 +1462,31 @@ for (const input of ["native", "touch"] as const)
               string[]
             >
           )[day];
-          return order.slice(order.indexOf("a1"), order.indexOf("a1") + 3);
+          const anchor = currentRules ? "offscreen" : "a1";
+          return order.slice(
+            order.indexOf(anchor),
+            order.indexOf(anchor) + (currentRules ? 2 : 3),
+          );
         })
-        .toEqual(["a1", "a2", "merge-a"]);
+        .toEqual(
+          currentRules
+            ? ["offscreen", "merge-offscreen"]
+            : ["a1", "a2", "merge-a"],
+        );
+      if (currentRules)
+        expect(
+          (
+            (await stored(page, "executeModeItems"))[eventName] as Record<
+              string,
+              string[]
+            >
+          )[day],
+        ).toEqual([
+          ...(beforeOrder as Record<string, string[]>)[day],
+          "merge-offscreen",
+        ]);
       await reopen(page);
-      await expect.poll(() => ids(page, "candidate")).not.toContain("merge-a");
+      await expect.poll(() => ids(page, "candidate")).not.toContain(sourceId);
     });
     test(`mixed-hall offscreen selection rejects atomically: ${input} grouping ${grouped}`, async ({
       page,
@@ -2059,20 +2093,7 @@ for (const input of ["native", "touch"] as const)
       await grouping(page, false);
       await select(page, ["x"]);
       await start(page, input, "x");
-      const beforeOrder = (await stored(page, "executeModeItems"))[eventName];
-      let result = await hover(page, input, "c", "after", false);
-      if (process.env.ESP_EVIDENCE_PHASE !== "before") {
-        expect(result.status).toBe("rejected");
-        expect(result.guides.some((line) => line.kind === "suggestion")).toBe(
-          true,
-        );
-        expect((await stored(page, "executeModeItems"))[eventName]).toEqual(
-          beforeOrder,
-        );
-        const endpoint = compatible ? "a2" : "a1";
-        await revealFunctionalTarget(page, endpoint);
-        result = await hover(page, input, endpoint, "after", false);
-      }
+      const result = await hover(page, input, "c", "after", false);
       expect(result.status).toBe("accepted");
       expect(
         result.guides.map(({ kind, edge, owner }) => ({ kind, edge, owner })),

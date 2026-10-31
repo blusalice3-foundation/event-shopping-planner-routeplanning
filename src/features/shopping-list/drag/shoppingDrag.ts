@@ -215,6 +215,19 @@ function suggestedGroupSlot(
   layout.absentGroupSlots.set(group, slot);
   return slot;
 }
+/** The shared group zone includes its boundary before the next group's first visit. */
+export function isShoppingDragGroupSlot(
+  layout: ShoppingDragLayout,
+  item: ShoppingItem,
+  index: number,
+): boolean {
+  if (!isSameExecutionPlacementGroup(item, item, layout.context)) return false;
+  const key = buildExecutionPlacementGroupKey(item, layout.context);
+  const bucket = layout.buckets.get(key);
+  return bucket
+    ? index >= bucket.first && index <= bucket.last + 1
+    : index === suggestedGroupSlot(layout, item);
+}
 /** Indexed boundaries keep pointer movement independent of total item count. */
 export function resolveShoppingDragPlacement(
   layout: ShoppingDragLayout,
@@ -244,16 +257,11 @@ export function resolveShoppingDragPlacement(
       : boundary === "before"
         ? range!.first
         : range!.last + 1;
-  if (positioned.length) {
-    const bucket = layout.buckets.get(groupKey);
-    if (bucket) {
-      if (insertionIndex < bucket.first || insertionIndex > bucket.last + 1)
-        return null;
-    } else {
-      const expectedSlot = suggestedGroupSlot(layout, moving[0]);
-      if (insertionIndex !== expectedSlot) return null;
-    }
-  }
+  if (
+    positioned.length &&
+    !isShoppingDragGroupSlot(layout, moving[0], insertionIndex)
+  )
+    return null;
   const next = layout.items[insertionIndex];
   const previous = layout.items[insertionIndex - 1];
   const nextInGroup =

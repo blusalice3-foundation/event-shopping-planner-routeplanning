@@ -1105,3 +1105,93 @@ describe("existing space is a merge drop zone", () => {
     },
   );
 });
+
+describe("pure merges use the confirmed placement group", () => {
+  it.each([
+    { grouped: false, y: 110 },
+    { grouped: false, y: 290 },
+    { grouped: true, y: 110 },
+    { grouped: true, y: 290 },
+  ])(
+    "appends at the existing tail when hovering another same-group space $grouped/$y",
+    async ({ grouped, y }) => {
+      const other = item("other", "02a"),
+        incoming = item("incoming", "01a4");
+      const onMove = vi.fn();
+      const view = render(
+        <Harness
+          grouped={grouped}
+          onMove={onMove}
+          initialExecute={[a1, a2, other]}
+          initialCandidate={[incoming]}
+        />,
+      );
+      const row = (id: string) =>
+        view.container.querySelector<HTMLElement>(
+          `[data-item-id="${id}"]:not([data-space-group-key])`,
+        )!;
+      const owner = grouped
+        ? row("other").closest<HTMLElement>('[data-row-key^="group:"]')!
+        : row("other");
+      vi.spyOn(owner, "getBoundingClientRect").mockReturnValue(rect(100, 300));
+      const transfer = { setData: vi.fn(), getData: () => "candidate" };
+      fireEvent.dragStart(row("incoming"), { dataTransfer: transfer });
+      dragOver(row("other"), y, transfer);
+      const guide = view.container.querySelector<HTMLElement>(
+        '[data-shopping-drag-guide="merge"]',
+      )!;
+      expect(guide).toHaveAttribute("data-shopping-drag-boundary", "after");
+      expect(
+        grouped
+          ? guide.closest<HTMLElement>('[data-row-key^="group:"]')?.dataset
+              .rowKey
+          : guide.closest<HTMLElement>("[data-item-id]")?.dataset.itemId,
+      ).toBe(grouped ? 'group:"A-01a"' : "a2");
+      fireEvent.drop(row("other"), { dataTransfer: transfer });
+      expect(onMove).toHaveBeenCalledTimes(1);
+      await waitFor(() =>
+        expect(
+          [
+            ...view.container.querySelectorAll(
+              '[data-shopping-drag-column="execute"] [data-item-id]:not([data-space-group-key])',
+            ),
+          ].map((el) => el.getAttribute("data-item-id")),
+        ).toEqual(["a1", "a2", "incoming", "other"]),
+      );
+    },
+  );
+  it("accepts the group tail immediately before the next priority group", async () => {
+    const next = item("next", "02a", { priorityLevel: "none" });
+    const first = { ...a1, priorityLevel: "priority" as const },
+      peer = { ...a2, priorityLevel: "priority" as const };
+    const incoming = item("incoming", "01a4", { priorityLevel: "priority" });
+    const onMove = vi.fn();
+    const view = render(
+      <Harness
+        grouped={false}
+        onMove={onMove}
+        initialExecute={[first, peer, next]}
+        initialCandidate={[incoming]}
+      />,
+    );
+    const row = (id: string) =>
+      view.container.querySelector<HTMLElement>(`[data-item-id="${id}"]`)!;
+    vi.spyOn(row("next"), "getBoundingClientRect").mockReturnValue(
+      rect(100, 300),
+    );
+    const transfer = { setData: vi.fn(), getData: () => "candidate" };
+    fireEvent.dragStart(row("incoming"), { dataTransfer: transfer });
+    dragOver(row("next"), 110, transfer);
+    fireEvent.drop(row("next"), { dataTransfer: transfer });
+    expect(onMove).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(
+        [
+          ...view.container.querySelectorAll(
+            '[data-shopping-drag-column="execute"] [data-item-id]',
+          ),
+        ].map((el) => el.getAttribute("data-item-id")),
+      ).toEqual(["a1", "a2", "incoming", "next"]),
+    );
+  });
+});
