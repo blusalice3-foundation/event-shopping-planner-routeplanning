@@ -493,9 +493,13 @@ async function hover(
         });
         let previousPoint: { x: number; y: number } | null = null;
         let stable = false;
+        let previousRead: ReturnType<typeof readTarget> = null;
+        let lastRead: ReturnType<typeof readTarget> = ready;
         for (let frame = 1; frame <= 60; frame++) {
           await new Promise(requestAnimationFrame);
           const current = readTarget();
+          previousRead = lastRead;
+          lastRead = current;
           if (!current || !pointVisible(current)) {
             previousPoint = null;
             continue;
@@ -516,10 +520,84 @@ async function hover(
           }
           previousPoint = { x: current.x, y: current.y };
         }
-        if (!stable)
+        if (!stable) {
+          // Failure-only observation: reuse the final two existing reads.
+          // Successful calls retain the same geometry reads, input and clock.
+          const bounds = (value: DOMRect) => ({
+            x: value.x,
+            y: value.y,
+            top: value.top,
+            bottom: value.bottom,
+            left: value.left,
+            right: value.right,
+            width: value.width,
+            height: value.height,
+          });
+          const cachedRead = (value: ReturnType<typeof readTarget>) =>
+            value
+              ? {
+                  point: { x: value.x, y: value.y },
+                  pointInsideViewport: pointVisible(value),
+                  top: bounds(value.top),
+                  bottom: bounds(value.bottom),
+                }
+              : null;
+          const describe = (element: Element | null | undefined) =>
+            element
+              ? {
+                  tag: element.tagName,
+                  connected: element.isConnected,
+                  itemId: element.getAttribute("data-item-id"),
+                  rowKey: element.getAttribute("data-row-key"),
+                  viewportRowKey: element.getAttribute("data-viewport-row-key"),
+                  viewportActive: element.getAttribute("data-viewport-active"),
+                  viewportRetain: element.getAttribute("data-viewport-retain"),
+                  column: element.getAttribute("data-shopping-drag-column"),
+                  className: element.getAttribute("class"),
+                  rect: bounds(element.getBoundingClientRect()),
+                }
+              : null;
+          const hit =
+            lastRead && typeof document.elementFromPoint === "function"
+              ? document.elementFromPoint(lastRead.x, lastRead.y)
+              : null;
+          const scrolling = document.scrollingElement;
+          const readinessFailure = {
+            requested: { id, edge, grouped, input, scroll },
+            limits: { maximumReadinessFrames: 60, requiredStableFrames: 2 },
+            before,
+            initialRead: cachedRead(ready),
+            previousRead: cachedRead(previousRead),
+            lastRead: cachedRead(lastRead),
+            target: describe(lastRead?.target),
+            retainedSlot: describe(slot),
+            owner: describe(lastRead?.owner),
+            root: describe(lastRead?.root),
+            hit: describe(hit),
+            hitRow: describe(
+              hit?.closest(
+                "[data-item-id], [data-row-key], [data-viewport-row-key]",
+              ),
+            ),
+            viewport: {
+              width: window.innerWidth,
+              height: window.innerHeight,
+              scrollX: window.scrollX,
+              scrollY: window.scrollY,
+              scrollHeight: scrolling?.scrollHeight ?? null,
+              clientHeight: scrolling?.clientHeight ?? null,
+              maxScrollY: scrolling
+                ? scrolling.scrollHeight - scrolling.clientHeight
+                : null,
+            },
+            responseClockStarted: false,
+            inputDispatched: false,
+            diagnosticReadsOnlyAfterFailure: true,
+          };
           throw new Error(
-            `Hover target ${id} did not expose its requested ${edge} point in the viewport within 60 animation frames.`,
+            `Hover target ${id} did not expose its requested ${edge} point in the viewport within 60 animation frames. readinessFailure=${JSON.stringify(readinessFailure)}`,
           );
+        }
       }
       const { target, root, header, owner, top, next, bottom, x, y } = ready;
       const scrollBefore = window.scrollY;
