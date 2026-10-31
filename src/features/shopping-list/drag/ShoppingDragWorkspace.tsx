@@ -315,22 +315,34 @@ function createWorkspace(
     list: DragList,
     clientY: number,
     clientX?: number,
-  ): string | undefined => {
+  ):
+    | { readonly kind: "row"; readonly id: string }
+    | { readonly kind: "column" }
+    | { readonly kind: "unresolved" } => {
     const root = list.root();
-    if (!root || !list.rowReferences) return undefined;
+    if (!root) return { kind: "unresolved" };
+    const liveHit =
+      clientX !== undefined && typeof document.elementFromPoint === "function";
+    const hit = liveHit ? document.elementFromPoint(clientX, clientY) : null;
+    if (liveHit && !hit) return { kind: "unresolved" };
+    if (hit && !root.contains(hit)) {
+      const surface = root.closest<HTMLElement>("[data-shopping-drag-surface]");
+      return surface?.contains(hit)
+        ? { kind: "column" }
+        : { kind: "unresolved" };
+    }
+    if (!list.rowReferences) return { kind: "unresolved" };
     const cache = rowCache(list);
-    if (!cache.references.length) return undefined;
-    const hit =
-      clientX === undefined || typeof document.elementFromPoint !== "function"
-        ? null
-        : document.elementFromPoint(clientX, clientY);
+    if (!cache.references.length) return { kind: "unresolved" };
+    let logicalGroupHit = false;
     if (hit && root.contains(hit)) {
       const row = hit.closest<HTMLElement>(
         "[data-viewport-row-key], [data-row-key]",
       );
       const key = row?.dataset.viewportRowKey ?? row?.dataset.rowKey;
       const itemId = key && cache.byKey.get(key);
-      if (itemId && key.startsWith("item:")) return itemId;
+      if (itemId && key.startsWith("item:")) return { kind: "row", id: itemId };
+      logicalGroupHit = Boolean(itemId);
     }
     if (!cache.elements) {
       // Retained rows keep these public wrappers while their controls are absent.
@@ -350,7 +362,22 @@ function createWorkspace(
       });
     }
     const rows = cache.elements;
-    if (!rows.length) return undefined;
+    if (!rows.length) return { kind: "unresolved" };
+    if (!logicalGroupHit) {
+      const bounds = root.getBoundingClientRect();
+      if (
+        clientY < bounds.top ||
+        clientY > bounds.bottom ||
+        (clientX !== undefined &&
+          (clientX < bounds.left || clientX > bounds.right))
+      )
+        return { kind: "unresolved" };
+      const firstBounds = rows[0].element.getBoundingClientRect();
+      const lastBounds = rows.at(-1)!.element.getBoundingClientRect();
+      // Column headers and padding are neutral surfaces, not the nearest visit.
+      if (clientY < firstBounds.top || clientY > lastBounds.bottom)
+        return liveHit ? { kind: "column" } : { kind: "unresolved" };
+    }
     // Canonical row tops follow display order, including nested group headers.
     // Read only the search path and its adjacent boundaries on each hover.
     let first = 0;
@@ -371,9 +398,11 @@ function createWorkspace(
         !nextRect ||
         clientY - previousRect.bottom <= nextRect.top - clientY
       )
-        return previous.itemId;
+        return { kind: "row", id: previous.itemId };
     }
-    return nextRect && nextRect.bottom > nextRect.top ? next.itemId : undefined;
+    return nextRect && nextRect.bottom > nextRect.top
+      ? { kind: "row", id: next.itemId }
+      : { kind: "unresolved" };
   };
   const visitElements = (
     list: DragList,
@@ -643,7 +672,12 @@ function createWorkspace(
       hitTestRejected = false;
 
       const list = lists.get(column);
-      targetId ??= list && resolveRowReference(list, clientY, clientX);
+      const rowHit =
+        !targetId && list
+          ? resolveRowReference(list, clientY, clientX)
+          : undefined;
+      const neutralColumnBlank = rowHit?.kind === "column";
+      if (rowHit?.kind === "row") targetId = rowHit.id;
       hoverPoint = { column, id: targetId, y: clientY, x: clientX };
       accepted = null;
       if (!list?.root()) {
@@ -794,10 +828,13 @@ function createWorkspace(
       // Existing joins have fixed tails. Any valid position in the same placement
       // group accepts that real merge; a corrective guide remains provisional.
       const validMergeHover =
-        !mergeOnly || isShoppingDragGroupSlot(layout, moving[0], pointerSlot);
+        !mergeOnly ||
+        neutralColumnBlank ||
+        isShoppingDragGroupSlot(layout, moving[0], pointerSlot);
       const tail = layout.items.at(-1);
       const tailElements = tail ? visitElements(list, layout, tail.id) : null;
       const validBlank = Boolean(
+        neutralColumnBlank ||
         targetId ||
         layout.items.length === 0 ||
         (placement &&

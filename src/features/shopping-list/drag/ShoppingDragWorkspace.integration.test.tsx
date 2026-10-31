@@ -9,7 +9,10 @@ import { useState } from "react";
 import ShoppingList from "../../../components/ShoppingList";
 import type { ShoppingItem } from "../../../types/item";
 import { computeMoveItem } from "../../events/itemOps";
-import { ShoppingDragProvider } from "./ShoppingDragWorkspace";
+import {
+  ShoppingDragProvider,
+  ShoppingDragColumnSurface,
+} from "./ShoppingDragWorkspace";
 import type { ShoppingDragMoveContext } from "./shoppingDrag";
 const originalElementFromPoint = Object.getOwnPropertyDescriptor(
   document,
@@ -40,6 +43,7 @@ function Harness({
   grouped = true,
   hallGrouped = false,
   retained = false,
+  neutralExecuteSurface = false,
   collapsedExecute,
   sort = null,
   generation = 0,
@@ -53,6 +57,7 @@ function Harness({
   grouped?: boolean;
   hallGrouped?: boolean;
   retained?: boolean;
+  neutralExecuteSurface?: boolean;
   collapsedExecute?: Set<string>;
   sort?: "asc" | "desc" | null;
   generation?: number;
@@ -115,16 +120,26 @@ function Harness({
       : undefined,
     skipLimitedPurchaseForSingleQuantity: true,
   };
+  const executeList = (
+    <ShoppingList
+      {...common}
+      items={execute}
+      dragExecuteOrder={execute.map((item) => item.id)}
+      collapsedSpaces={collapsedExecute}
+      dragSourceItems={allItems}
+      columnType="execute"
+    />
+  );
   return (
     <ShoppingDragProvider eventName="Event" day="Day1" generation={generation}>
-      <ShoppingList
-        {...common}
-        items={execute}
-        dragExecuteOrder={execute.map((item) => item.id)}
-        collapsedSpaces={collapsedExecute}
-        dragSourceItems={allItems}
-        columnType="execute"
-      />
+      {neutralExecuteSurface ? (
+        <ShoppingDragColumnSurface column="execute">
+          <div data-testid="execute-neutral-surface">実行列の空き領域</div>
+          {executeList}
+        </ShoppingDragColumnSurface>
+      ) : (
+        executeList
+      )}
       <ShoppingList
         {...common}
         items={candidate}
@@ -1478,4 +1493,105 @@ describe("public drag row surfaces", () => {
     );
     expect(root.className).toBe(rootClass);
   });
+});
+
+describe("neutral execution column surfaces", () => {
+  it.each([
+    { grouped: false, merge: false, location: "surface" },
+    { grouped: true, merge: false, location: "surface" },
+    { grouped: false, merge: true, location: "surface" },
+    { grouped: true, merge: true, location: "surface" },
+    { grouped: false, merge: false, location: "header" },
+    { grouped: false, merge: false, location: "footer" },
+  ])(
+    "uses canonical placement on neutral $location, grouping $grouped, merge $merge",
+    async ({ grouped, merge, location }) => {
+      const first = { ...a1, priorityLevel: "priority" as const };
+      const peer = { ...a2, priorityLevel: "priority" as const };
+      const other = item("other", "02a", { priorityLevel: "priority" });
+      const next = item("next", "03a", { priorityLevel: "none" });
+      const incoming = item("incoming", merge ? "01a4" : "04a", {
+        priorityLevel: "priority",
+      });
+      const onMove = vi.fn();
+      const view = render(
+        <Harness
+          grouped={grouped}
+          neutralExecuteSurface
+          onMove={onMove}
+          initialExecute={[first, peer, other, next]}
+          initialCandidate={[incoming]}
+        />,
+      );
+      const root = view.container.querySelector<HTMLElement>(
+        '[data-shopping-drag-column="execute"]',
+      )!;
+      const blank = view.getByTestId("execute-neutral-surface");
+      const row = (id: string) =>
+        view.container.querySelector<HTMLElement>(
+          `[data-item-id="${id}"]:not([data-space-group-key])`,
+        )!;
+      const positions = new Map([
+        ['item:"a1"', rect(200, 240)],
+        ['item:"a2"', rect(250, 290)],
+        ['item:"other"', rect(400, 460)],
+        ['item:"next"', rect(600, 660)],
+      ]);
+      vi.spyOn(
+        HTMLElement.prototype,
+        "getBoundingClientRect",
+      ).mockImplementation(function (this: HTMLElement) {
+        if (this === root) return rect(180, 800);
+        const key = this.dataset.viewportRowKey ?? this.dataset.rowKey;
+        if (key && positions.has(key)) return positions.get(key)!;
+        if (key?.startsWith("group:")) {
+          if (key.includes("01a")) return rect(190, 300);
+          if (key.includes("02a")) return rect(380, 480);
+          return rect(580, 680);
+        }
+        return (
+          (this.dataset.itemId &&
+            positions.get(`item:${JSON.stringify(this.dataset.itemId)}`)) ||
+          rect(100, 170)
+        );
+      });
+      const hit = location === "surface" ? blank : root;
+      const y =
+        location === "surface" ? 150 : location === "header" ? 185 : 750;
+      Object.defineProperty(document, "elementFromPoint", {
+        configurable: true,
+        value: () => hit,
+      });
+      const transfer = { setData: vi.fn(), getData: () => "candidate" };
+      fireEvent.dragStart(row("incoming"), { dataTransfer: transfer });
+      dragOver(hit, y, transfer);
+      expect(
+        root.querySelector('[data-shopping-drag-status="accepted"]'),
+      ).not.toBeNull();
+      const drop = new Event("drop", { bubbles: true, cancelable: true });
+      Object.defineProperties(drop, {
+        clientX: { value: 10 },
+        clientY: { value: y },
+        dataTransfer: { value: transfer },
+      });
+      fireEvent(hit, drop);
+      expect(onMove).toHaveBeenCalledTimes(1);
+      expect(
+        onMove.mock.calls[0][4].placement.hallTailInsertions,
+      ).toBeDefined();
+      await waitFor(() =>
+        expect(
+          [
+            ...root.querySelectorAll<HTMLElement>(
+              "[data-item-id]:not([data-space-group-key])",
+            ),
+          ].map((element) => element.dataset.itemId),
+        ).toEqual(
+          merge
+            ? ["a1", "a2", "incoming", "other", "next"]
+            : ["a1", "a2", "other", "incoming", "next"],
+        ),
+      );
+    },
+  );
 });
