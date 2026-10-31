@@ -33,6 +33,9 @@ performanceFixture()だけで、既存の画面外訪問`offscreen`と最後のA
 | drag fixtureのpriority表示確認                                      | 訪問アンカーIDの末尾が`:priority`                             | 所属別の表示用`@placement:`接尾辞があれば、その手前の優先度部分を確認。実際のホール表示・グループ表示・優先度表示のpositive controlは維持する                                                                                                                             |
 | scrolled offscreen notice（native/touch × grouping ON/OFF、4件）    | Aの`merge-a`から表示中の任意行をhoverして合流                 | after/defaultはBの`merge-offscreen`からAの`a1`を明示的にhoverし、補正案内・保存不変・案内の可読性を確認。公開スクロール後、実際にBの`offscreen`へhover/dropし、既存B訪問末尾への追加・全raw ID順・再読込後の候補除外を確認する。before phaseは元のAの操作・期待を保持する |
 | actual-map membership endpoint（native/touch × existing pair、4件） | 同じ確定所属・優先度にある別スペース`c`から既存訪問末尾へ合流 | 元の受付・末尾ガイド・raw/表示順・再読込の期待を保持する。実際の合流先はresolverで確定した`a2`または`a1`のままであり、`c`を不必要に拒否しない                                                                                                                             |
+| held touch same-order cleanup（flat / space / hall、3件）           | 変更なしのdrop後は範囲コントロール0個                         | after/defaultは操作前の範囲コントロール数と全5品目のID・チェック状態を取得し、変更なしのdrop後に一致を確認。before phaseは元の0個期待を保持する。CDP入力、クローン消失時のopacity・操作可能性、選択3件、保存順の検証は維持する                                            |
+
+計画6.4.2の「その移動に伴う選択解除・範囲解除だけを保全または復帰できるようにする」、6.4.7の「対象なし・拒否・変更なしの場合まで無条件に選択やソート状態を消す経路を点検する」に対応する期待値の調整である。範囲コントロールは選択状態として比較し、クローン・装飾・スクロールロック等のドラッグ資源の解除と区別する。この3件のジェスチャー・保持時間・クローン消失時の採取点を変更せず、性能測定ループや回数・基準にも適用しない。
 
 操作を対応させるのは上記offscreen機能試験4件だけであり、性能測定ループ・ジェスチャー・反応/DOM/実フレーム/次操作の終了点を変更しない。新規追加の機能用スクロールhelperは性能シナリオから呼び出さない。候補フィルター2件も、選択対象・保存・再読込の期待を含め変更しない。表示ID互換guardは保存済み訪問IDの変更や基準の緩和を意味しない。
 

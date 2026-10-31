@@ -2745,9 +2745,39 @@ test.describe("held touch drag cleanup", () => {
       await restore(page, backup);
       await grouping(page, layout === "space");
       await select(page, selected);
-      await expect(
-        page.getByTitle("範囲内のチェックを外す", { exact: true }).first(),
-      ).toBeVisible();
+      const rangeControls = page.getByTitle("範囲内のチェックを外す", {
+        exact: true,
+      });
+      await expect(rangeControls.first()).toBeVisible();
+      const rangeControlsBefore = await rangeControls.count();
+      const allIds = backup.data.eventLists[eventName].map((item) => item.id);
+      const checkboxState = () =>
+        page.evaluate(
+          (ids) =>
+            ids.map((id) => {
+              const row = document.querySelector<HTMLElement>(
+                `[data-item-id="${id}"]:not([data-space-group-key]):not(.esp-shopping-touch-clone)`,
+              );
+              const checkbox = row?.querySelector<HTMLInputElement>(
+                'input[type="checkbox"]',
+              );
+              if (!checkbox) throw new Error(`Missing checkbox for ${id}`);
+              return {
+                id,
+                checked: checkbox.checked,
+                indeterminate: checkbox.indeterminate,
+              };
+            }),
+          allIds,
+        );
+      const checkboxesBefore = await checkboxState();
+      expect(checkboxesBefore).toEqual(
+        allIds.map((id) => ({
+          id,
+          checked: selected.includes(id),
+          indeterminate: false,
+        })),
+      );
       const before = (await stored(page, "executeModeItems"))[eventName];
       const source = page.locator(rowSelector(selected[0]));
       const handle = await source
@@ -2861,8 +2891,18 @@ test.describe("held touch drag cleanup", () => {
               }
             ).__heldTouchCleanup,
         );
+        const rangeControlsAfter = await rangeControls.count();
+        const checkboxesAfter = await checkboxState();
         await testInfo.attach("held-touch-cleanup", {
-          body: JSON.stringify({ layout, ...cleanup }),
+          body: JSON.stringify({
+            layout,
+            ...cleanup,
+            rangeControls: {
+              before: rangeControlsBefore,
+              after: rangeControlsAfter,
+            },
+            checkboxes: { before: checkboxesBefore, after: checkboxesAfter },
+          }),
           contentType: "application/json",
         });
         expect(cleanup.opacities).toEqual([1, 1, 1]);
@@ -2871,9 +2911,12 @@ test.describe("held touch drag cleanup", () => {
           await expect(
             page.locator(rowSelector(id)).getByRole("checkbox"),
           ).toBeChecked();
-        await expect(
-          page.getByTitle("範囲内のチェックを外す", { exact: true }),
-        ).toHaveCount(0);
+        if (process.env.ESP_EVIDENCE_PHASE === "before") {
+          await expect(rangeControls).toHaveCount(0);
+        } else {
+          await expect(rangeControls).toHaveCount(rangeControlsBefore);
+          expect(checkboxesAfter).toEqual(checkboxesBefore);
+        }
         expect((await stored(page, "executeModeItems"))[eventName]).toEqual(
           before,
         );
