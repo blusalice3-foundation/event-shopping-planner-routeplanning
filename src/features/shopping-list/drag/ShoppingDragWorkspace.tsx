@@ -33,6 +33,11 @@ interface DragList {
   readonly sourceItems?: readonly ShoppingItem[];
   readonly executeOrder?: readonly string[];
   readonly displayOrder?: () => readonly string[];
+  readonly rowReferences?: () => readonly {
+    readonly rowKey: string;
+    readonly itemId: string;
+  }[];
+  readonly groupKeyForItem?: (item: ShoppingItem) => string;
   readonly presentation: ShoppingDragPresentation;
   readonly root: () => HTMLDivElement | null;
   readonly move: (
@@ -151,6 +156,20 @@ function createWorkspace(
     columnPlacement?: ShoppingDragPlacement | null;
     moving?: readonly ShoppingItem[];
   } | null = null;
+  const rowReferenceCaches = new WeakMap<
+    DragList,
+    {
+      readonly references: readonly {
+        readonly rowKey: string;
+        readonly itemId: string;
+      }[];
+      readonly byKey: ReadonlyMap<string, string>;
+      elements?: readonly {
+        readonly itemId: string;
+        readonly element: HTMLElement;
+      }[];
+    }
+  >();
   let hoverPoint: {
     column: ShoppingDragColumn;
     id?: string;
@@ -265,6 +284,82 @@ function createWorkspace(
       root.querySelector(`[data-row-key=${JSON.stringify(rowKey)}]`)
     );
   };
+  const rowCache = (list: DragList) => {
+    let cache = rowReferenceCaches.get(list);
+    if (!cache) {
+      const references = list.rowReferences?.() ?? [];
+      cache = {
+        references,
+        byKey: new Map(references.map((row) => [row.rowKey, row.itemId])),
+      };
+      rowReferenceCaches.set(list, cache);
+    }
+    return cache;
+  };
+  const resolveRowReference = (
+    list: DragList,
+    clientY: number,
+    clientX?: number,
+  ): string | undefined => {
+    const root = list.root();
+    if (!root || !list.rowReferences) return undefined;
+    const cache = rowCache(list);
+    if (!cache.references.length) return undefined;
+    const hit =
+      clientX === undefined || typeof document.elementFromPoint !== "function"
+        ? null
+        : document.elementFromPoint(clientX, clientY);
+    if (hit && root.contains(hit)) {
+      const row = hit.closest<HTMLElement>(
+        "[data-viewport-row-key], [data-row-key]",
+      );
+      const key = row?.dataset.viewportRowKey ?? row?.dataset.rowKey;
+      const itemId = key && cache.byKey.get(key);
+      if (itemId && key.startsWith("item:")) return itemId;
+    }
+    if (!cache.elements) {
+      // Retained rows keep these public wrappers while their controls are absent.
+      // Rebuild identities only after row mounts change; geometry stays live.
+      const elements = new Map<string, HTMLElement>();
+      root
+        .querySelectorAll<HTMLElement>(
+          "[data-viewport-row-key], [data-row-key]",
+        )
+        .forEach((element) => {
+          const key = element.dataset.viewportRowKey ?? element.dataset.rowKey;
+          if (key && !elements.has(key)) elements.set(key, element);
+        });
+      cache.elements = cache.references.flatMap((row) => {
+        const element = elements.get(row.rowKey);
+        return element ? [{ itemId: row.itemId, element }] : [];
+      });
+    }
+    const rows = cache.elements;
+    if (!rows.length) return undefined;
+    // Canonical row tops follow display order, including nested group headers.
+    // Read only the search path and its adjacent boundaries on each hover.
+    let first = 0;
+    let end = rows.length;
+    while (first < end) {
+      const middle = (first + end) >>> 1;
+      if (rows[middle].element.getBoundingClientRect().top <= clientY)
+        first = middle + 1;
+      else end = middle;
+    }
+    const previous = rows[first - 1];
+    const next = rows[first];
+    const previousRect = previous?.element.getBoundingClientRect();
+    const nextRect = next?.element.getBoundingClientRect();
+    if (previousRect && previousRect.bottom > previousRect.top) {
+      if (
+        clientY <= previousRect.bottom ||
+        !nextRect ||
+        clientY - previousRect.bottom <= nextRect.top - clientY
+      )
+        return previous.itemId;
+    }
+    return nextRect && nextRect.bottom > nextRect.top ? next.itemId : undefined;
+  };
   const visitElements = (
     list: DragList,
     layout: ShoppingDragLayout,
@@ -287,22 +382,26 @@ function createWorkspace(
         "[data-viewport-row-key], [data-row-key]",
       );
       if (headingOwner) return { first: headingOwner, last: headingOwner };
-      const rowKey = `group:${JSON.stringify(getSpaceGroupKey(item, list.presentation))}`;
-      const layoutOwner =
-        root.querySelector<HTMLElement>(
-          `[data-viewport-row-key=${JSON.stringify(rowKey)}]`,
-        ) ??
-        root.querySelector<HTMLElement>(
-          `[data-row-key=${JSON.stringify(rowKey)}]`,
-        );
+      const groupKey = list.groupKeyForItem?.(item);
+      const rowKey = groupKey && `group:${JSON.stringify(groupKey)}`;
+      const layoutOwner = rowKey
+        ? (root.querySelector<HTMLElement>(
+            `[data-viewport-row-key=${JSON.stringify(rowKey)}]`,
+          ) ??
+          root.querySelector<HTMLElement>(
+            `[data-row-key=${JSON.stringify(rowKey)}]`,
+          ))
+        : null;
       if (layoutOwner) return { first: layoutOwner, last: layoutOwner };
       const first = itemElement(root, visit.itemIds[0]);
       const group = first?.closest<HTMLElement>('[data-row-key^="group:"]');
       if (group) return { first: group, last: group };
       // Expanded headers do not expose an item ID; their stable visit ID identifies the owner.
-      const heading = root.querySelector<HTMLElement>(
-        `[data-space-group-key=${JSON.stringify(getSpaceGroupKey(item, list.presentation))}]`,
-      );
+      const heading = groupKey
+        ? root.querySelector<HTMLElement>(
+            `[data-space-group-key=${JSON.stringify(groupKey)}]`,
+          )
+        : null;
       const owner = heading?.closest<HTMLElement>("[data-row-key]");
       if (owner) return { first: owner, last: owner };
     }
@@ -481,7 +580,31 @@ function createWorkspace(
           ),
         };
       if (typeof MutationObserver === "function") {
-        layoutObserver = new MutationObserver(() => workspace.refresh());
+        layoutObserver = new MutationObserver((records) => {
+          for (const record of records) {
+            const changedRows = [
+              ...record.addedNodes,
+              ...record.removedNodes,
+            ].some(
+              (node) =>
+                node instanceof Element &&
+                (node.matches("[data-viewport-row-key], [data-row-key]") ||
+                  node.querySelector(
+                    "[data-viewport-row-key], [data-row-key]",
+                  )),
+            );
+            if (!changedRows || !(record.target instanceof Element)) continue;
+            const root = record.target.closest<HTMLElement>(
+              "[data-shopping-drag-column]",
+            );
+            const column = root?.dataset.shoppingDragColumn as
+              | ShoppingDragColumn
+              | undefined;
+            const list = column && lists.get(column);
+            if (list) rowCache(list).elements = undefined;
+          }
+          workspace.refresh();
+        });
         lists.forEach((entry) => {
           const root = entry.root();
           if (root)
@@ -504,8 +627,9 @@ function createWorkspace(
         guidedPoint = null;
       hitTestRejected = false;
 
-      hoverPoint = { column, id: targetId, y: clientY, x: clientX };
       const list = lists.get(column);
+      targetId ??= list && resolveRowReference(list, clientY, clientX);
+      hoverPoint = { column, id: targetId, y: clientY, x: clientX };
       accepted = null;
       if (!list?.root()) {
         clearDecorations();
@@ -906,15 +1030,7 @@ function createWorkspace(
   };
   return workspace;
 }
-function getSpaceGroupKey(
-  item: ShoppingItem,
-  presentation: ShoppingDragPresentation,
-): string {
-  return buildExecutionPlacementVisitKey(
-    item,
-    shoppingPlacementContext(presentation),
-  );
-}
+
 export function ShoppingDragProvider({
   eventName,
   day,

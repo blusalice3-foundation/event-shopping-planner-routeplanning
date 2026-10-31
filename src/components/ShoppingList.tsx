@@ -2517,6 +2517,16 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         )
       : listReadModel.itemRows.map((row) => row.itemId),
   );
+  const dragRowReferences = useStableCallback(() => {
+    const firstItemByGroup = new Map(
+      listRowGroups?.map((group) => [group.key, group.items[0]?.id]),
+    );
+    return listVisibleModel.rows.flatMap((row) => {
+      const itemId =
+        row.kind === "item" ? row.itemId : firstItemByGroup.get(row.groupKey);
+      return itemId ? [{ rowKey: row.rowKey, itemId }] : [];
+    });
+  });
   const resolveDragMembership = useStableCallback((itemId: string) => {
     const item = getLatestItemById(itemId);
     if (item) latestCardCrudCallbacksRef.current.onEditRequest(item);
@@ -2537,6 +2547,8 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       sourceItems: dragSourceItems,
       executeOrder: dragExecuteOrder,
       displayOrder: dragDisplayOrder,
+      rowReferences: dragRowReferences,
+      groupKeyForItem: getNavigatorGroupKey,
       presentation: dragPresentation,
       root: () => containerRef.current,
       move: handleDragMove,
@@ -2553,6 +2565,8 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     dragSourceItems,
     dragExecuteOrder,
     dragDisplayOrder,
+    dragRowReferences,
+    getNavigatorGroupKey,
     listRowGroups,
     handleDragMove,
     revealDragTarget,

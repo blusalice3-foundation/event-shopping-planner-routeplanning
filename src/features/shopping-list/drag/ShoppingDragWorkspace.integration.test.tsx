@@ -38,6 +38,9 @@ const a1 = item("a1", "01a"),
   x2 = item("x2", "02a2");
 function Harness({
   grouped = true,
+  hallGrouped = false,
+  retained = false,
+  collapsedExecute,
   sort = null,
   generation = 0,
   onMove = vi.fn(),
@@ -48,6 +51,9 @@ function Harness({
   initialExecute = [a1, a2],
 }: {
   grouped?: boolean;
+  hallGrouped?: boolean;
+  retained?: boolean;
+  collapsedExecute?: Set<string>;
   sort?: "asc" | "desc" | null;
   generation?: number;
   onMove?: (...args: unknown[]) => void;
@@ -100,6 +106,13 @@ function Harness({
     rangeScopeId: "Event",
     viewMode: "edit" as const,
     showSpaceGroups: grouped,
+    showHallGroups: hallGrouped,
+    listRendererPreferencePort: retained
+      ? {
+          read: () => ({ status: "ok", value: "auto" }) as const,
+          write: () => true,
+        }
+      : undefined,
     skipLimitedPurchaseForSingleQuantity: true,
   };
   return (
@@ -108,6 +121,7 @@ function Harness({
         {...common}
         items={execute}
         dragExecuteOrder={execute.map((item) => item.id)}
+        collapsedSpaces={collapsedExecute}
         dragSourceItems={allItems}
         columnType="execute"
       />
@@ -1193,5 +1207,224 @@ describe("pure merges use the confirmed placement group", () => {
         ].map((el) => el.getAttribute("data-item-id")),
       ).toEqual(["a1", "a2", "incoming", "next"]),
     );
+  });
+});
+
+describe("public drag row surfaces", () => {
+  it.each([false, true])(
+    "uses the real same-group gap rather than the global end, grouping %s",
+    async (grouped) => {
+      const first = { ...a1, priorityLevel: "priority" as const };
+      const peer = { ...a2, priorityLevel: "priority" as const };
+      const other = item("other", "02a", { priorityLevel: "priority" });
+      const later = item("later", "03a", { priorityLevel: "priority" });
+      const next = item("next", "04a", { priorityLevel: "none" });
+      const incoming = item("incoming", "05a", { priorityLevel: "priority" });
+      const onMove = vi.fn();
+      const view = render(
+        <Harness
+          grouped={grouped}
+          hallGrouped={!grouped}
+          onMove={onMove}
+          initialExecute={[first, peer, other, later, next]}
+          initialCandidate={[incoming]}
+        />,
+      );
+      const root = view.container.querySelector<HTMLElement>(
+        '[data-shopping-drag-column="execute"]',
+      )!;
+      const row = (id: string) =>
+        view.container.querySelector<HTMLElement>(
+          `[data-item-id="${id}"]:not([data-space-group-key])`,
+        )!;
+      const group = row("a1").closest<HTMLElement>('[data-row-key^="group:"]')!;
+      const positions = new Map([
+        ['item:"a1"', rect(100, 140)],
+        ['item:"a2"', rect(150, 190)],
+        ['item:"other"', rect(240, 300)],
+        ['item:"later"', rect(400, 460)],
+        ['item:"next"', rect(600, 660)],
+      ]);
+      vi.spyOn(
+        HTMLElement.prototype,
+        "getBoundingClientRect",
+      ).mockImplementation(function (this: HTMLElement) {
+        const key = this.dataset.rowKey ?? this.dataset.viewportRowKey;
+        if (key && positions.has(key)) return positions.get(key)!;
+        if (key?.startsWith("group:")) {
+          if (!grouped) return this === group ? rect(50, 500) : rect(550, 700);
+          if (key.includes("01a")) return rect(50, 200);
+          if (key.includes("02a")) return rect(220, 320);
+          if (key.includes("03a")) return rect(380, 480);
+          return rect(550, 700);
+        }
+        const id = this.dataset.itemId;
+        return (
+          (id && positions.get(`item:${JSON.stringify(id)}`)) || rect(0, 800)
+        );
+      });
+      Object.defineProperty(document, "elementFromPoint", {
+        configurable: true,
+        value: () => (grouped ? root : group),
+      });
+      const transfer = { setData: vi.fn(), getData: () => "candidate" };
+      fireEvent.dragStart(row("incoming"), { dataTransfer: transfer });
+      dragOver(root, 350, transfer);
+      expect(
+        root.querySelector('[data-shopping-drag-status="accepted"]'),
+      ).not.toBeNull();
+      fireEvent.scroll(window);
+      expect(
+        root.querySelector('[data-shopping-drag-status="accepted"]'),
+      ).not.toBeNull();
+      fireEvent.drop(root, { dataTransfer: transfer });
+      expect(onMove).toHaveBeenCalledTimes(1);
+      expect(onMove.mock.calls[0][1]).toBe("later");
+      await waitFor(() =>
+        expect(
+          [
+            ...root.querySelectorAll<HTMLElement>(
+              "[data-item-id]:not([data-space-group-key])",
+            ),
+          ].map((element) => element.dataset.itemId),
+        ).toEqual(["a1", "a2", "other", "incoming", "later", "next"]),
+      );
+    },
+  );
+
+  it("keeps a global blank below the last public row at the actual group tail", () => {
+    const first = { ...a1, priorityLevel: "priority" as const };
+    const last = item("last", "02a", { priorityLevel: "none" });
+    const incoming = item("incoming", "03a", { priorityLevel: "none" });
+    const onMove = vi.fn();
+    const view = render(
+      <Harness
+        grouped={false}
+        initialExecute={[first, last]}
+        initialCandidate={[incoming]}
+        onMove={onMove}
+      />,
+    );
+    const root = view.container.querySelector<HTMLElement>(
+      '[data-shopping-drag-column="execute"]',
+    )!;
+    const row = (id: string) =>
+      view.container.querySelector<HTMLElement>(`[data-item-id="${id}"]`)!;
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+      function (this: HTMLElement) {
+        const key = this.dataset.rowKey;
+        if (key === 'item:"a1"' || this.dataset.itemId === "a1")
+          return rect(100, 200);
+        if (key === 'item:"last"' || this.dataset.itemId === "last")
+          return rect(300, 400);
+        return rect(0, 800);
+      },
+    );
+    Object.defineProperty(document, "elementFromPoint", {
+      configurable: true,
+      value: () => root,
+    });
+    const transfer = { setData: vi.fn(), getData: () => "candidate" };
+    fireEvent.dragStart(row("incoming"), { dataTransfer: transfer });
+    dragOver(root, 500, transfer);
+    fireEvent.drop(root, { dataTransfer: transfer });
+    expect(onMove).toHaveBeenCalledTimes(1);
+    expect(onMove.mock.calls[0][1]).toBe("__END_OF_LIST__");
+    expect(
+      [...root.querySelectorAll<HTMLElement>("[data-item-id]")].map(
+        (element) => element.dataset.itemId,
+      ),
+    ).toEqual(["a1", "last", "incoming"]);
+  });
+
+  it("resolves retained public group placeholders and the collapsed legacy-key merge tail", () => {
+    vi.stubGlobal("visualViewport", {
+      scale: 1,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    });
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    let scrolled = false;
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+      function (this: HTMLElement) {
+        const key = this.dataset.viewportRowKey ?? this.dataset.rowKey;
+        if (!scrolled) return key ? rect(5000, 5200) : rect(0, 800);
+        if (key === 'group:"A-01a"') return rect(-1000, -800);
+        const match = key?.match(/other-(\d+)/);
+        if (match) {
+          const top = 160 + Number(match[1]) * 300;
+          return rect(top, top + 100);
+        }
+        const group = key?.match(/group:"A-(\d+)a"/);
+        if (group) {
+          const top = 100 + (Number(group[1]) - 2) * 300;
+          return rect(top, top + 200);
+        }
+        return rect(0, 800);
+      },
+    );
+    const execute = [
+      a1,
+      a2,
+      ...Array.from({ length: 32 }, (_, index) =>
+        item(`other-${index}`, `${index + 2}a`),
+      ),
+    ];
+    const incoming = item("incoming", "01a4");
+    const onMove = vi.fn();
+    const view = render(
+      <Harness
+        retained
+        grouped
+        collapsedExecute={new Set(["A-01a"])}
+        initialExecute={execute}
+        initialCandidate={[incoming]}
+        onMove={onMove}
+      />,
+    );
+    const root = view.container.querySelector<HTMLElement>(
+      '[data-shopping-drag-column="execute"]',
+    )!;
+    expect(root).toHaveAttribute(
+      "data-list-renderer-strategy",
+      "retained-viewport",
+    );
+    const target = root.querySelector<HTMLElement>(
+      "[data-viewport-row-key='group:\"A-2a\"']",
+    )!;
+    const mergeTail = root.querySelector<HTMLElement>(
+      "[data-viewport-row-key='group:\"A-01a\"']",
+    )!;
+    expect(target).not.toBeNull();
+    expect(mergeTail).not.toBeNull();
+    expect(root.querySelector('[data-item-id="other-0"]')).toBeNull();
+    expect(root.querySelector('[data-item-id="a1"]')).toBeNull();
+    scrolled = true;
+    Object.defineProperty(document, "elementFromPoint", {
+      configurable: true,
+      value: () => target.querySelector(".esp-viewport-placeholder-heading"),
+    });
+    const source = view.container.querySelector<HTMLElement>(
+      '[data-item-id="incoming"]',
+    )!;
+    const transfer = { setData: vi.fn(), getData: () => "candidate" };
+    fireEvent.dragStart(source, { dataTransfer: transfer });
+    dragOver(target, 150, transfer);
+    expect(
+      root.querySelector('[data-shopping-drag-status="accepted"]'),
+    ).not.toBeNull();
+    expect(
+      mergeTail.querySelector('[data-shopping-drag-guide="merge"]'),
+    ).not.toBeNull();
+    fireEvent.drop(target, { dataTransfer: transfer });
+    expect(onMove).toHaveBeenCalledTimes(1);
+    expect(onMove.mock.calls[0][4].placement.mergeTargetIds).toEqual(["a2"]);
   });
 });
