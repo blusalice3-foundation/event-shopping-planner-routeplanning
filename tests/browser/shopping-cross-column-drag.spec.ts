@@ -461,7 +461,20 @@ async function hover(
             ? top.top + Math.max(4, (bottom.bottom - top.top) * 0.25)
             : top.top + Math.max(6, (bottom.bottom - top.top) * 0.75);
         const x = top.left + 20;
-        return { target, root, header, owner, top, next, bottom, x, y };
+        const viewportScroll = { x: window.scrollX, y: window.scrollY };
+        return {
+          target,
+          root,
+          header,
+          owner,
+          top,
+          next,
+          bottom,
+          x,
+          y,
+          documentPoint: { x: x + viewportScroll.x, y: y + viewportScroll.y },
+          hit: document.elementFromPoint(x, y),
+        };
       };
       const pointVisible = (
         value: NonNullable<ReturnType<typeof readTarget>>,
@@ -470,6 +483,26 @@ async function hover(
         value.x < window.innerWidth &&
         value.y >= 0 &&
         value.y < window.innerHeight;
+      const pointExposed = (
+        value: NonNullable<ReturnType<typeof readTarget>>,
+      ) => {
+        if (
+          !pointVisible(value) ||
+          !value.target.isConnected ||
+          !value.hit?.isConnected
+        )
+          return false;
+        if (value.owner) return value.owner.contains(value.hit);
+        const containsHit = (element: HTMLElement | null) => {
+          if (!element) return false;
+          const row = element.closest(
+            '[data-row-key^="item:"], [data-viewport-row-key^="item:"]',
+          );
+          return element.contains(value.hit) || !!row?.contains(value.hit);
+        };
+        // The original a1 boundary spans a1 through a2, including its after point.
+        return containsHit(value.target) || containsHit(value.next);
+      };
       let ready = readTarget();
       if (!ready)
         throw new Error(
@@ -480,7 +513,7 @@ async function hover(
         before: { x: number; y: number; scrollY: number };
         after: { x: number; y: number; scrollY: number };
       } | null = null;
-      if (!pointVisible(ready)) {
+      if (!pointExposed(ready)) {
         const before = { x: ready.x, y: ready.y, scrollY: window.scrollY };
         const rowKey = `item:${JSON.stringify(id)}`;
         const slot = document.querySelector<HTMLElement>(
@@ -491,7 +524,7 @@ async function hover(
           inline: "nearest",
           behavior: "instant",
         });
-        let previousPoint: { x: number; y: number } | null = null;
+        let previousDocumentPoint: { x: number; y: number } | null = null;
         let stable = false;
         let previousRead: ReturnType<typeof readTarget> = null;
         let lastRead: ReturnType<typeof readTarget> = ready;
@@ -500,11 +533,11 @@ async function hover(
           const current = readTarget();
           previousRead = lastRead;
           lastRead = current;
-          if (!current || !pointVisible(current)) {
-            previousPoint = null;
+          if (!current || !pointExposed(current)) {
+            previousDocumentPoint = null;
             if (current) {
-              // Mounting can replace the initially centered placeholder and
-              // move this same ID/edge outside the viewport. Reacquire it.
+              // Mounting or an overlay can hide the requested point. Reacquire
+              // only this same ID/edge's current connected public row.
               const currentSlot = document.querySelector<HTMLElement>(
                 `[data-row-key=${JSON.stringify(rowKey)}], [data-viewport-row-key=${JSON.stringify(rowKey)}]`,
               );
@@ -521,9 +554,9 @@ async function hover(
             continue;
           }
           if (
-            previousPoint &&
-            Math.abs(previousPoint.x - current.x) <= 1 &&
-            Math.abs(previousPoint.y - current.y) <= 1
+            previousDocumentPoint &&
+            Math.abs(previousDocumentPoint.x - current.documentPoint.x) <= 1 &&
+            Math.abs(previousDocumentPoint.y - current.documentPoint.y) <= 1
           ) {
             ready = current;
             visibilityPreparation = {
@@ -534,7 +567,8 @@ async function hover(
             stable = true;
             break;
           }
-          previousPoint = { x: current.x, y: current.y };
+          // Window auto-scroll moves viewport coordinates without moving the target.
+          previousDocumentPoint = current.documentPoint;
         }
         if (!stable) {
           // Failure-only observation: reuse the final two existing reads.
@@ -553,7 +587,9 @@ async function hover(
             value
               ? {
                   point: { x: value.x, y: value.y },
+                  documentPoint: value.documentPoint,
                   pointInsideViewport: pointVisible(value),
+                  pointExposed: pointExposed(value),
                   top: bounds(value.top),
                   bottom: bounds(value.bottom),
                 }
@@ -2992,6 +3028,67 @@ const summary = (values: number[]) => ({
   samples: values,
   ...summarizePerformanceSamples(values),
 });
+async function observeRejectedGuideVisibility(page: Page) {
+  return page.evaluate(async () => {
+    const snapshot = (frame: number) => {
+      const root = document.querySelector(
+        '[data-shopping-drag-column="execute"]',
+      );
+      const guides = Array.from(
+        root?.querySelectorAll<HTMLElement>("[data-shopping-drag-guide]") ?? [],
+      ).map((line) => {
+        const owner = line.parentElement!;
+        const ownerRect = owner.getBoundingClientRect();
+        const guideRect = line.getBoundingClientRect();
+        const rowKey = owner.dataset.rowKey ?? owner.dataset.viewportRowKey;
+        return {
+          kind: line.dataset.shoppingDragGuide,
+          edge: line.dataset.shoppingDragBoundary,
+          owner:
+            owner.dataset.itemId ??
+            (rowKey?.startsWith("item:")
+              ? (JSON.parse(rowKey.slice(5)) as string)
+              : rowKey),
+          offsetPx: Math.abs(guideRect.bottom - ownerRect.bottom),
+          ownerRect: { top: ownerRect.top, bottom: ownerRect.bottom },
+          guideRect: { top: guideRect.top, bottom: guideRect.bottom },
+        };
+      });
+      const status = root?.querySelector<HTMLElement>(
+        "[data-shopping-drag-status]",
+      )?.dataset.shoppingDragStatus;
+      return {
+        frame,
+        scrollY: window.scrollY,
+        viewportHeight: window.innerHeight,
+        status,
+        guides,
+        visible:
+          status === "rejected" &&
+          guides.length === 1 &&
+          guides[0].kind === "suggestion" &&
+          guides[0].edge === "after" &&
+          guides[0].owner === "priority" &&
+          Number.isFinite(guides[0].offsetPx) &&
+          guides[0].offsetPx <= 1 &&
+          guides[0].guideRect.bottom > 0 &&
+          guides[0].guideRect.top < window.innerHeight,
+      };
+    };
+    const snapshots = [snapshot(0)];
+    for (let frame = 1; !snapshots.at(-1)!.visible && frame <= 60; frame++) {
+      await new Promise(requestAnimationFrame);
+      snapshots.push(snapshot(frame));
+    }
+    return {
+      phase: "after-original-response-clock",
+      maximumFrames: 60,
+      addedInputs: 0,
+      addedScrolls: 0,
+      snapshots,
+    };
+  });
+}
 async function observeRejectedFailure(page: Page) {
   return page.evaluate(async () => {
     const began = performance.now();
@@ -3662,20 +3759,27 @@ for (const count of [150, 500])
               });
               previousBoundary = observedBoundary;
             }
-            guideSamples.push({ ...response, expectedGuides });
+            let correctiveVisibility: Awaited<
+              ReturnType<typeof observeRejectedGuideVisibility>
+            > | null = null;
             if ("viewportScroll" in response) {
               if (
                 scenario.name === "rejected" &&
                 process.env.ESP_EVIDENCE_PHASE !== "before"
               ) {
-                if (
-                  !(
-                    response.viewportScroll.after >
-                    response.viewportScroll.before
-                  )
-                )
+                correctiveVisibility =
+                  await observeRejectedGuideVisibility(page);
+                const final = correctiveVisibility.snapshots.at(-1)!;
+                const originalGuide = response.guides[0].guideRect;
+                const directionCorrect =
+                  originalGuide.bottom <= 0
+                    ? final.scrollY < response.viewportScroll.after
+                    : originalGuide.top >= final.viewportHeight
+                      ? final.scrollY > response.viewportScroll.after
+                      : true;
+                if (!final.visible || !directionCorrect)
                   await attach(testInfo, "rejected-scroll-failure-context", {
-                    stage: "rejected-scroll-assertion-after-original-clock",
+                    stage: "rejected-final-visibility-after-original-clock",
                     count,
                     input,
                     grouped,
@@ -3690,20 +3794,28 @@ for (const count of [150, 500])
                     initialHover,
                     positiveControl: rejectedPositiveControl,
                     response,
+                    correctiveVisibility,
                     afterFailure: await observeRejectedFailure(page),
                   });
                 expect(
-                  response.viewportScroll.after,
-                  scenario.name,
-                ).toBeGreaterThan(response.viewportScroll.before);
-                expect(response.guides[0].guideRect.bottom).toBeGreaterThan(0);
-                expect(response.guides[0].guideRect.top).toBeLessThan(1000);
+                  final.visible,
+                  `${scenario.name} final correct tail visibility`,
+                ).toBe(true);
+                expect(
+                  directionCorrect,
+                  `${scenario.name} offscreen correction direction`,
+                ).toBe(true);
               } else {
                 expect(response.viewportScroll.after, scenario.name).toBe(
                   response.viewportScroll.before,
                 );
               }
             }
+            guideSamples.push({
+              ...response,
+              expectedGuides,
+              ...(correctiveVisibility ? { correctiveVisibility } : {}),
+            });
             if ("scrollBefore" in response) {
               expect(response.scrollAfter).toBeGreaterThan(
                 response.scrollBefore,
