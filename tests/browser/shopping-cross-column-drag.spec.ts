@@ -26,6 +26,11 @@ const dropSaveTargetMapping = {
 } as const;
 const localityDiagnosticEnabled =
   process.env.ESP_DRAG_LOCALITY_DIAGNOSTIC === "1";
+const priorLocalityFailureKeys = [
+  "item:execute-220",
+  "item:execute-225",
+  "item:execute-230",
+] as const;
 type Input = "native" | "touch";
 const makeItem = (
   id: string,
@@ -3091,21 +3096,33 @@ async function observeLocalityRows(page: Page, probeKeys: string[]) {
                 `[data-item-id=${JSON.stringify(itemId)}]:not([data-space-group-key])`,
               ]),
         ].join(", ");
+        const elements = Array.from(
+          document.querySelectorAll<HTMLElement>(selector),
+        )
+          .filter((node) => !node.closest(".esp-shopping-touch-clone"))
+          .map((node) => {
+            const retainedAncestors = [];
+            for (
+              let ancestor = node.parentElement;
+              ancestor;
+              ancestor = ancestor.parentElement
+            )
+              if (ancestor.hasAttribute("data-viewport-active"))
+                retainedAncestors.push(describe(ancestor));
+            return { ...describe(node), retainedAncestors };
+          });
         return {
           probeKey: key,
-          elements: Array.from(document.querySelectorAll<HTMLElement>(selector))
-            .filter((node) => !node.closest(".esp-shopping-touch-clone"))
-            .map((node) => {
-              const retainedAncestors = [];
-              for (
-                let ancestor = node.parentElement;
-                ancestor;
-                ancestor = ancestor.parentElement
-              )
-                if (ancestor.hasAttribute("data-viewport-active"))
-                  retainedAncestors.push(describe(ancestor));
-              return { ...describe(node), retainedAncestors };
-            }),
+          elements,
+          card:
+            itemId === null
+              ? null
+              : (elements.find((element) => element.itemId === itemId) ?? null),
+          publicRow:
+            elements.find(
+              (element) =>
+                element.rowKey === rowKey || element.viewportRowKey === rowKey,
+            ) ?? null,
         };
       }),
     };
@@ -4004,9 +4021,15 @@ for (const count of [150, 500])
               guideSamples,
               remountedExisting,
               unexpectedMountKeys: unexpectedMounts ? mountKeys : [],
+              priorFailureMountKeys: localityDiagnosticEnabled
+                ? priorLocalityFailureKeys
+                : [],
               afterObservation: await observeLocalityRows(page, [
                 ...new Set([
                   ...mountKeys,
+                  ...(localityDiagnosticEnabled
+                    ? priorLocalityFailureKeys
+                    : []),
                   "item:priority",
                   "item:a1",
                   "item:a2",

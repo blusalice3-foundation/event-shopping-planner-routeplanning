@@ -55,7 +55,7 @@ nativeの同診断では、生responseはrejected・priority/after suggestion・
 
 ec6b362の正式attempt2では、500/native/OFFのrejectedで既存update0・before-mountedとの重複mount0を通過した後、`execute-220/225/230`の新規logical key各2が厳密なnomount期待に違反した。元243ファイルと当初の失敗・途中runは保持し、期待を緩めずに切り分ける。nomount違反が既存probe値から確定した場合だけ、`beforeRender`/`render`/初回hover/scenario/rendererBeforeと既存guideSamples・postvisibility、および10回のpositive-control response参照を添付する。新しいDOM読取は失敗確定後のcurrent renderer mode・public card/slot・retained祖先の接続/active/BCR/scrollの1snapshotだけで、入力・scroll・observer本体・metric・時計・終了点・nomount期待を変えない。
 
-間欠症状の数値診断に限り`ESP_DRAG_LOCALITY_DIAGNOSTIC=1`を明示すると、rejected成功時にも同contextを添付する。このflag時のtiming artifactは`diagnosticOnly: true` / `acceptanceMeasurement: false`とし、正式group監査・完了判定へ流用しない。通常unsetの成功経路では既存positive-control responseの参照保存以外のDOM読取・入力・時計を追加しない。変更前後の最終比較には同じ最終spec/helper/fixtureを適用し、元ec6b362のpartial成功を新runへ補充しない。
+間欠症状の数値診断に限り`ESP_DRAG_LOCALITY_DIAGNOSTIC=1`を明示すると、rejected成功時にも同contextを添付する。明示flag時だけ、元ec6b362失敗の対象`execute-220/225/230`を実mountKeysとは別の`priorFailureMountKeys`として観測対象へ含め、成功時も3行のBCR/activeとcard/publicRowの有無（未mountはnull）を残す。これは観測する行IDの追加だけで、fixture・入力先・保存先・probe key集合やnomount期待を変更しない。このflag時のtiming artifactは`diagnosticOnly: true` / `acceptanceMeasurement: false`とし、正式group監査・完了判定へ流用しない。通常unsetの成功経路では既存positive-control responseの参照保存以外のDOM読取・入力・時計を追加しない。変更前後の最終比較には同じ最終spec/helper/fixtureを適用し、元ec6b362のpartial成功を新runへ補充しない。
 
 ## 2026-11-01ユーザー承認によるdrop-save対象位置の対応
 
