@@ -16,6 +16,7 @@ interface ViewportRegistry {
   listSizes: Map<HTMLElement, number>;
   sizeObserver?: ResizeObserver;
   requestedKeys: Map<string, number>;
+  retainedLists: Map<HTMLElement, number>;
   initialOffsets: WeakMap<
     Element,
     {
@@ -136,6 +137,7 @@ const getRegistry = (document: Document): ViewportRegistry => {
     visibility: new WeakMap(),
     listSizes: new Map(),
     requestedKeys: new Map(),
+    retainedLists: new Map(),
     initialOffsets: new WeakMap(),
     printing: false,
     backwardTab: false,
@@ -189,6 +191,44 @@ const getRegistry = (document: Document): ViewportRegistry => {
   return registry;
 };
 
+const disposeRegistryIfUnused = (
+  document: Document,
+  registry: ViewportRegistry,
+) => {
+  if (registry.subscribers.size || registry.retainedLists.size) return;
+  registry.observer.disconnect();
+  registry.sizeObserver?.disconnect();
+  document.removeEventListener("keydown", registry.keyDown, true);
+  document.removeEventListener("focusout", registry.focusOut, true);
+  document.defaultView?.removeEventListener(
+    "beforeprint",
+    registry.beforePrint,
+  );
+  document.defaultView?.removeEventListener("afterprint", registry.afterPrint);
+  if (registries.get(document) === registry) registries.delete(document);
+};
+
+/** Hold only already activated controls and controls visited until this lease ends. */
+export const retainActivatedViewportContent = (
+  list: HTMLElement,
+): (() => void) => {
+  const registry = registries.get(list.ownerDocument);
+  if (!registry) return () => {};
+  registry.retainedLists.set(list, (registry.retainedLists.get(list) ?? 0) + 1);
+  for (const [root, subscription] of registry.subscribers)
+    if (list.contains(root)) subscription.update();
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    const remaining = (registry.retainedLists.get(list) ?? 1) - 1;
+    if (remaining > 0) registry.retainedLists.set(list, remaining);
+    else registry.retainedLists.delete(list);
+    for (const [root, subscription] of registry.subscribers)
+      if (list.contains(root)) subscription.update();
+    disposeRegistryIfUnused(list.ownerDocument, registry);
+  };
+};
 /** Reveal deferred ancestors before scrolling; release the temporary pin afterwards. */
 export const revealViewportContent = (element: HTMLElement): void => {
   const registry = registries.get(element.ownerDocument);
@@ -324,6 +364,11 @@ export const ViewportContent = ({
     }
     initialVisibility.current.registry = registry;
     initialVisibility.current.unknown = visible === undefined;
+    let retainedActive = false;
+    const activate = () => {
+      if (list && registry.retainedLists.has(list)) retainedActive = true;
+      setActivated(true);
+    };
     const subscription: Subscription = {
       resetHeight: () => {
         heightRef.current = heightCache(root.ownerDocument).get(
@@ -334,8 +379,16 @@ export const ViewportContent = ({
       // Unknown is local bookkeeping only; forced activation does not require it.
       visible: visible ?? false,
       update: () => {
-        if (!defer || retain || registry.printing || subscription.visible) {
-          setActivated(true);
+        if (!list || !registry.retainedLists.has(list)) retainedActive = false;
+        else if (root.dataset.viewportActive === "true") retainedActive = true;
+        if (
+          !defer ||
+          retain ||
+          registry.printing ||
+          subscription.visible ||
+          retainedActive
+        ) {
+          activate();
           return;
         }
         const pinned =
@@ -343,7 +396,7 @@ export const ViewportContent = ({
           root.dataset.viewportRetain === "true" ||
           root.querySelector('[data-viewport-retain="true"]') !== null;
         if (pinned) {
-          setActivated(true);
+          activate();
           return;
         }
         if (registry.requestedKeys.size === 0) {
@@ -357,7 +410,8 @@ export const ViewportContent = ({
           ].some((child) =>
             registry.requestedKeys.has(child.dataset.viewportRowKey ?? ""),
           );
-        setActivated(requested);
+        if (requested) activate();
+        else setActivated(false);
       },
     };
     if (visible !== undefined) registry.visibility.set(root, visible);
@@ -380,29 +434,7 @@ export const ViewportContent = ({
           registry.sizeObserver?.unobserve(list);
         }
       }
-      if (!registry.subscribers.size) {
-        registry.observer.disconnect();
-        registry.sizeObserver?.disconnect();
-        root.ownerDocument.removeEventListener(
-          "keydown",
-          registry.keyDown,
-          true,
-        );
-        root.ownerDocument.removeEventListener(
-          "focusout",
-          registry.focusOut,
-          true,
-        );
-        root.ownerDocument.defaultView?.removeEventListener(
-          "beforeprint",
-          registry.beforePrint,
-        );
-        root.ownerDocument.defaultView?.removeEventListener(
-          "afterprint",
-          registry.afterPrint,
-        );
-        registries.delete(root.ownerDocument);
-      }
+      disposeRegistryIfUnused(root.ownerDocument, registry);
     };
   }, [defer, retain, rowKey, layoutKey, estimatedHeight]);
   useLayoutEffect(() => {

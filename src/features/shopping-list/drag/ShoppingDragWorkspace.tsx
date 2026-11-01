@@ -9,6 +9,7 @@ import React, {
 import type { ShoppingItem } from "../../../types/item";
 import ReactDOM from "react-dom";
 import { buildMovePlan } from "../../lists/domain/movePlan";
+import { retainActivatedViewportContent } from "../renderers/ViewportContent";
 import {
   buildExecutionPlacementVisitKey,
   projectExecutionPlacementVisits,
@@ -156,6 +157,26 @@ function createWorkspace(
     columnPlacement?: ShoppingDragPlacement | null;
     moving?: readonly ShoppingItem[];
   } | null = null;
+  const retainedViewports = new Map<
+    ShoppingDragColumn,
+    { root: HTMLElement; release: () => void }
+  >();
+  const releaseViewport = (column: ShoppingDragColumn) => {
+    const retained = retainedViewports.get(column);
+    if (!retained) return;
+    retainedViewports.delete(column);
+    retained.release();
+  };
+  const retainViewport = (column: ShoppingDragColumn, list: DragList) => {
+    const root = list.root();
+    if (retainedViewports.get(column)?.root === root) return;
+    releaseViewport(column);
+    if (root)
+      retainedViewports.set(column, {
+        root,
+        release: retainActivatedViewportContent(root),
+      });
+  };
   const rowReferenceCaches = new WeakMap<
     DragList,
     {
@@ -553,6 +574,7 @@ function createWorkspace(
     },
     register(column, list) {
       lists.set(column, list);
+      if (active) retainViewport(column, list);
       layoutCache = null;
       if (column === "candidate") candidateNavigation = null;
       if (hoverPoint?.column === column && active)
@@ -560,6 +582,7 @@ function createWorkspace(
       return () => {
         if (lists.get(column) !== list) return;
         abortPendingReveal(list);
+        releaseViewport(column);
         lists.delete(column);
         if (active?.context.sourceColumn === column)
           workspace.clear(active.context.token);
@@ -645,6 +668,7 @@ function createWorkspace(
         isCurrent: () => active?.context.token === token,
       };
       active = { context, dragId, moving, requested };
+      lists.forEach((list, column) => retainViewport(column, list));
       const candidates = lists.get("candidate");
       if (candidates)
         candidateNavigation = prepareCandidateNavigation(candidates);
@@ -1126,6 +1150,7 @@ function createWorkspace(
       refreshing = false;
       clearHighlights();
       clearDecorations();
+      retainedViewports.forEach((_, column) => releaseViewport(column));
       if (wasActive) listeners.forEach((listener) => listener(false));
     },
   };

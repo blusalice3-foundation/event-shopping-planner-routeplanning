@@ -11,6 +11,7 @@ import { useCardExpansion } from "./ViewportRowState";
 import {
   prewarmViewportContent,
   revealViewportContent,
+  retainActivatedViewportContent,
   ViewportContent,
   VIEWPORT_RETENTION_EVENT,
 } from "./ViewportContent";
@@ -2832,5 +2833,188 @@ describe("forced viewport activation keeps unknown visibility private", () => {
     expect(root.querySelector("input")).not.toBeNull();
     fireEvent(window, new Event("afterprint"));
     expect(root.querySelector("input")).toBeNull();
+  });
+});
+
+describe("gesture activation retention leases", () => {
+  const notify = (
+    view: ReturnType<typeof render>,
+    key: string,
+    visible: boolean,
+  ) => {
+    if (visible) visibleKeys.add(key);
+    else visibleKeys.delete(key);
+    const target = view.container.querySelector<HTMLElement>(
+      `[data-viewport-row-key=${JSON.stringify(key)}]`,
+    )!;
+    act(() =>
+      callback(
+        [
+          { target, isIntersecting: visible },
+        ] as unknown as IntersectionObserverEntry[],
+        {} as IntersectionObserver,
+      ),
+    );
+  };
+
+  it("holds existing and newly visited parent and child gates without activating unseen rows", () => {
+    visibleKeys.add("existing-group");
+    visibleKeys.add("existing-child");
+    const group = (name: string) => (
+      <ViewportContent
+        rowKey={`${name}-group`}
+        placeholder={<span>{name} group pending</span>}
+        render={() => (
+          <>
+            <ViewportContent
+              rowKey={`${name}-child`}
+              placeholder={<span>{name} child pending</span>}
+              render={() => <input aria-label={`${name} child`} />}
+            />
+            <ViewportContent
+              rowKey={`${name}-unseen`}
+              placeholder={<span>{name} unseen pending</span>}
+              render={() => <input aria-label={`${name} unseen`} />}
+            />
+          </>
+        )}
+      />
+    );
+    const view = render(
+      <div data-list-renderer="virtual">
+        {group("existing")}
+        {group("visited")}
+        {group("unseen")}
+      </div>,
+    );
+    const root = view.container.firstElementChild as HTMLElement;
+    const existing = view.getByRole("textbox", { name: "existing child" });
+    let release = () => {};
+    act(() => {
+      release = retainActivatedViewportContent(root);
+    });
+    notify(view, "existing-child", false);
+    notify(view, "existing-group", false);
+    expect(view.getByRole("textbox", { name: "existing child" })).toBe(
+      existing,
+    );
+    expect(view.queryByRole("textbox", { name: "visited child" })).toBeNull();
+    visibleKeys.add("visited-child");
+    notify(view, "visited-group", true);
+    notify(view, "visited-child", true);
+    const visited = view.getByRole("textbox", { name: "visited child" });
+    notify(view, "visited-child", false);
+    notify(view, "visited-group", false);
+    notify(view, "existing-group", true);
+    notify(view, "existing-group", false);
+    expect(view.getByRole("textbox", { name: "existing child" })).toBe(
+      existing,
+    );
+    expect(view.getByRole("textbox", { name: "visited child" })).toBe(visited);
+    expect(view.queryByRole("textbox", { name: /unseen/ })).toBeNull();
+    expect(
+      root.querySelector('[data-viewport-row-key="unseen-group"]'),
+    ).toHaveAttribute("data-viewport-active", "false");
+    act(() => release());
+    expect(view.queryByRole("textbox")).toBeNull();
+    expect(existing).not.toBeInTheDocument();
+    expect(visited).not.toBeInTheDocument();
+  });
+
+  it("releases its lease while preserving focus, explicit pins and navigation owners", async () => {
+    for (const key of ["lease-focus", "lease-pin", "lease-navigation"])
+      visibleKeys.add(key);
+    const view = render(
+      <div data-list-renderer="virtual">
+        {["lease-focus", "lease-pin", "lease-navigation"].map((key) => (
+          <ViewportContent
+            key={key}
+            rowKey={key}
+            placeholder={<span>{key} pending</span>}
+            render={() => <input aria-label={key} />}
+          />
+        ))}
+      </div>,
+    );
+    const root = view.container.firstElementChild as HTMLElement;
+    const focused = view.getByRole("textbox", { name: "lease-focus" });
+    const pinned = view.getByRole("textbox", { name: "lease-pin" });
+    const navigation = view.getByRole("textbox", { name: "lease-navigation" });
+    focused.focus();
+    pinned.dataset.viewportRetain = "true";
+    let release = () => {},
+      releaseNavigation = () => {};
+    act(() => {
+      release = retainActivatedViewportContent(root);
+      releaseNavigation = prewarmViewportContent(navigation);
+    });
+    for (const key of ["lease-focus", "lease-pin", "lease-navigation"])
+      notify(view, key, false);
+    act(() => release());
+    expect(view.getByRole("textbox", { name: "lease-focus" })).toBe(focused);
+    expect(focused).toHaveFocus();
+    expect(view.getByRole("textbox", { name: "lease-pin" })).toBe(pinned);
+    expect(pinned.dataset.viewportRetain).toBe("true");
+    expect(view.getByRole("textbox", { name: "lease-navigation" })).toBe(
+      navigation,
+    );
+    act(() => releaseNavigation());
+    expect(
+      view.queryByRole("textbox", { name: "lease-navigation" }),
+    ).toBeNull();
+    focused.blur();
+    await act(async () => Promise.resolve());
+    expect(view.queryByRole("textbox", { name: "lease-focus" })).toBeNull();
+    delete pinned.dataset.viewportRetain;
+    fireEvent(pinned, new Event(VIEWPORT_RETENTION_EVENT, { bubbles: true }));
+    expect(view.queryByRole("textbox")).toBeNull();
+  });
+
+  it("keeps overlapping leases scoped, releases once and disposes after unmount", () => {
+    visibleKeys.add("lease-owned");
+    visibleKeys.add("lease-outside");
+    const content = (key: string) => (
+      <ViewportContent
+        rowKey={key}
+        placeholder={<span>{key} pending</span>}
+        render={() => <input aria-label={key} />}
+      />
+    );
+    const view = render(
+      <>
+        <div data-list-renderer="virtual" data-testid="lease-root">
+          {content("lease-owned")}
+        </div>
+        <div data-list-renderer="virtual">{content("lease-outside")}</div>
+      </>,
+    );
+    const root = view.getByTestId("lease-root");
+    const owned = view.getByRole("textbox", { name: "lease-owned" });
+    let releaseFirst = () => {},
+      releaseSecond = () => {};
+    act(() => {
+      releaseFirst = retainActivatedViewportContent(root);
+      releaseSecond = retainActivatedViewportContent(root);
+    });
+    notify(view, "lease-owned", false);
+    notify(view, "lease-outside", false);
+    expect(view.getByRole("textbox", { name: "lease-owned" })).toBe(owned);
+    expect(view.queryByRole("textbox", { name: "lease-outside" })).toBeNull();
+    act(() => {
+      releaseFirst();
+      releaseFirst();
+    });
+    expect(view.getByRole("textbox", { name: "lease-owned" })).toBe(owned);
+    act(() => releaseSecond());
+    expect(view.queryByRole("textbox")).toBeNull();
+    let releaseUnmount = () => {};
+    act(() => {
+      releaseUnmount = retainActivatedViewportContent(root);
+    });
+    expect(view.queryByRole("textbox")).toBeNull();
+    view.unmount();
+    expect(disconnect).not.toHaveBeenCalled();
+    act(() => releaseUnmount());
+    expect(disconnect).toHaveBeenCalledTimes(1);
   });
 });

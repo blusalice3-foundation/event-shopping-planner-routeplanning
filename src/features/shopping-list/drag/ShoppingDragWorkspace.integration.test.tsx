@@ -44,6 +44,7 @@ function Harness({
   hallGrouped = false,
   retained = false,
   neutralExecuteSurface = false,
+  omittedColumn,
   collapsedExecute,
   sort = null,
   generation = 0,
@@ -58,6 +59,7 @@ function Harness({
   hallGrouped?: boolean;
   retained?: boolean;
   neutralExecuteSurface?: boolean;
+  omittedColumn?: "execute" | "candidate";
   collapsedExecute?: Set<string>;
   sort?: "asc" | "desc" | null;
   generation?: number;
@@ -132,21 +134,24 @@ function Harness({
   );
   return (
     <ShoppingDragProvider eventName="Event" day="Day1" generation={generation}>
-      {neutralExecuteSurface ? (
-        <ShoppingDragColumnSurface column="execute">
-          <div data-testid="execute-neutral-surface">実行列の空き領域</div>
-          {executeList}
-        </ShoppingDragColumnSurface>
-      ) : (
-        executeList
+      {omittedColumn !== "execute" &&
+        (neutralExecuteSurface ? (
+          <ShoppingDragColumnSurface column="execute">
+            <div data-testid="execute-neutral-surface">実行列の空き領域</div>
+            {executeList}
+          </ShoppingDragColumnSurface>
+        ) : (
+          executeList
+        ))}
+      {omittedColumn !== "candidate" && (
+        <ShoppingList
+          {...common}
+          items={candidate}
+          columnType="candidate"
+          candidateNumberSortDirection={sort}
+          collapsedSpaces={collapsedCandidate ? new Set(["A-02a"]) : undefined}
+        />
       )}
-      <ShoppingList
-        {...common}
-        items={candidate}
-        columnType="candidate"
-        candidateNumberSortDirection={sort}
-        collapsedSpaces={collapsedCandidate ? new Set(["A-02a"]) : undefined}
-      />
     </ShoppingDragProvider>
   );
 }
@@ -2025,5 +2030,185 @@ it.each(["native", "touch"] as const)(
         );
       else Reflect.deleteProperty(HTMLElement.prototype, "scrollIntoView");
     }
+  },
+);
+
+it.each([
+  { input: "native", finish: "end" },
+  { input: "touch", finish: "cancel" },
+  { input: "native", finish: "unregister-execute" },
+  { input: "native", finish: "unregister-candidate" },
+] as const)(
+  "retains visited controls in both columns until the gesture ends: $input $finish",
+  ({ input, finish }) => {
+    vi.useFakeTimers();
+    vi.stubGlobal("scrollBy", vi.fn());
+    vi.stubGlobal("visualViewport", {
+      scale: 1,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    });
+    const observers = new Set<{
+      next: IntersectionObserverCallback;
+      targets: Set<Element>;
+    }>();
+    const intersect: IntersectionObserverCallback = (entries) => {
+      for (const observer of observers) {
+        const own = entries.filter((entry) =>
+          observer.targets.has(entry.target),
+        );
+        if (own.length)
+          observer.next(own, observer as unknown as IntersectionObserver);
+      }
+    };
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        targets = new Set<Element>();
+        constructor(public next: IntersectionObserverCallback) {
+          observers.add(this);
+        }
+        observe(element: Element) {
+          this.targets.add(element);
+        }
+        unobserve(element: Element) {
+          this.targets.delete(element);
+        }
+        disconnect() {
+          observers.delete(this);
+        }
+      },
+    );
+    const visible = new Set(["incoming", "candidate-near", "a1", "a2"]);
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+      function (this: HTMLElement) {
+        const key = this.dataset.viewportRowKey ?? this.dataset.rowKey;
+        const id = key?.startsWith("item:")
+          ? (JSON.parse(key.slice(5)) as string)
+          : this.dataset.itemId;
+        if (id === "a1" && visible.has(id)) return rect(300, 360);
+        if (id === "a2" && visible.has(id)) return rect(360, 420);
+        return id || key
+          ? visible.has(id ?? "")
+            ? rect(250, 300)
+            : rect(5000, 5200)
+          : rect(0, 800);
+      },
+    );
+    const onMove = vi.fn();
+    const props = {
+      retained: true,
+      grouped: false,
+      onMove,
+      initialExecute: [
+        a1,
+        a2,
+        ...Array.from({ length: 32 }, (_, index) =>
+          item(`execute-${index}`, `${index + 10}a`),
+        ),
+      ],
+      initialCandidate: [
+        item("incoming", "01a3"),
+        item("candidate-near", "03a"),
+        ...Array.from({ length: 32 }, (_, index) =>
+          item(`candidate-${index}`, `${index + 50}a`),
+        ),
+      ],
+    };
+    const view = render(<Harness {...props} />);
+    const card = (id: string) =>
+      view.container.querySelector<HTMLElement>(
+        `[data-item-id="${id}"]:not([data-space-group-key])`,
+      );
+    const viewport = (id: string) =>
+      view.container.querySelector<HTMLElement>(
+        `[data-viewport-row-key=${JSON.stringify(`item:${JSON.stringify(id)}`)}]`,
+      )!;
+    const notify = (id: string, isIntersecting: boolean) => {
+      if (isIntersecting) visible.add(id);
+      else visible.delete(id);
+      act(() =>
+        intersect(
+          [
+            { target: viewport(id), isIntersecting },
+          ] as unknown as IntersectionObserverEntry[],
+          {} as IntersectionObserver,
+        ),
+      );
+    };
+    const source = card("incoming")!;
+    const existingTarget = card("a2")!;
+    const existingCandidate = card("candidate-near")!;
+    const transfer = { setData: vi.fn(), getData: () => "candidate" };
+    if (input === "native")
+      fireEvent.dragStart(source, { dataTransfer: transfer });
+    else {
+      fireEvent.touchStart(source, {
+        touches: [{ identifier: 1, clientX: 10, clientY: 250 }],
+      });
+      act(() => vi.advanceTimersByTime(250));
+    }
+    notify("a2", false);
+    notify("candidate-near", false);
+    expect(card("a2")).toBe(existingTarget);
+    expect(card("candidate-near")).toBe(existingCandidate);
+    notify("execute-0", true);
+    notify("candidate-0", true);
+    const visitedTarget = card("execute-0")!;
+    const visitedCandidate = card("candidate-0")!;
+    notify("execute-0", false);
+    notify("candidate-0", false);
+    notify("execute-0", true);
+    notify("candidate-0", true);
+    expect(card("execute-0")).toBe(visitedTarget);
+    expect(card("candidate-0")).toBe(visitedCandidate);
+    expect(viewport("execute-1")).toHaveAttribute(
+      "data-viewport-active",
+      "false",
+    );
+    expect(viewport("candidate-1")).toHaveAttribute(
+      "data-viewport-active",
+      "false",
+    );
+    expect(card("execute-1")).toBeNull();
+    expect(card("candidate-1")).toBeNull();
+    // A valid hover cancels corrective scrolling, but keeps the gesture's rows.
+    notify("a2", true);
+    Object.defineProperty(document, "elementFromPoint", {
+      configurable: true,
+      value: () => existingTarget,
+    });
+    if (input === "native") dragOver(existingTarget, 390, transfer);
+    else
+      fireEvent.touchMove(source, {
+        touches: [{ identifier: 1, clientX: 10, clientY: 390 }],
+      });
+    expect(
+      view.container.querySelector('[data-shopping-drag-status="accepted"]'),
+    ).not.toBeNull();
+    notify("a2", false);
+    notify("execute-0", false);
+    notify("candidate-0", false);
+    expect(card("a2")).toBe(existingTarget);
+    expect(card("execute-0")).toBe(visitedTarget);
+    expect(card("candidate-0")).toBe(visitedCandidate);
+    if (finish === "unregister-execute") {
+      view.rerender(<Harness {...props} omittedColumn="execute" />);
+      // Removing the destination releases that root, while the source lease lives.
+      expect(card("candidate-near")).toBe(existingCandidate);
+      expect(card("candidate-0")).toBe(visitedCandidate);
+      fireEvent.dragEnd(source, { dataTransfer: transfer });
+    } else if (finish === "unregister-candidate")
+      view.rerender(<Harness {...props} omittedColumn="candidate" />);
+    else if (input === "native")
+      fireEvent.dragEnd(source, { dataTransfer: transfer });
+    else fireEvent.touchCancel(source);
+    expect(card("a2")).toBeNull();
+    expect(card("candidate-near")).toBeNull();
+    expect(card("execute-0")).toBeNull();
+    expect(card("candidate-0")).toBeNull();
+    expect(onMove).not.toHaveBeenCalled();
+    expect(document.querySelector(".esp-shopping-touch-clone")).toBeNull();
+    expect(document.body).not.toHaveClass("esp-body-scroll-lock");
   },
 );
