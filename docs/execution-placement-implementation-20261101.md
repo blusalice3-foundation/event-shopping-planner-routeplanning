@@ -4,7 +4,7 @@
 - 依頼プラン: D:/esp-placement-plan-20261101/docs/execution-placement-rules-remediation-plan-20261101.md
 - 変更前の製品source: 19c7541175b2a60076807dd17469127d67f8407d
 - 実装作業ツリー: D:/esp-placement-implementation-20261101
-- 最新の製品修正: 7534b7936e6c826883c8e18db3a2bc6a6977bf35。文書だけの後続コミット、製品・計測器・採取HEADを区別する。
+- 最新の製品修正: 131e1c4b76b22b51cb62f3d6948bdd0762f46324。文書だけの後続コミット、製品・計測器・採取HEADを区別する。
 - 最新の計測器修正: a96cfed131601d24be7e0c2367871a0668598190。承認済み対象変更、文書座標の2stableと実hit、時計後の補正可視性確認、および失敗時または明示診断時だけの描画・座標記録を含む。製品修正のsourceと区別する。
 - 状態: 製品実装、単体・統合試験、重点PWA確認を実施。標準completion全機能・全144性能条件、同条件の変更前後比較は未完了。保存測定位置の限定的な追加変更はユーザーが明示承認し、a861b39で計測器へ実装した。計画の完了判定、元作業ツリーへの反映はまだ行っていない。
 
@@ -160,3 +160,13 @@ shopping/range診断時の製品src/publicは8f8b0f1で、HEAD4423f18の後半�
 - ViewportContentの既存IO callbackは表示範囲へ入った行のsetActivatedを非同期enqueueするため、補正スクロール後の通知から実commitが後続操作へ遅れる経路があった。7534b793ではgesture lease中に届いたIO entriesだけを既存flushSyncで1batch同期反映する。通常scrollは従来enqueue、未交差行の強制描画・全registryの座標走査・追加RAF・consume時刻・入力/測定条件の変更はない。document共通registryのため、同時に存在する未lease列のentriesも同batchのcommit timingに含まれ得る。
 - lease中の通知直後DOM期待は旧c4で失敗し、修正後は通過した。leaseなしの従来非同期対照、未交差行の非表示、lease解放後の復帰も確認し、関連6suite250件・型・lint・encoding・formatを通過した。IO通知自体の配送遅れまでは保証しない。実ブラウザーの間欠局所性、全性能群と前後比較は引き続き採取待ちであり、transferは開始していない。
 - 外部証拠はD:/esp-placement-feature-evidence-20261101/drag-completion-diagnostic-c4a7a34-center-attempt1およびlocality-context-diagnostic-c4a7a34-center-500-native-off。双方ともdiagnosticOnly: true / acceptanceMeasurement: falseで元rawとhashを保持し、部分成功を完了へ合算しない。比較用ツリー2349a585ではa96の計測器25/fixture18の全file/aggregate hash一致と製品src/public対19c差分0を確認した。新beforeの採取は全after成功後に行う。
+
+## 移動後の選択解除とドラッグ開始時の不要案内の修正
+
+- 7534b793の候補4db1383は全単体3,786通過/88スキップ、全静的・文字コード・書式・release-aビルド・配信cap一致を確認した。通常フラグのdrag8診断を独立2runで各全件通過し、各60主指標10回・基準超過0、52局所性区間・8保存配列も通過した。別の500/native/OFF座標診断も通過し、既知3行は開始時mount済みだった。同診断では初回8pxの端スクロールが残り、後続9回は0だったため完全な消失とは書かない。成功診断を全144条件へ合算しない。
+- 同sourceのtransfer100診断は100登録・5開始後、3件の失敗headerを確認して04:50:47.922UTCまでにowned processを停止し、子process0を確認した。1件は失敗headerなしで次caseへ進行、1件中断、95件未開始である。最終report/HTMLは生成されず、厳密な最終passed/failed/global/retry集計はunknownとして保持した（設定retry0、観測retry header0）。123元ファイルのSHA再照合と別中断sidecarを保存し、元wrapperのrunning状態を書き換えていない。
+- candidate→execute responseでは配置・content・durable保存・順序は全10回通過したが、時計後の独立5秒pollでも移動済みc1/c2の選択が残った。drop後、保存を待たず実checkboxのe0を操作する元の次操作検証が、whole-selection revisionを変え、commit後の選択解除全体を止めていた。receipt settleとtransferred IDsの戻り値欠落は今回原因ではなかった。
+- execute→candidate response/frameの失敗は、frame本測定や保存後ではなく共通warmupのdrop前prepareNextInputで固定c0が画面外になったものだった。元source e0自身へのhoverでは、移動品目を除いたlayoutにe0が存在せず、無効境界としてD05が実行列末尾を案内し得た。d910603では実際の移動対象自身へのhoverだけをprivate noopで扱い、所有する案内を取消し、selfdropはmove portも誤拒否表示も出さない。非移動の同スペースbookへのD02は維持した。旧4dbでnative/touch×grouping ON/OFFの4回帰がscroll1/期待0で失敗し、修正後は新6件を含む関連144件と静的検査を通過した。
+- 131e1c4bではuseListInteractionStateに、受理時のselected∩moved IDsだけを追跡する小さい消費ownerを追加した。ユーザーがそのIDを後から操作すると消費権を外すため、別IDのe0操作はc1/c2解除を妨げず、c1のoff→on再選択は保護する。committedで未操作IDだけを最新Setから消費し、abort/cancel/context失効では解除せず追跡を解放する。unmountではlayout cleanupで全ownerを無効化する。pendingなしは即returnし、恒久的なID履歴mapは追加していない。
+- Appからcommandへのoptional構造portだけを追加し、range/sortの既存whole revision guardとportなしfallbackは維持した。drag/列移動ボタンそれぞれの後続別ID・ABA・abort・cancel・context・unmount、およびhookの全選択入口・並行owner・二重解放を19新ケースで検証した。旧d910 consumerの実hook負controlはc1/c2/e0残留で失敗し、修正後はe0だけを残した。関連7suite309件・型・lint・architecture・encoding・formatを通過し、独立レビューでも具体的な問題はなかった。
+- 計測器a96cfedの25/18ファイル、fixture、入力gesture、時計・終了点、回数、閾値、保存schema・receipt形式は今回変更していない。外部証拠はD:/esp-placement-feature-evidence-20261101/drag-completion-diagnostic-4db1383-iosync-attempt1、同attempt2、locality-context-diagnostic-4db1383-iosync-500-native-off、transfer-completion-diagnostic-4db1383-attempt1。修正後の元失敗3条件、transfer100全条件、標準全群と同条件before比較は引き続き未完了である。
