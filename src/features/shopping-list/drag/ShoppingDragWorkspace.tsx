@@ -198,6 +198,7 @@ function createWorkspace(
   let hitTestRejected = false;
   let rejectionReason = "";
   let guidedTarget = "";
+  let suggestionGuide: { target: string; element: HTMLElement } | null = null;
   let guidedPoint: { x?: number; y: number } | null = null;
   let refreshing = false;
   let highlightedIds: readonly ShoppingItem[] | null = null;
@@ -245,6 +246,7 @@ function createWorkspace(
     element.dataset.shoppingDragGuideOwner = "true";
   };
   const clearDecorations = () => {
+    suggestionGuide = null;
     decorations.splice(0).forEach((element) => element.remove());
     decorationOwners.forEach((previous, element) => {
       if (element.dataset.shoppingDragGuideOwner !== "true") return;
@@ -254,6 +256,25 @@ function createWorkspace(
     decorationOwners.clear();
     decorationKey = "";
     dragStatus = null;
+  };
+  const isGuidedTargetVisible = (target: string) => {
+    if (
+      suggestionGuide?.target !== target ||
+      !suggestionGuide.element.isConnected
+    )
+      return false;
+    const bounds = suggestionGuide.element.getBoundingClientRect();
+    const { appHeaderHeight, footerHeight } = document.documentElement.dataset;
+    const top = Math.max(0, Number.parseFloat(appHeaderHeight ?? "") || 0);
+    const bottom =
+      window.innerHeight -
+      Math.max(0, Number.parseFloat(footerHeight ?? "") || 0);
+    return (
+      bounds.bottom > top &&
+      bounds.top < bottom &&
+      bounds.right > 0 &&
+      bounds.left < window.innerWidth
+    );
   };
   const positionStatus = () => {
     if (!dragStatus) return;
@@ -461,6 +482,7 @@ function createWorkspace(
       element: HTMLElement;
       edge: "before" | "after";
       kind: string;
+      revealTarget?: string;
     }[],
   ) => {
     if (
@@ -483,7 +505,7 @@ function createWorkspace(
     decorations.push(status);
     dragStatus = { root, element: status };
     positionStatus();
-    lines.forEach(({ element, edge, kind }) => {
+    lines.forEach(({ element, edge, kind, revealTarget }) => {
       const line = document.createElement("div");
       line.dataset.shoppingDragGuide = kind;
       line.dataset.shoppingDragBoundary = edge;
@@ -491,6 +513,8 @@ function createWorkspace(
       ownDecorationPosition(element);
       element.append(line);
       decorations.push(line);
+      if (kind === "suggestion" && revealTarget === guidedTarget)
+        suggestionGuide = { target: revealTarget, element: line };
     });
   };
   const refreshHover = (
@@ -660,6 +684,7 @@ function createWorkspace(
     },
     hover(column, targetId, clientY, clientX) {
       if (!active) return false;
+      let movedAfterGuide = false;
       if (
         guidedPoint &&
         !refreshing &&
@@ -669,7 +694,7 @@ function createWorkspace(
             Math.abs(clientX - guidedPoint.x) > 1))
       ) {
         guidedPoint = null;
-        guidedTarget = "";
+        movedAfterGuide = true;
       }
       hitTestRejected = false;
 
@@ -859,7 +884,11 @@ function createWorkspace(
             layout.visits[suggestion.insertVisitIndex - 1]?.itemIds.at(-1)) ??
           (suggestion &&
             layout.visits[suggestion.insertVisitIndex]?.itemIds[0]);
-        if (target && guidedTarget !== target) {
+        if (
+          target &&
+          (guidedTarget !== target ||
+            (movedAfterGuide && !isGuidedTargetVisible(target)))
+        ) {
           guidedTarget = target;
           list.reveal?.(target);
         }
@@ -881,6 +910,7 @@ function createWorkspace(
                   element: guideBefore ? destination.first : destination.last,
                   edge: guideBefore ? "before" : "after",
                   kind: "suggestion",
+                  revealTarget: target ?? undefined,
                 },
               ]
             : [],

@@ -1697,13 +1697,15 @@ describe("candidate container whitespace keeps its original endpoint", () => {
 });
 
 it.each(["native", "touch"] as const)(
-  "reveals the same corrective target again only after a new wrong-group input: %s",
+  "re-reveals an offscreen corrective target without repeating a visible guide: %s",
   async (input) => {
     const priorScroll = Object.getOwnPropertyDescriptor(
       HTMLElement.prototype,
       "scrollIntoView",
     );
     const reveal = vi.fn();
+    const priorHeader = document.documentElement.dataset.appHeaderHeight;
+    const priorFooter = document.documentElement.dataset.footerHeight;
     Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
       configurable: true,
       writable: true,
@@ -1781,6 +1783,13 @@ it.each(["native", "touch"] as const)(
       fireEvent.scroll(window);
       await flushReveal();
       expect(reveal).toHaveBeenCalledTimes(1);
+      const suggestion = root.querySelector<HTMLElement>(
+        '[data-shopping-drag-guide="suggestion"]',
+      )!;
+      let suggestionBounds = rect(2094, 2100);
+      const suggestionRect = vi
+        .spyOn(suggestion, "getBoundingClientRect")
+        .mockImplementation(() => suggestionBounds);
       expect(
         root.querySelector('[data-shopping-drag-status="rejected"]'),
       ).not.toBeNull();
@@ -1789,7 +1798,8 @@ it.each(["native", "touch"] as const)(
       await flushReveal();
       expect(reveal).toHaveBeenCalledTimes(1);
       expect(onMove).not.toHaveBeenCalled();
-      // Only a subsequent actual input point invalidates the same-target cache.
+      expect(suggestionRect).not.toHaveBeenCalled();
+      // A real input retries the still-offscreen target.
       hover(wrong, 394);
       await flushReveal();
       expect(reveal).toHaveBeenCalledTimes(2);
@@ -1799,19 +1809,61 @@ it.each(["native", "touch"] as const)(
       expect(
         root.querySelectorAll('[data-shopping-drag-guide="suggestion"]'),
       ).toHaveLength(1);
-      fireEvent.scroll(window);
+      correctRect.mockReturnValue(rect(300, 400));
+      suggestionBounds = rect(394, 400);
+      hover(wrong, 398);
+      await flushReveal();
+      hover(wrong, 402);
       await flushReveal();
       expect(reveal).toHaveBeenCalledTimes(2);
+      expect(suggestionRect).toHaveBeenCalledTimes(3);
+      // A line hidden under the header or footer needs a new reveal.
+      document.documentElement.dataset.appHeaderHeight = "410";
+      hover(wrong, 406);
+      await flushReveal();
+      expect(reveal).toHaveBeenCalledTimes(3);
+      document.documentElement.dataset.appHeaderHeight = "0";
+      document.documentElement.dataset.footerHeight = `${window.innerHeight - 390}`;
+      hover(wrong, 410);
+      await flushReveal();
+      expect(reveal).toHaveBeenCalledTimes(4);
+      document.documentElement.dataset.footerHeight = "0";
+      correctRect.mockReturnValue(rect(2000, 2100));
+      suggestionBounds = rect(2094, 2100);
+      hover(wrong, 414);
+      await flushReveal();
+      expect(reveal).toHaveBeenCalledTimes(5);
+      expect(suggestionRect).toHaveBeenCalledTimes(6);
+      // A disconnected guide is unknown, even if its old bounds were visible.
+      suggestionBounds = rect(394, 400);
+      suggestion.remove();
+      hover(wrong, 418);
+      await flushReveal();
+      expect(reveal).toHaveBeenCalledTimes(6);
+      expect(suggestionRect).toHaveBeenCalledTimes(6);
+      const replacement = root.querySelector<HTMLElement>(
+        '[data-shopping-drag-guide="suggestion"]',
+      )!;
+      expect(replacement).not.toBe(suggestion);
+      const replacementRect = vi
+        .spyOn(replacement, "getBoundingClientRect")
+        .mockReturnValue(rect(394, 400));
+      hover(wrong, 422);
+      await flushReveal();
+      fireEvent.scroll(window);
+      await flushReveal();
+      expect(reveal).toHaveBeenCalledTimes(6);
+      expect(replacementRect).toHaveBeenCalledTimes(1);
       expect(onMove).not.toHaveBeenCalled();
       if (input === "native")
         fireEvent.drop(wrong, {
           dataTransfer: transfer,
           clientX: 10,
-          clientY: 394,
+          clientY: 422,
         });
       else
         fireEvent.touchEnd(source, {
-          changedTouches: [{ identifier: 1, clientX: 10, clientY: 394 }],
+          changedTouches: [{ identifier: 1, clientX: 10, clientY: 422 }],
         });
       expect(onMove).not.toHaveBeenCalled();
       expect(
@@ -1820,6 +1872,12 @@ it.each(["native", "touch"] as const)(
       expect(document.querySelector(".esp-shopping-touch-clone")).toBeNull();
       expect(document.body).not.toHaveClass("esp-body-scroll-lock");
     } finally {
+      if (priorHeader === undefined)
+        delete document.documentElement.dataset.appHeaderHeight;
+      else document.documentElement.dataset.appHeaderHeight = priorHeader;
+      if (priorFooter === undefined)
+        delete document.documentElement.dataset.footerHeight;
+      else document.documentElement.dataset.footerHeight = priorFooter;
       if (priorScroll)
         Object.defineProperty(
           HTMLElement.prototype,
