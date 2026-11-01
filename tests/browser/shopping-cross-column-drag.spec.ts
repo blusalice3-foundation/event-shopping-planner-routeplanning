@@ -502,6 +502,22 @@ async function hover(
           lastRead = current;
           if (!current || !pointVisible(current)) {
             previousPoint = null;
+            if (current) {
+              // Mounting can replace the initially centered placeholder and
+              // move this same ID/edge outside the viewport. Reacquire it.
+              const currentSlot = document.querySelector<HTMLElement>(
+                `[data-row-key=${JSON.stringify(rowKey)}], [data-viewport-row-key=${JSON.stringify(rowKey)}]`,
+              );
+              const currentTarget = currentSlot?.isConnected
+                ? currentSlot
+                : current.target;
+              if (currentTarget.isConnected)
+                currentTarget.scrollIntoView({
+                  block: "center",
+                  inline: "nearest",
+                  behavior: "instant",
+                });
+            }
             continue;
           }
           if (

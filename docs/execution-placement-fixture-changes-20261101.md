@@ -43,7 +43,9 @@ performanceFixture()だけで、既存の画面外訪問`offscreen`と最後のA
 
 計測前提として、要求した同じ品目ID・同じ挿入辺の入力点が実viewportの外にある場合だけ、計測時計を開始する前に同じ公開論理行を`scrollIntoView`で表示する。公開行の位置を最大60 animation framesの範囲で再取得し、同じ入力点がviewport内で2フレーム安定してから、従来と同じ座標式・入力を実行する。入力点が既にviewport内ならスクロールや待機を追加しない。別品目への置換・強制mount・受付状態の擬装を行わず、準備前後の点・scroll位置・待機frame数を応答へ記録する。これは画面外への合成入力を防ぐ計測器の前提整備であり、変更前後の双方へ同じhelperを適用し、対象ID・挿入辺・測定ループ・ウォームアップ・回数・終了点・期待結果を保持する。修正前の失敗runとその数値観測（695756dのpriority-afterはy=19059.84375、viewport高1000、elementFromPoint=null）も保持する。
 
-readinessが既存の60 animation frames・2フレーム安定条件を満たせず失敗した場合だけ、直近2回の既存`readTarget`結果の点・rectを再利用し、元ID/辺/入力種別・viewport・scroll位置/最大値・card/slotの種別とrect・`elementFromPoint`を失敗throwへ数値として添付する。追加のDOM/geometry読み取りは失敗確定後だけとし、成功時のread回数・入力・時計・スクロール動作・60フレーム上限を変更しない。この段階ではreadiness動作や製品を修正せず、8900675の旧操作OFF4件の準備失敗rawとON4件の完全な拒否proofを保持する。
+readinessが既存の60 animation frames・2フレーム安定条件を満たせず失敗した場合だけ、直近2回の既存`readTarget`結果の点・rectを再利用し、元ID/辺/入力種別・viewport・scroll位置/最大値・card/slotの種別とrect・`elementFromPoint`を失敗throwへ数値として添付する。追加のDOM/geometry読み取りは失敗確定後だけとし、成功時のread回数・入力・時計・スクロール動作・60フレーム上限を変更しない。da7b2e9の数値診断段階ではreadiness動作や製品を修正せず、8900675の旧操作OFF4件の準備失敗rawとON4件の完全な拒否proofを保持した。
+
+da7b2e9の150/native/OFF実測は、直近2点がともにy=1136.84375（viewport高1000）、現在の実cardがconnected・初回slotがdetached、scrollY16856/max17096で余地240pxという安定した画面外残留を示した。この実測に基づき、既存60フレーム内で同じ元ID・辺の点が画面外の場合だけ、現在の同ID公開slot/targetを再取得し、connectedな対象へcenter scrollして次frameで再評価する。画面内なら追加scrollせず、元の点計算・2フレーム安定・60フレーム上限・dispatch・時計・終了点を保持する。古いdetached slotの再利用、別IDへの置換、強制mount、時間上限延長は行わない。変更前後には最終helperを同一適用し、元失敗rawとfailure-only診断を保持する。
 
 ## 2026-11-01ユーザー承認によるdrop-save対象位置の対応
 
