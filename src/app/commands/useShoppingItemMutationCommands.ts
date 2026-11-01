@@ -121,6 +121,10 @@ export interface ShoppingItemMutationActionPort {
   clearRangeSelection(): void;
   clearSelection(): void;
   removeSelectedItemIds(itemIds: readonly string[]): void;
+  captureSelectionConsumption?(itemIds: readonly string[]): {
+    consume(): void;
+    release(): void;
+  };
   queueShoppingMovePatch: QueueShoppingMovePatch;
   setSortState(value: Extract<SortState, "Manual">): void;
   setBlockSortDirection(value: BlockSortDirection | null): void;
@@ -333,6 +337,7 @@ export const useShoppingItemMutationCommands = ({
     clearRangeSelection,
     clearSelection,
     removeSelectedItemIds,
+    captureSelectionConsumption,
     queueShoppingMovePatch,
     setSortState,
     setBlockSortDirection,
@@ -892,6 +897,10 @@ export const useShoppingItemMutationCommands = ({
             return;
           }
           if (receipt.status === "noop") return;
+          const selectionConsumption = result.transferredItemIds?.length
+            ? captureSelectionConsumption?.(result.transferredItemIds)
+            : undefined;
+
           const selectedRevision = selectionRef.current.revision;
           const rangeRevision = selectionRevisionReader.current?.();
           const finishSelection = () => {
@@ -899,13 +908,16 @@ export const useShoppingItemMutationCommands = ({
             if (
               latest.activeEventName !== activeEventName ||
               latest.activeEventDate !== activeEventDate ||
-              selectCurrentMode(latest) !== "edit" ||
-              selectionRef.current.revision !== selectedRevision ||
-              (rangeRevision !== undefined &&
-                selectionRevisionReader.current?.() !== rangeRevision)
+              selectCurrentMode(latest) !== "edit"
             )
               return;
-            if (result.transferredItemIds)
+            const selectionUnchanged =
+              selectionRef.current.revision === selectedRevision &&
+              (rangeRevision === undefined ||
+                selectionRevisionReader.current?.() === rangeRevision);
+            selectionConsumption?.consume();
+            if (!selectionUnchanged) return;
+            if (!selectionConsumption && result.transferredItemIds)
               removeSelectedItemIds(result.transferredItemIds);
             if (!receipt.completion || rangeRevision !== undefined)
               clearRangeSelection();
@@ -914,12 +926,20 @@ export const useShoppingItemMutationCommands = ({
           };
           spaceGroupDragItemIdsRef.current = null;
           if (receipt.completion) {
-            void receipt.completion.then((completion) => {
-              if (completion.status === "aborted")
-                placementRejected(completion.reason);
-              else if (completion.status === "committed") finishSelection();
-            });
-          } else finishSelection();
+            void receipt.completion
+              .then((completion) => {
+                if (completion.status === "aborted")
+                  placementRejected(completion.reason);
+                else if (completion.status === "committed") finishSelection();
+              })
+              .finally(() => selectionConsumption?.release());
+          } else {
+            try {
+              finishSelection();
+            } finally {
+              selectionConsumption?.release();
+            }
+          }
         }
         if (
           !dragContext &&
@@ -958,6 +978,7 @@ export const useShoppingItemMutationCommands = ({
       areItemsInSameHallGroup,
       clearRangeSelection,
       removeSelectedItemIds,
+      captureSelectionConsumption,
       queueShoppingMovePatch,
       placementRejected,
       eventLists,
@@ -1039,6 +1060,9 @@ export const useShoppingItemMutationCommands = ({
         return;
       }
       if (receipt.status === "noop") return;
+      const selectionConsumption = input.removeTransferredSelection
+        ? captureSelectionConsumption?.(input.effectiveIds)
+        : undefined;
       const selectedRevision = selectionRef.current.revision;
       const rangeRevision = selectionRevisionReader.current?.();
       const finish = () => {
@@ -1046,13 +1070,16 @@ export const useShoppingItemMutationCommands = ({
         if (
           latest.activeEventName !== activeEventName ||
           latest.activeEventDate !== activeEventDate ||
-          selectCurrentMode(latest) !== "edit" ||
-          selectionRef.current.revision !== selectedRevision ||
-          (rangeRevision !== undefined &&
-            selectionRevisionReader.current?.() !== rangeRevision)
+          selectCurrentMode(latest) !== "edit"
         )
           return;
-        if (input.removeTransferredSelection)
+        const selectionUnchanged =
+          selectionRef.current.revision === selectedRevision &&
+          (rangeRevision === undefined ||
+            selectionRevisionReader.current?.() === rangeRevision);
+        selectionConsumption?.consume();
+        if (!selectionUnchanged) return;
+        if (!selectionConsumption && input.removeTransferredSelection)
           removeSelectedItemIds(input.effectiveIds);
         if (!receipt.completion || rangeRevision !== undefined)
           clearRangeSelection();
@@ -1063,11 +1090,19 @@ export const useShoppingItemMutationCommands = ({
         if (input.mergeNotice) notify(EXECUTION_VISIT_MERGE_NOTICE);
       };
       if (receipt.completion)
-        void receipt.completion.then((result) => {
-          if (result.status === "aborted") placementRejected(result.reason);
-          else if (result.status === "committed") finish();
-        });
-      else finish();
+        void receipt.completion
+          .then((result) => {
+            if (result.status === "aborted") placementRejected(result.reason);
+            else if (result.status === "committed") finish();
+          })
+          .finally(() => selectionConsumption?.release());
+      else {
+        try {
+          finish();
+        } finally {
+          selectionConsumption?.release();
+        }
+      }
     },
   );
   const moveItemVertical = useCallback(

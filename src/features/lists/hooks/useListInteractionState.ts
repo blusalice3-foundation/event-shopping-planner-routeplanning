@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import {
   resolveRangeSelection,
   toggleRangeSelection,
@@ -41,13 +41,33 @@ export const useListInteractionState = () => {
     Set<string>
   >(new Set());
 
+  const pendingConsumptions = useRef(new Set<Set<string>>());
+  useLayoutEffect(() => {
+    const owners = pendingConsumptions.current;
+    return () => {
+      owners.forEach((owner) => owner.clear());
+      owners.clear();
+    };
+  }, []);
+  const invalidateSelectionConsumption = useCallback(
+    (itemIds?: string | readonly string[]) => {
+      if (!pendingConsumptions.current.size) return;
+      for (const owner of pendingConsumptions.current) {
+        if (typeof itemIds === "string") owner.delete(itemIds);
+        else if (itemIds) itemIds.forEach((id) => owner.delete(id));
+        else owner.clear();
+      }
+    },
+    [],
+  );
   const clearSelection = useCallback(() => {
+    invalidateSelectionConsumption();
     setSelectedItemIds(new Set());
     setRangeStart(null);
     setRangeEnd(null);
-  }, []);
+  }, [invalidateSelectionConsumption]);
 
-  const removeSelectedItemIds = useCallback((itemIds: readonly string[]) => {
+  const applySelectionRemoval = useCallback((itemIds: readonly string[]) => {
     setSelectedItemIds((previous) => {
       if (!itemIds.some((id) => previous.has(id))) return previous;
       const next = new Set(previous);
@@ -56,6 +76,32 @@ export const useListInteractionState = () => {
     });
   }, []);
 
+  const removeSelectedItemIds = useCallback(
+    (itemIds: readonly string[]) => {
+      invalidateSelectionConsumption(itemIds);
+      applySelectionRemoval(itemIds);
+    },
+    [applySelectionRemoval, invalidateSelectionConsumption],
+  );
+  const captureSelectionConsumption = useCallback(
+    (itemIds: readonly string[]) => {
+      const owner = new Set(itemIds.filter((id) => selectedItemIds.has(id)));
+      if (owner.size) pendingConsumptions.current.add(owner);
+      return {
+        consume: () => {
+          if (!pendingConsumptions.current.delete(owner)) return;
+          const remaining = [...owner];
+          owner.clear();
+          if (remaining.length) applySelectionRemoval(remaining);
+        },
+        release: () => {
+          pendingConsumptions.current.delete(owner);
+          owner.clear();
+        },
+      };
+    },
+    [applySelectionRemoval, selectedItemIds],
+  );
   const clearRangeSelection = useCallback(() => {
     setRangeStart(null);
     setRangeEnd(null);
@@ -103,6 +149,7 @@ export const useListInteractionState = () => {
 
   const selectItemForRange = useCallback(
     (itemId: string, presentation: RangePresentation) => {
+      invalidateSelectionConsumption(itemId);
       const endpoint: RangeEndpoint = {
         kind: "item",
         itemId,
@@ -156,7 +203,7 @@ export const useListInteractionState = () => {
         return next;
       });
     },
-    [rangeEnd, rangeStart],
+    [invalidateSelectionConsumption, rangeEnd, rangeStart],
   );
 
   const selectSpaceGroupForRange = useCallback(
@@ -165,6 +212,7 @@ export const useListInteractionState = () => {
       allItemIds: readonly string[],
       presentation: RangePresentation,
     ) => {
+      invalidateSelectionConsumption(allItemIds);
       const endpoint: RangeEndpoint = {
         kind: "group",
         groupKey,
@@ -218,11 +266,12 @@ export const useListInteractionState = () => {
         return next;
       });
     },
-    [rangeEnd, rangeStart],
+    [invalidateSelectionConsumption, rangeEnd, rangeStart],
   );
 
   const toggleRangeItemIdsSelection = useCallback(
     (rangeItemIds: readonly string[]) => {
+      invalidateSelectionConsumption(rangeItemIds);
       setSelectedItemIds((prev) => {
         const result = toggleRangeSelection(prev, rangeItemIds);
         if (result.operation === "deselect") {
@@ -231,7 +280,7 @@ export const useListInteractionState = () => {
         return result.selectedItemIds;
       });
     },
-    [clearRangeSelection],
+    [clearRangeSelection, invalidateSelectionConsumption],
   );
 
   return {
@@ -250,6 +299,7 @@ export const useListInteractionState = () => {
     setExecuteCollapsedSpaces,
     clearSelection,
     removeSelectedItemIds,
+    captureSelectionConsumption,
     clearRangeSelection,
     clearBlockFilters,
     toggleBlockFilter,

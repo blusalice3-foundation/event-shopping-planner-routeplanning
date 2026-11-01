@@ -189,3 +189,89 @@ describe("useListInteractionState range anchors", () => {
     });
   });
 });
+
+describe("pending selection consumption ownership", () => {
+  it.each(["item", "group", "range", "remove", "clear-all"] as const)(
+    "protects later off/on selection through the %s entry point",
+    (entry) => {
+      const { result } = renderHook(() => useListInteractionState());
+      const flat = buildRangePresentation({
+        scopeKey: "event/day/candidate/flat",
+        grouping: "flat",
+        itemIds: ["a", "b", "later"],
+      });
+      const grouped = buildRangePresentation({
+        scopeKey: "event/day/candidate/space",
+        grouping: "space",
+        groups: [{ key: "a-space", itemIds: ["a"] }],
+      });
+      act(() => result.current.toggleRangeItemIdsSelection(["a", "b"]));
+      const owner = result.current.captureSelectionConsumption([
+        "a",
+        "b",
+        "not-selected",
+      ]);
+      const touch = () => {
+        if (entry === "item") result.current.selectItemForRange("a", flat);
+        else if (entry === "group")
+          result.current.selectSpaceGroupForRange("a-space", ["a"], grouped);
+        else result.current.toggleRangeItemIdsSelection(["a"]);
+      };
+      if (entry === "clear-all") {
+        act(() => result.current.clearSelection());
+        act(() => result.current.toggleRangeItemIdsSelection(["a", "b"]));
+      } else {
+        act(() => {
+          if (entry === "remove") result.current.removeSelectedItemIds(["a"]);
+          else touch();
+        });
+        act(() => touch());
+      }
+      const { rangeStart, rangeEnd } = result.current;
+      act(() => {
+        owner.consume();
+        owner.consume();
+        owner.release();
+      });
+      expect([...result.current.selectedItemIds]).toEqual(
+        entry === "clear-all" ? ["a", "b"] : ["a"],
+      );
+      expect(result.current.rangeStart).toBe(rangeStart);
+      expect(result.current.rangeEnd).toBe(rangeEnd);
+    },
+  );
+
+  it("keeps parallel owners independent and releases aborted work without changing selection", () => {
+    const { result } = renderHook(() => useListInteractionState());
+    act(() => result.current.toggleRangeItemIdsSelection(["a", "b", "c"]));
+    const aborted = result.current.captureSelectionConsumption(["a", "b"]);
+    const committed = result.current.captureSelectionConsumption(["b", "c"]);
+    act(() => result.current.toggleRangeItemIdsSelection(["later"]));
+    const beforeAbort = result.current.selectedItemIds;
+    act(() => {
+      aborted.release();
+      aborted.release();
+      aborted.consume();
+    });
+    expect(result.current.selectedItemIds).toBe(beforeAbort);
+    act(() => committed.consume());
+    expect([...result.current.selectedItemIds]).toEqual(["a", "later"]);
+  });
+
+  it("invalidates pending owners on unmount and leaves another hook's selection alone", () => {
+    const first = renderHook(() => useListInteractionState());
+    act(() => first.result.current.toggleRangeItemIdsSelection(["a"]));
+    const owner = first.result.current.captureSelectionConsumption(["a"]);
+    first.unmount();
+    const next = renderHook(() => useListInteractionState());
+    act(() => next.result.current.toggleRangeItemIdsSelection(["a"]));
+    const selected = next.result.current.selectedItemIds;
+    act(() => {
+      owner.consume();
+      owner.release();
+      owner.consume();
+    });
+    expect(next.result.current.selectedItemIds).toBe(selected);
+    expect([...selected]).toEqual(["a"]);
+  });
+});

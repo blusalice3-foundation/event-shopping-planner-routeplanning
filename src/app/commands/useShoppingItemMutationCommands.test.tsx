@@ -20,9 +20,10 @@ import {
   renderHook,
   screen,
 } from "@testing-library/react";
-import { Suspense, startTransition, useState } from "react";
+import { Suspense, startTransition, useRef, useState } from "react";
 import ShoppingList from "../../components/ShoppingList";
 import { useListInteractionState } from "../../features/lists/hooks/useListInteractionState";
+import { buildRangePresentation } from "../../features/lists/domain/rangeSelection";
 import { describe, expect, it, vi } from "vitest";
 import type {
   DayModeState,
@@ -2667,5 +2668,167 @@ it.each(["drag", "vertical button"] as const)(
     expect(h.stores.candidateNumberSortDirection).toBe("asc");
     expect(h.stores.eventLists[EVENT]).toBe(allItems);
     expect(h.stores.executeModeItems[EVENT][DAY]).toBe(order);
+  },
+);
+
+it.each(
+  (
+    [
+      "unrelated",
+      "reselected",
+      "aborted",
+      "cancelled",
+      "context-changed",
+      "unmounted",
+    ] as const
+  ).flatMap((scenario) =>
+    (["drag", "column-button"] as const).map((consumer) => ({
+      scenario,
+      consumer,
+    })),
+  ),
+)(
+  "selectively consumes committed moved IDs with real selection state: $consumer $scenario",
+  async ({ scenario, consumer }) => {
+    const c1 = item("c1", { number: "1" });
+    const c2 = item("c2", { number: "2" });
+    const e0 = item("e0", { number: "3" });
+    const h = createHarness({
+      eventLists: { [EVENT]: [c1, c2, e0] },
+      executeModeItems: { [EVENT]: { [DAY]: ["e0"] } },
+      blockSortDirection: "asc",
+    });
+    type Completion =
+      | { status: "committed" }
+      | { status: "aborted"; reason: string }
+      | { status: "cancelled" };
+    let finish!: (value: Completion) => void;
+    const completion = new Promise<Completion>((resolve) => {
+      finish = resolve;
+    });
+    h.spies.queueShoppingMovePatch.mockReturnValue({
+      status: "accepted",
+      operationId: "pending-selection",
+      moveId: "pending-selection:move:1",
+      completion,
+    });
+    const ownerSpies: Array<{
+      consume: ReturnType<typeof vi.spyOn>;
+      release: ReturnType<typeof vi.spyOn>;
+    }> = [];
+    let activeDay = DAY;
+    const { result, rerender, unmount } = renderHook(() => {
+      const selection = useListInteractionState();
+      const revision = useRef({
+        inputs: [
+          selection.selectedItemIds,
+          selection.rangeStart,
+          selection.rangeEnd,
+        ],
+        value: 0,
+      });
+      const inputs = [
+        selection.selectedItemIds,
+        selection.rangeStart,
+        selection.rangeEnd,
+      ];
+      if (
+        inputs.some((value, index) => value !== revision.current.inputs[index])
+      )
+        revision.current = { inputs, value: revision.current.value + 1 };
+      const capture = selection.captureSelectionConsumption;
+      const actions = {
+        ...h.ports.actions,
+        captureSelectionConsumption: (ids: readonly string[]) => {
+          const owner = capture(ids);
+          ownerSpies.push({
+            consume: vi.spyOn(owner, "consume"),
+            release: vi.spyOn(owner, "release"),
+          });
+          return owner;
+        },
+        removeSelectedItemIds: selection.removeSelectedItemIds,
+        clearRangeSelection: selection.clearRangeSelection,
+      };
+      const commands = useShoppingItemMutationCommands({
+        ...h.ports,
+        state: {
+          ...h.ports.state,
+          activeEventDate: activeDay,
+          selectedItemIds: selection.selectedItemIds,
+          getSelectionRevision: () => revision.current.value,
+        },
+        actions,
+      });
+      return { selection, commands };
+    });
+    const presentation = buildRangePresentation({
+      scopeKey: "event/day/execute/flat",
+      grouping: "flat",
+      itemIds: ["c1", "c2", "e0"],
+    });
+    act(() => result.current.selection.selectItemForRange("c1", presentation));
+    act(() => result.current.selection.selectItemForRange("c2", presentation));
+    act(() =>
+      consumer === "column-button"
+        ? result.current.commands.moveToExecuteColumn(["c1", "c2"])
+        : result.current.commands.moveItem(
+            "c1",
+            "__END_OF_LIST__",
+            "execute",
+            "candidate",
+            frozenDrag(
+              "candidate",
+              "execute",
+              ["c1", "c2"],
+              ["c1", "c2"],
+              [c1, c2],
+            ),
+          ),
+    );
+    expect(h.spies.queueShoppingMovePatch).toHaveBeenCalledTimes(1);
+    expect(ownerSpies).toHaveLength(1);
+    if (scenario === "reselected") {
+      // Distinct updates form ABA: membership returns to checked, ownership does not.
+      act(() =>
+        result.current.selection.selectItemForRange("c1", presentation),
+      );
+      act(() =>
+        result.current.selection.selectItemForRange("c1", presentation),
+      );
+    }
+    act(() => result.current.selection.selectItemForRange("e0", presentation));
+    const { rangeStart, rangeEnd } = result.current.selection;
+    if (scenario === "context-changed") {
+      activeDay = "another-day";
+      rerender();
+    } else if (scenario === "unmounted") unmount();
+    await act(async () => {
+      finish(
+        scenario === "aborted"
+          ? { status: "aborted", reason: "placement changed" }
+          : scenario === "cancelled"
+            ? { status: "cancelled" }
+            : { status: "committed" },
+      );
+      await completion;
+    });
+    expect([...result.current.selection.selectedItemIds]).toEqual(
+      scenario === "unrelated"
+        ? ["e0"]
+        : scenario === "reselected"
+          ? ["c1", "e0"]
+          : ["c1", "c2", "e0"],
+    );
+    expect(result.current.selection.rangeStart).toBe(rangeStart);
+    expect(result.current.selection.rangeEnd).toBe(rangeEnd);
+    expect(ownerSpies[0].release).toHaveBeenCalledTimes(1);
+    if (["aborted", "cancelled", "context-changed"].includes(scenario))
+      expect(ownerSpies[0].consume).not.toHaveBeenCalled();
+    const selected = result.current.selection.selectedItemIds;
+    act(() => ownerSpies[0].consume());
+    expect(result.current.selection.selectedItemIds).toBe(selected);
+    expect(h.spies.setSortState).not.toHaveBeenCalled();
+    expect(h.stores.blockSortDirection).toBe("asc");
   },
 );
