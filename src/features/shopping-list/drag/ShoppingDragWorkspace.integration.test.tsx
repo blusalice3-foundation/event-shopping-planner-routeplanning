@@ -2212,3 +2212,224 @@ it.each([
     expect(document.body).not.toHaveClass("esp-body-scroll-lock");
   },
 );
+
+it.each([
+  { input: "native", grouped: false },
+  { input: "native", grouped: true },
+  { input: "touch", grouped: false },
+  { input: "touch", grouped: true },
+] as const)(
+  "does not guide to the execution tail while hovering the moving source itself: $input grouped=$grouped",
+  async ({ input, grouped }) => {
+    vi.useFakeTimers();
+    vi.stubGlobal("scrollBy", vi.fn());
+    const previousScroll = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      "scrollIntoView",
+    );
+    const scroll = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      writable: true,
+      value: scroll,
+    });
+    try {
+      const onMove = vi.fn();
+      const view = render(
+        <Harness
+          grouped={grouped}
+          onMove={onMove}
+          initialExecute={[
+            item("e0", "01a"),
+            item("e1", "41a"),
+            item("e249", "2249a"),
+            item("priority", "9999a", { priorityLevel: "priority" }),
+          ]}
+          initialCandidate={[item("c0", "90a")]}
+        />,
+      );
+      const card = (id: string) =>
+        view.container.querySelector<HTMLElement>(
+          `[data-item-id="${id}"]:not([data-space-group-key])`,
+        )!;
+      const source = card("e0"),
+        target = card("c0"),
+        wrong = card("priority");
+      vi.spyOn(source, "getBoundingClientRect").mockReturnValue(rect(250, 350));
+      vi.spyOn(target, "getBoundingClientRect").mockReturnValue(rect(250, 350));
+      vi.spyOn(wrong, "getBoundingClientRect").mockReturnValue(rect(350, 450));
+      const wrongGroup = wrong.closest<HTMLElement>('[data-row-key^="group:"]');
+      if (wrongGroup)
+        vi.spyOn(wrongGroup, "getBoundingClientRect").mockReturnValue(
+          rect(350, 450),
+        );
+      const hitTest = vi.fn(() => source);
+      Object.defineProperty(document, "elementFromPoint", {
+        configurable: true,
+        value: hitTest,
+      });
+      const transfer = { setData: vi.fn(), getData: () => "execute" };
+      const begin = () => {
+        hitTest.mockReturnValue(source);
+        if (input === "native")
+          fireEvent.dragStart(source, { dataTransfer: transfer });
+        else {
+          fireEvent.touchStart(source, {
+            touches: [{ identifier: 1, clientX: 10, clientY: 280 }],
+          });
+          act(() => vi.advanceTimersByTime(250));
+        }
+      };
+      const hover = (element: HTMLElement, y: number) => {
+        hitTest.mockReturnValue(element);
+        if (input === "native") dragOver(element, y, transfer);
+        else
+          fireEvent.touchMove(source, {
+            touches: [{ identifier: 1, clientX: 10, clientY: y }],
+          });
+      };
+      const drop = (element: HTMLElement, y: number) => {
+        if (input === "native")
+          fireEvent.drop(element, {
+            dataTransfer: transfer,
+            clientX: 10,
+            clientY: y,
+          });
+        else
+          fireEvent.touchEnd(source, {
+            changedTouches: [{ identifier: 1, clientX: 10, clientY: y }],
+          });
+      };
+      begin();
+      hover(source, 300);
+      await act(async () => vi.advanceTimersByTime(50));
+      expect(scroll).not.toHaveBeenCalled();
+      expect(
+        view.container.querySelector("[data-shopping-drag-guide]"),
+      ).toBeNull();
+      expect(onMove).not.toHaveBeenCalled();
+      // Returning to the source clears an earlier corrective guide.
+      hover(wrong, 360);
+      expect(
+        view.container.querySelector('[data-shopping-drag-guide="suggestion"]'),
+      ).not.toBeNull();
+      scroll.mockClear();
+      hover(source, 300);
+      await act(async () => vi.advanceTimersByTime(50));
+      expect(scroll).not.toHaveBeenCalled();
+      expect(
+        view.container.querySelector(
+          "[data-shopping-drag-status], [data-shopping-drag-guide]",
+        ),
+      ).toBeNull();
+      // A real destination still accepts, and returning to the source clears it.
+      hover(target, 310);
+      expect(
+        view.container.querySelector('[data-shopping-drag-status="accepted"]'),
+      ).not.toBeNull();
+      hover(source, 300);
+      expect(
+        view.container.querySelector(
+          "[data-shopping-drag-status], [data-shopping-drag-guide]",
+        ),
+      ).toBeNull();
+      drop(source, 300);
+      expect(onMove).not.toHaveBeenCalled();
+      expect(
+        document.querySelector("[data-shopping-placement-rejection]"),
+      ).toBeNull();
+      expect(document.querySelector(".esp-shopping-touch-clone")).toBeNull();
+      expect(document.body).not.toHaveClass("esp-body-scroll-lock");
+      begin();
+      hover(source, 300);
+      hover(target, 310);
+      drop(target, 310);
+      expect(onMove).toHaveBeenCalledTimes(1);
+      expect(onMove.mock.calls[0].slice(0, 4)).toEqual([
+        "e0",
+        "__END_OF_LIST__",
+        "candidate",
+        "execute",
+      ]);
+      expect(onMove.mock.calls[0][4].effectiveIds).toEqual(["e0"]);
+      expect(scroll).not.toHaveBeenCalled();
+      expect(
+        document.querySelector("[data-shopping-placement-rejection]"),
+      ).toBeNull();
+      expect(document.querySelector(".esp-shopping-touch-clone")).toBeNull();
+      expect(document.body).not.toHaveClass("esp-body-scroll-lock");
+    } finally {
+      if (previousScroll)
+        Object.defineProperty(
+          HTMLElement.prototype,
+          "scrollIntoView",
+          previousScroll,
+        );
+      else Reflect.deleteProperty(HTMLElement.prototype, "scrollIntoView");
+    }
+  },
+);
+
+it.each(["native", "touch"] as const)(
+  "accepts a nonmoving book in the same visit after a source no-op: %s",
+  (input) => {
+    vi.useFakeTimers();
+    vi.stubGlobal("scrollBy", vi.fn());
+    const onMove = vi.fn();
+    const view = render(
+      <Harness
+        grouped={false}
+        onMove={onMove}
+        initialExecute={[a1, a2, x1]}
+        initialCandidate={[]}
+      />,
+    );
+    const card = (id: string) =>
+      view.container.querySelector<HTMLElement>(`[data-item-id="${id}"]`)!;
+    const source = card("a1"),
+      peer = card("a2");
+    vi.spyOn(source, "getBoundingClientRect").mockReturnValue(rect(250, 350));
+    vi.spyOn(peer, "getBoundingClientRect").mockReturnValue(rect(350, 450));
+    const hitTest = vi.fn(() => source);
+    Object.defineProperty(document, "elementFromPoint", {
+      configurable: true,
+      value: hitTest,
+    });
+    const transfer = { setData: vi.fn(), getData: () => "execute" };
+    if (input === "native") {
+      fireEvent.dragStart(source, { dataTransfer: transfer });
+      dragOver(source, 300, transfer);
+      hitTest.mockReturnValue(peer);
+      dragOver(peer, 420, transfer);
+      fireEvent.drop(peer, { dataTransfer: transfer });
+    } else {
+      fireEvent.touchStart(source, {
+        touches: [{ identifier: 1, clientX: 10, clientY: 280 }],
+      });
+      act(() => vi.advanceTimersByTime(250));
+      fireEvent.touchMove(source, {
+        touches: [{ identifier: 1, clientX: 10, clientY: 300 }],
+      });
+      hitTest.mockReturnValue(peer);
+      fireEvent.touchMove(source, {
+        touches: [{ identifier: 1, clientX: 10, clientY: 420 }],
+      });
+      fireEvent.touchEnd(source, {
+        changedTouches: [{ identifier: 1, clientX: 10, clientY: 420 }],
+      });
+    }
+    expect(onMove).toHaveBeenCalledTimes(1);
+    expect(onMove.mock.calls[0][4].effectiveIds).toEqual(["a1"]);
+    expect(onMove.mock.calls[0][4].placement.kind).toBe("items");
+    expect(
+      [
+        ...view.container.querySelectorAll(
+          '[data-shopping-drag-column="execute"] [data-item-id]',
+        ),
+      ].map((node) => node.getAttribute("data-item-id")),
+    ).toEqual(["a2", "a1", "x1"]);
+    expect(
+      document.querySelector("[data-shopping-placement-rejection]"),
+    ).toBeNull();
+  },
+);

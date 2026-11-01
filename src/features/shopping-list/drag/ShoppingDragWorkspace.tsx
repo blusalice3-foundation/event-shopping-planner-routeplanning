@@ -201,6 +201,7 @@ function createWorkspace(
     column: ShoppingDragColumn;
     hoverId: string;
     context: ShoppingDragMoveContext;
+    noop?: boolean;
   } | null = null;
   const decorations: HTMLElement[] = [];
   const decorationOwners = new Map<HTMLElement, string | null>();
@@ -823,6 +824,25 @@ function createWorkspace(
       );
       const moving = isBookReorder ? active.requested : active.moving;
       highlightMoving(moving);
+      if (
+        sourceIsExecute &&
+        targetId &&
+        moving.some((item) => item.id === targetId)
+      ) {
+        // Moving rows are removed from placement layouts; hovering one is a
+        // no-op, rather than an invalid boundary that needs a remote reveal.
+        abortPendingReveal();
+        guidedTarget = "";
+        guidedPoint = null;
+        clearDecorations();
+        accepted = {
+          column,
+          hoverId: targetId,
+          context: active.context,
+          noop: true,
+        };
+        return true;
+      }
       if (layoutCache?.list !== list || layoutCache.moving !== moving) {
         const ids = new Set(
           sourceIsExecute ? moving.map((item) => item.id) : [],
@@ -1113,7 +1133,7 @@ function createWorkspace(
         reportRejection(
           "配置先を確認できませんでした。品目は移動していません。有効な位置でもう一度ドラッグしてください。",
         );
-      if (target?.column === column)
+      if (target?.column === column && !target.noop)
         lists
           .get(column)
           ?.move(
