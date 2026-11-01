@@ -121,13 +121,17 @@ const getRegistry = (document: Document): ViewportRegistry => {
   const subscribers = new Map<Element, Subscription>();
   const observer = new IntersectionObserver(
     (entries) => {
-      for (const entry of entries) {
-        const subscription = subscribers.get(entry.target);
-        if (!subscription) continue;
-        subscription.visible = entry.isIntersecting;
-        registry.visibility.set(entry.target, entry.isIntersecting);
-        subscription.update();
-      }
+      const updateEntries = () => {
+        for (const entry of entries) {
+          const subscription = subscribers.get(entry.target);
+          if (!subscription) continue;
+          subscription.visible = entry.isIntersecting;
+          registry.visibility.set(entry.target, entry.isIntersecting);
+          subscription.update();
+        }
+      };
+      if (registry.retainedLists.size > 0) flushSync(updateEntries);
+      else updateEntries();
     },
     { rootMargin: PRELOAD_MARGIN_PX + "px" },
   );

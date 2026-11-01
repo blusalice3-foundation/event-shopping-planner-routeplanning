@@ -3018,3 +3018,61 @@ describe("gesture activation retention leases", () => {
     expect(disconnect).toHaveBeenCalledTimes(1);
   });
 });
+
+it.each([false, true])(
+  "commits delivered IO visibility synchronously only during a gesture lease (lease=%s)",
+  (leased) => {
+    const view = render(
+      <div data-list-renderer="virtual">
+        {["delivered-visibility", "undelivered-visibility"].map((key) => (
+          <ViewportContent
+            key={key}
+            rowKey={key}
+            placeholder={<span>{key} pending</span>}
+            render={() => <input aria-label={key} />}
+          />
+        ))}
+      </div>,
+    );
+    const list = view.container.firstElementChild as HTMLElement;
+    const target = list.querySelector<HTMLElement>(
+      '[data-viewport-row-key="delivered-visibility"]',
+    )!;
+    const untouched = list.querySelector<HTMLElement>(
+      '[data-viewport-row-key="undelivered-visibility"]',
+    )!;
+    let release = () => {};
+    if (leased)
+      act(() => {
+        release = retainActivatedViewportContent(list);
+      });
+    const deliver = (isIntersecting: boolean) =>
+      callback(
+        [{ target, isIntersecting }] as unknown as IntersectionObserverEntry[],
+        {} as IntersectionObserver,
+      );
+    visibleKeys.add("delivered-visibility");
+    act(() => {
+      deliver(true);
+      // Inspect before leaving the notification turn; ordinary updates stay batched.
+      expect(target.querySelector("input") !== null).toBe(leased);
+      expect(untouched).toHaveAttribute("data-viewport-active", "false");
+      expect(untouched.querySelector("input")).toBeNull();
+    });
+    const input = target.querySelector("input");
+    expect(input).not.toBeNull();
+    visibleKeys.delete("delivered-visibility");
+    act(() => deliver(false));
+    expect(target.querySelector("input")).toBe(leased ? input : null);
+    act(() => release());
+    expect(target.querySelector("input")).toBeNull();
+    // Once the lease ends, later notifications use ordinary async batching again.
+    visibleKeys.add("delivered-visibility");
+    act(() => {
+      deliver(true);
+      expect(target.querySelector("input")).toBeNull();
+    });
+    expect(target.querySelector("input")).not.toBeNull();
+    expect(untouched).toHaveAttribute("data-viewport-active", "false");
+  },
+);
