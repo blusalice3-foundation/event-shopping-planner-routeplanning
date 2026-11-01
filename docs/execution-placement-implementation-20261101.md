@@ -4,7 +4,7 @@
 - 依頼プラン: D:/esp-placement-plan-20261101/docs/execution-placement-rules-remediation-plan-20261101.md
 - 変更前の製品source: 19c7541175b2a60076807dd17469127d67f8407d
 - 実装作業ツリー: D:/esp-placement-implementation-20261101
-- 最新の製品修正: 131e1c4b76b22b51cb62f3d6948bdd0762f46324。文書だけの後続コミット、製品・計測器・採取HEADを区別する。
+- 最新の製品修正: 71bd5f54a49ca14feb1f557abcda2d4eca7d5a0b。文書だけの後続コミット、製品・計測器・採取HEADを区別する。
 - 最新の計測器修正: a96cfed131601d24be7e0c2367871a0668598190。承認済み対象変更、文書座標の2stableと実hit、時計後の補正可視性確認、および失敗時または明示診断時だけの描画・座標記録を含む。製品修正のsourceと区別する。
 - 状態: 製品実装、単体・統合試験、重点PWA確認を実施。標準completion全機能・全144性能条件、同条件の変更前後比較は未完了。保存測定位置の限定的な追加変更はユーザーが明示承認し、a861b39で計測器へ実装した。計画の完了判定、元作業ツリーへの反映はまだ行っていない。
 
@@ -170,3 +170,12 @@ shopping/range診断時の製品src/publicは8f8b0f1で、HEAD4423f18の後半�
 - 131e1c4bではuseListInteractionStateに、受理時のselected∩moved IDsだけを追跡する小さい消費ownerを追加した。ユーザーがそのIDを後から操作すると消費権を外すため、別IDのe0操作はc1/c2解除を妨げず、c1のoff→on再選択は保護する。committedで未操作IDだけを最新Setから消費し、abort/cancel/context失効では解除せず追跡を解放する。unmountではlayout cleanupで全ownerを無効化する。pendingなしは即returnし、恒久的なID履歴mapは追加していない。
 - Appからcommandへのoptional構造portだけを追加し、range/sortの既存whole revision guardとportなしfallbackは維持した。drag/列移動ボタンそれぞれの後続別ID・ABA・abort・cancel・context・unmount、およびhookの全選択入口・並行owner・二重解放を19新ケースで検証した。旧d910 consumerの実hook負controlはc1/c2/e0残留で失敗し、修正後はe0だけを残した。関連7suite309件・型・lint・architecture・encoding・formatを通過し、独立レビューでも具体的な問題はなかった。
 - 計測器a96cfedの25/18ファイル、fixture、入力gesture、時計・終了点、回数、閾値、保存schema・receipt形式は今回変更していない。外部証拠はD:/esp-placement-feature-evidence-20261101/drag-completion-diagnostic-4db1383-iosync-attempt1、同attempt2、locality-context-diagnostic-4db1383-iosync-500-native-off、transfer-completion-diagnostic-4db1383-attempt1。修正後の元失敗3条件、transfer100全条件、標準全群と同条件before比較は引き続き未完了である。
+
+## 候補列の保存配列の配置枠を維持する修正
+
+- 製品131e1c4の候補ead931eでは全単体3,811通過/88スキップ、全静的・encoding・format・release-aビルド・配信cap一致を確認した。元失敗3条件を同じ公式spec/tagからexact3登録で選んだ独立completion診断は1通過/2失敗、retry0/global0、30.545秒で完走し子process0だった。candidate→execute responseは10回すべて選択の独立postconditionを通過し、旧c1/c2残留は再発しなかった。
+- execute→candidate response/frameは旧warmupの画面外c0を越え、保存後の全raw順の独立期待で失敗した。候補内の相対順とexecute順が同じでも、既存契約は移動元枠と候補枠へ候補順を再充填し、他日・残存executeのraw位置を保つ。期待prefixはc0/e0/e3…、実際はe3…e249/c0/e0/e1/e2…だった。partial7主/2保存のうち3主/1保存だけが各10回記録され、逆方向4主/1保存は後段検証でappend前に止まり欠測である。34元rawをSHA保全し、全100条件の成功へ流用していない。
+- computeMoveItemの候補側提案自体は既存slot契約どおりだったが、保存plannerのplacementBaseline経路がeffective IDsだけを全rawから抜差しし、提案に含まれる他の候補IDの枠移動を再現しなかった。変更がないbaselineでも起きるため、D11を理由に提案の既存意味を捨てる根拠にはならない。reverse期待の関連3fileは元19cと完全一致し、D12のfixture変更許可対象でもない。
+- 71bd5f54ではtarget=candidateかつplacementBaselineのeventList再適用だけを、最新の当日candidate∪moving subsequenceへ既存effective-order replayを適用し、その結果を最新rawの同じ対象枠へ充填する処理にした。既存sameDay・最新execute所属を使い、長さ・一意性・ID集合を検証する。古いsnapshotの内容/全順序は採用せず、他日・残存execute枠、無関係な最新insert/delete/order/content/列所属を保持する。実行列のreplay、配置依存guard、receiptは変更していない。
+- 旧ead/131eの実行→候補と候補内のraw枠2回帰は失敗し、修正後は通過した。追加2件で最新の無関係変更も確認し、関連7suite313件と型・lint・architecture・encoding・formatを通過した。root/saveの独立レビューに具体的な問題はなかった。実装2fileはUTF-8/BOMなし/LF/U+FFFDなしを維持した。計測器・fixture・gesture・時計・終了点・閾値・回数・独立期待は変更していない。全検査後の元3条件再診断、transfer100、標準全群・同条件before比較は引き続き未完了である。
+- 部分診断の外部証拠はD:/esp-placement-feature-evidence-20261101/transfer-failed-three-diagnostic-ead931e-attempt1。元の成否・欠測・元rawを保全し、修正後の別runでのみ再確認する。
