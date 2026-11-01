@@ -1695,3 +1695,138 @@ describe("candidate container whitespace keeps its original endpoint", () => {
     },
   );
 });
+
+it.each(["native", "touch"] as const)(
+  "reveals the same corrective target again only after a new wrong-group input: %s",
+  async (input) => {
+    const priorScroll = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      "scrollIntoView",
+    );
+    const reveal = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      writable: true,
+      value: function (this: HTMLElement) {
+        if (this.dataset.rowKey === 'item:"priority"') reveal();
+      },
+    });
+    try {
+      vi.useFakeTimers();
+      vi.stubGlobal("scrollBy", vi.fn());
+      const priority = item("priority", "03a", { priorityLevel: "priority" });
+      const incoming = item("incoming", "05a", { priorityLevel: "priority" });
+      const onMove = vi.fn();
+      const view = render(
+        <Harness
+          grouped={false}
+          onMove={onMove}
+          initialExecute={[a1, a2, priority]}
+          initialCandidate={[incoming]}
+        />,
+      );
+      const row = (id: string) =>
+        view.container.querySelector<HTMLElement>(
+          `[data-item-id="${id}"]:not([data-space-group-key])`,
+        )!;
+      const root = view.container.querySelector<HTMLElement>(
+        '[data-shopping-drag-column="execute"]',
+      )!;
+      const source = row("incoming"),
+        correct = row("priority"),
+        wrong = row("a2");
+      const correctRect = vi
+        .spyOn(correct, "getBoundingClientRect")
+        .mockReturnValue(rect(300, 400));
+      vi.spyOn(row("a1"), "getBoundingClientRect").mockReturnValue(
+        rect(300, 360),
+      );
+      vi.spyOn(wrong, "getBoundingClientRect").mockReturnValue(rect(360, 420));
+      const hitTest = vi.fn((): Element | null => correct);
+      Object.defineProperty(document, "elementFromPoint", {
+        configurable: true,
+        value: hitTest,
+      });
+      const transfer = { setData: vi.fn(), getData: () => "candidate" };
+      const hover = (target: HTMLElement, y: number) => {
+        hitTest.mockReturnValue(target);
+        if (input === "native") dragOver(target, y, transfer);
+        else
+          fireEvent.touchMove(source, {
+            touches: [{ identifier: 1, clientX: 10, clientY: y }],
+          });
+      };
+      const flushReveal = async () => {
+        await act(async () => {
+          vi.advanceTimersByTime(50);
+        });
+      };
+      if (input === "native")
+        fireEvent.dragStart(source, { dataTransfer: transfer });
+      else {
+        fireEvent.touchStart(source, {
+          touches: [{ identifier: 1, clientX: 10, clientY: 250 }],
+        });
+        act(() => vi.advanceTimersByTime(250));
+      }
+      hover(correct, 390);
+      expect(
+        root.querySelector('[data-shopping-drag-status="accepted"]'),
+      ).not.toBeNull();
+      expect(reveal).not.toHaveBeenCalled();
+      // A public/programmatic scroll changes the row beneath the stationary
+      // pointer, establishing a corrective target during refresh.
+      correctRect.mockReturnValue(rect(2000, 2100));
+      hitTest.mockReturnValue(wrong);
+      fireEvent.scroll(window);
+      await flushReveal();
+      expect(reveal).toHaveBeenCalledTimes(1);
+      expect(
+        root.querySelector('[data-shopping-drag-status="rejected"]'),
+      ).not.toBeNull();
+      fireEvent.scroll(window);
+      hover(wrong, 390);
+      await flushReveal();
+      expect(reveal).toHaveBeenCalledTimes(1);
+      expect(onMove).not.toHaveBeenCalled();
+      // Only a subsequent actual input point invalidates the same-target cache.
+      hover(wrong, 394);
+      await flushReveal();
+      expect(reveal).toHaveBeenCalledTimes(2);
+      expect(
+        root.querySelector('[data-shopping-drag-status="rejected"]'),
+      ).not.toBeNull();
+      expect(
+        root.querySelectorAll('[data-shopping-drag-guide="suggestion"]'),
+      ).toHaveLength(1);
+      fireEvent.scroll(window);
+      await flushReveal();
+      expect(reveal).toHaveBeenCalledTimes(2);
+      expect(onMove).not.toHaveBeenCalled();
+      if (input === "native")
+        fireEvent.drop(wrong, {
+          dataTransfer: transfer,
+          clientX: 10,
+          clientY: 394,
+        });
+      else
+        fireEvent.touchEnd(source, {
+          changedTouches: [{ identifier: 1, clientX: 10, clientY: 394 }],
+        });
+      expect(onMove).not.toHaveBeenCalled();
+      expect(
+        view.container.querySelector("[data-shopping-drag-guide]"),
+      ).toBeNull();
+      expect(document.querySelector(".esp-shopping-touch-clone")).toBeNull();
+      expect(document.body).not.toHaveClass("esp-body-scroll-lock");
+    } finally {
+      if (priorScroll)
+        Object.defineProperty(
+          HTMLElement.prototype,
+          "scrollIntoView",
+          priorScroll,
+        );
+      else Reflect.deleteProperty(HTMLElement.prototype, "scrollIntoView");
+    }
+  },
+);

@@ -667,8 +667,10 @@ function createWorkspace(
           (clientX !== undefined &&
             guidedPoint.x !== undefined &&
             Math.abs(clientX - guidedPoint.x) > 1))
-      )
+      ) {
         guidedPoint = null;
+        guidedTarget = "";
+      }
       hitTestRejected = false;
 
       const list = lists.get(column);
