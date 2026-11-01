@@ -2111,13 +2111,34 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       (listRendererSelection.engine !== "full" && !useRetainedViewport)
     )
       return;
+    const signal = scrollRequest.signal;
+    let frame: number | null = null;
+    const cancel = () => {
+      if (frame !== null) cancelAnimationFrame(frame);
+      frame = null;
+      handleScrollRequestConsumed(scrollRequest.requestId);
+    };
+    if (signal?.aborted) {
+      cancel();
+      return;
+    }
+    signal?.addEventListener("abort", cancel, { once: true });
+    const cleanup = () => {
+      if (frame !== null) cancelAnimationFrame(frame);
+      signal?.removeEventListener("abort", cancel);
+    };
     const rowElement = findViewportRow(
       containerRef.current,
       scrollRequest.rowKey,
     );
     if (useRetainedViewportStructure && rowElement) {
       revealViewportContent(rowElement);
-      const frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        frame = null;
+        if (signal?.aborted) {
+          cancel();
+          return;
+        }
         const actual = findViewportRow(
           containerRef.current,
           scrollRequest.rowKey,
@@ -2128,13 +2149,15 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         });
         if (actual) handleScrollRequestConsumed(scrollRequest.requestId);
       });
-      return () => cancelAnimationFrame(frame);
+      return cleanup;
     }
-    rowElement?.scrollIntoView?.({
-      block: scrollRequest.alignment,
-      behavior: "auto",
-    });
+    if (!signal?.aborted)
+      rowElement?.scrollIntoView?.({
+        block: scrollRequest.alignment,
+        behavior: "auto",
+      });
     if (rowElement) handleScrollRequestConsumed(scrollRequest.requestId);
+    return cleanup;
   }, [
     handleScrollRequestConsumed,
     listControllerState.scrollRequest,
@@ -2531,15 +2554,19 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     const item = getLatestItemById(itemId);
     if (item) latestCardCrudCallbacksRef.current.onEditRequest(item);
   });
-  const revealDragTarget = useStableCallback((itemId: string) => {
-    const group = listRowGroups?.find((entry) =>
-      entry.items.some((item) => item.id === itemId),
-    );
-    const rowKey = group?.collapsed
-      ? `group:${JSON.stringify(group.key)}`
-      : `item:${JSON.stringify(itemId)}`;
-    dispatchListController(shoppingListCommand.requestScroll(rowKey));
-  });
+  const revealDragTarget = useStableCallback(
+    (itemId: string, signal?: AbortSignal) => {
+      const group = listRowGroups?.find((entry) =>
+        entry.items.some((item) => item.id === itemId),
+      );
+      const rowKey = group?.collapsed
+        ? `group:${JSON.stringify(group.key)}`
+        : `item:${JSON.stringify(itemId)}`;
+      dispatchListController(
+        shoppingListCommand.requestScroll(rowKey, "nearest", signal),
+      );
+    },
+  );
   useLayoutEffect(() => {
     if (!columnType || !dragWorkspace || !allowReorder) return;
     return dragWorkspace.register(columnType, {

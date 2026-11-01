@@ -192,3 +192,75 @@ describe("shoppingListControllerReducer range selection", () => {
     expect(cleared).toEqual(initial);
   });
 });
+
+it.each(["ordinary navigation", "new owned guidance"] as const)(
+  "does not consume a newer %s request when old guidance aborts",
+  (kind) => {
+    const model = buildListRows({ items: [item("1"), item("2")] });
+    const previous = new AbortController();
+    const next = new AbortController();
+    let state = shoppingListControllerReducer(
+      model,
+      createShoppingListControllerState(["1"]),
+      shoppingListCommand.requestScroll(
+        model.itemRows[0].rowKey,
+        "nearest",
+        previous.signal,
+      ),
+    );
+    const previousId = state.scrollRequest!.requestId;
+    expect(state.scrollRequest!.signal).toBe(previous.signal);
+    // An already queued abort callback can run after a newer request is adopted.
+    previous.signal.addEventListener("abort", () => {
+      state = shoppingListControllerReducer(
+        model,
+        state,
+        shoppingListCommand.consumeScroll(previousId),
+      );
+    });
+    state = shoppingListControllerReducer(
+      model,
+      state,
+      shoppingListCommand.requestScroll(
+        model.itemRows[1].rowKey,
+        "center",
+        kind === "new owned guidance" ? next.signal : undefined,
+      ),
+    );
+    const current = state.scrollRequest;
+    previous.abort();
+    expect(state.scrollRequest).toBe(current);
+    expect(state.scrollRequest).toMatchObject({
+      requestId: 2,
+      rowKey: model.itemRows[1].rowKey,
+      alignment: "center",
+    });
+    expect(state.scrollRequest!.signal).toBe(
+      kind === "new owned guidance" ? next.signal : undefined,
+    );
+    expect(state.selectedItemIds).toEqual(["1"]);
+  },
+);
+
+it("ignores an already cancelled guidance request while preserving ordinary navigation", () => {
+  const model = buildListRows({ items: [item("1"), item("2")] });
+  const navigation = shoppingListControllerReducer(
+    model,
+    createShoppingListControllerState(),
+    shoppingListCommand.requestScroll(model.itemRows[0].rowKey, "center"),
+  );
+  const cancelled = new AbortController();
+  cancelled.abort();
+  expect(
+    shoppingListControllerReducer(
+      model,
+      navigation,
+      shoppingListCommand.requestScroll(
+        model.itemRows[1].rowKey,
+        "nearest",
+        cancelled.signal,
+      ),
+    ),
+  ).toBe(navigation);
+  expect(navigation.scrollRequest).not.toHaveProperty("signal");
+});

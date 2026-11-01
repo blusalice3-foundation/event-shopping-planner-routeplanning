@@ -12,6 +12,7 @@ export interface ListScrollRequest {
   readonly requestId: number;
   readonly rowKey: string;
   readonly alignment: ListScrollAlignment;
+  readonly signal?: AbortSignal;
 }
 
 export interface ShoppingListControllerState {
@@ -47,6 +48,7 @@ export type ShoppingListControllerCommand =
       type: "request-scroll";
       rowKey: string;
       alignment?: ListScrollAlignment;
+      signal?: AbortSignal;
     }
   | {
       type: "consume-scroll";
@@ -145,13 +147,15 @@ export const shoppingListControllerReducer = (
         : state;
     }
     case "request-scroll":
-      if (!rowKeySet(model).has(command.rowKey)) return state;
+      if (command.signal?.aborted || !rowKeySet(model).has(command.rowKey))
+        return state;
       return {
         ...state,
         scrollRequest: {
           requestId: state.nextRequestId,
           rowKey: command.rowKey,
           alignment: command.alignment ?? "nearest",
+          ...(command.signal ? { signal: command.signal } : {}),
         },
         nextRequestId: state.nextRequestId + 1,
       };
@@ -215,8 +219,14 @@ export const shoppingListCommand = {
   requestScroll(
     rowKey: string,
     alignment: ListScrollAlignment = "nearest",
+    signal?: AbortSignal,
   ): ShoppingListControllerCommand {
-    return { type: "request-scroll", rowKey, alignment };
+    return {
+      type: "request-scroll",
+      rowKey,
+      alignment,
+      ...(signal ? { signal } : {}),
+    };
   },
   consumeScroll(requestId: number): ShoppingListControllerCommand {
     return { type: "consume-scroll", requestId };

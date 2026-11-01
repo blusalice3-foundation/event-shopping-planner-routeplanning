@@ -47,7 +47,7 @@ interface DragList {
     source: ShoppingDragColumn,
     context?: ShoppingDragMoveContext,
   ) => void;
-  readonly reveal?: (itemId: string) => void;
+  readonly reveal?: (itemId: string, signal?: AbortSignal) => void;
   readonly resolveMembership?: (itemId: string) => void;
   readonly candidateNumberSort: "asc" | "desc" | null;
 }
@@ -198,6 +198,15 @@ function createWorkspace(
   let hitTestRejected = false;
   let rejectionReason = "";
   let guidedTarget = "";
+  let pendingReveal: { controller: AbortController; list: DragList } | null =
+    null;
+  const abortPendingReveal = (owner?: DragList) => {
+    if (!pendingReveal || (owner && pendingReveal.list !== owner)) return;
+    const reveal = pendingReveal;
+    pendingReveal = null;
+    guidedTarget = "";
+    reveal.controller.abort();
+  };
   let suggestionGuide: { target: string; element: HTMLElement } | null = null;
   let guidedPoint: { x?: number; y: number } | null = null;
   let refreshing = false;
@@ -550,6 +559,7 @@ function createWorkspace(
         workspace.hover(column, hoverPoint.id, hoverPoint.y, hoverPoint.x);
       return () => {
         if (lists.get(column) !== list) return;
+        abortPendingReveal(list);
         lists.delete(column);
         if (active?.context.sourceColumn === column)
           workspace.clear(active.context.token);
@@ -743,6 +753,7 @@ function createWorkspace(
           )
             hoverId = candidateNavigation.ids[index + 1] ?? "__END_OF_LIST__";
         }
+        abortPendingReveal();
         accepted = {
           column,
           hoverId,
@@ -889,8 +900,11 @@ function createWorkspace(
           (guidedTarget !== target ||
             (movedAfterGuide && !isGuidedTargetVisible(target)))
         ) {
+          abortPendingReveal();
           guidedTarget = target;
-          list.reveal?.(target);
+          const controller = new AbortController();
+          pendingReveal = { controller, list };
+          list.reveal?.(target, controller.signal);
         }
         const guideBefore = Boolean(
           suggestion &&
@@ -917,6 +931,7 @@ function createWorkspace(
         );
         return true;
       }
+      abortPendingReveal();
       guidedTarget = "";
       accepted = {
         column,
@@ -1087,6 +1102,7 @@ function createWorkspace(
       workspace.clear(source.context.token);
     },
     leave() {
+      abortPendingReveal();
       hitTestRejected = true;
       accepted = null;
       hoverPoint = null;
@@ -1094,6 +1110,7 @@ function createWorkspace(
     },
     clear(token) {
       if (token && active?.context.token !== token) return;
+      abortPendingReveal();
       const wasActive = active !== null;
       layoutObserver?.disconnect();
       layoutObserver = null;

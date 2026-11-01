@@ -1888,3 +1888,142 @@ it.each(["native", "touch"] as const)(
     }
   },
 );
+
+it.each(["native", "touch"] as const)(
+  "ends retained corrective guidance before its pending scroll frame: %s",
+  async (input) => {
+    const previousScroll = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      "scrollIntoView",
+    );
+    const scrollTarget = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      writable: true,
+      value: function (this: HTMLElement) {
+        if (this.dataset.rowKey === 'item:"priority"') scrollTarget();
+      },
+    });
+    try {
+      vi.useFakeTimers();
+      vi.stubGlobal("scrollBy", vi.fn());
+      vi.stubGlobal("visualViewport", {
+        scale: 1,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      });
+      vi.stubGlobal(
+        "IntersectionObserver",
+        class {
+          observe() {}
+          unobserve() {}
+          disconnect() {}
+        },
+      );
+      vi.spyOn(
+        HTMLElement.prototype,
+        "getBoundingClientRect",
+      ).mockImplementation(function (this: HTMLElement) {
+        const key = this.dataset.viewportRowKey ?? this.dataset.rowKey;
+        const id = this.dataset.itemId;
+        if (key === 'item:"priority"' || id === "priority")
+          return rect(5000, 5200);
+        if (key === 'item:"a1"' || id === "a1") return rect(300, 360);
+        if (key === 'item:"a2"' || id === "a2") return rect(360, 420);
+        if (key === 'item:"incoming"' || id === "incoming")
+          return rect(250, 300);
+        return key ? rect(2000, 2200) : rect(0, 800);
+      });
+      const priority = item("priority", "03a", { priorityLevel: "priority" });
+      const incoming = item("incoming", "05a", { priorityLevel: "priority" });
+      const onMove = vi.fn();
+      const view = render(
+        <Harness
+          retained
+          grouped={false}
+          onMove={onMove}
+          initialExecute={[
+            a1,
+            a2,
+            ...Array.from({ length: 32 }, (_, index) =>
+              item(`normal-${index}`, `${index + 10}a`),
+            ),
+            priority,
+          ]}
+          initialCandidate={[incoming]}
+        />,
+      );
+      const root = view.container.querySelector<HTMLElement>(
+        '[data-shopping-drag-column="execute"]',
+      )!;
+      expect(root).toHaveAttribute(
+        "data-list-renderer-strategy",
+        "retained-viewport",
+      );
+      const target = root.querySelector<HTMLElement>(
+        "[data-viewport-row-key='item:\"priority\"']",
+      )!;
+      expect(target).toHaveAttribute("data-viewport-active", "false");
+      expect(root.querySelector('[data-item-id="priority"]')).toBeNull();
+      const source = view.container.querySelector<HTMLElement>(
+        '[data-item-id="incoming"]',
+      )!;
+      const wrong = root.querySelector<HTMLElement>('[data-item-id="a2"]')!;
+      expect(source).not.toBeNull();
+      expect(wrong).not.toBeNull();
+      Object.defineProperty(document, "elementFromPoint", {
+        configurable: true,
+        value: () => wrong,
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(80);
+      });
+      const transfer = { setData: vi.fn(), getData: () => "candidate" };
+      if (input === "native")
+        fireEvent.dragStart(source, { dataTransfer: transfer });
+      else {
+        fireEvent.touchStart(source, {
+          touches: [{ identifier: 1, clientX: 10, clientY: 250 }],
+        });
+        act(() => vi.advanceTimersByTime(250));
+      }
+      if (input === "native") dragOver(wrong, 390, transfer);
+      else
+        fireEvent.touchMove(source, {
+          touches: [{ identifier: 1, clientX: 10, clientY: 390 }],
+        });
+      expect(
+        root.querySelector('[data-shopping-drag-guide="suggestion"]'),
+      ).not.toBeNull();
+      expect(target).toHaveAttribute("data-viewport-active", "true");
+      expect(scrollTarget).not.toHaveBeenCalled();
+      if (input === "native")
+        fireEvent.dragEnd(source, { dataTransfer: transfer });
+      else
+        fireEvent.touchCancel(source, {
+          changedTouches: [{ identifier: 1, clientX: 10, clientY: 390 }],
+        });
+      expect(
+        root.querySelector(
+          "[data-shopping-drag-guide], [data-shopping-drag-status]",
+        ),
+      ).toBeNull();
+      expect(document.querySelector(".esp-shopping-touch-clone")).toBeNull();
+      expect(document.body).not.toHaveClass("esp-body-scroll-lock");
+      await act(async () => {
+        vi.advanceTimersByTime(80);
+      });
+      expect(scrollTarget).not.toHaveBeenCalled();
+      expect(target).toHaveAttribute("data-viewport-active", "false");
+      expect(onMove).not.toHaveBeenCalled();
+    } finally {
+      if (previousScroll)
+        Object.defineProperty(
+          HTMLElement.prototype,
+          "scrollIntoView",
+          previousScroll,
+        );
+      else Reflect.deleteProperty(HTMLElement.prototype, "scrollIntoView");
+    }
+  },
+);

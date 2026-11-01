@@ -340,6 +340,13 @@ const RuntimeVirtualListRenderer = ({
 
   useEffect(() => {
     if (!scrollRequest) return;
+    const cancel = () => onScrollRequestConsumed?.(scrollRequest.requestId);
+    const signal = scrollRequest.signal;
+    if (signal?.aborted) {
+      cancel();
+      return;
+    }
+    signal?.addEventListener("abort", cancel, { once: true });
     const rowIndex = rowIndexByKey.get(scrollRequest.rowKey);
     if (rowIndex !== undefined) {
       virtualizer.scrollToIndex(rowIndex, {
@@ -350,7 +357,8 @@ const RuntimeVirtualListRenderer = ({
         behavior: "auto",
       });
     }
-  }, [rowIndexByKey, scrollRequest, virtualizer]);
+    return () => signal?.removeEventListener("abort", cancel);
+  }, [onScrollRequestConsumed, rowIndexByKey, scrollRequest, virtualizer]);
   useLayoutEffect(() => {
     if (!scrollRequest) return;
     const rowIndex = rowIndexByKey.get(scrollRequest.rowKey);
