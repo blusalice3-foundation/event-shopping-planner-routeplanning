@@ -3463,12 +3463,8 @@ test.describe("held touch drag cleanup", () => {
           await expect(
             page.locator(rowSelector(id)).getByRole("checkbox"),
           ).toBeChecked();
-        if (process.env.ESP_EVIDENCE_PHASE === "before") {
-          await expect(rangeControls).toHaveCount(0);
-        } else {
-          await expect(rangeControls).toHaveCount(rangeControlsBefore);
-          expect(checkboxesAfter).toEqual(checkboxesBefore);
-        }
+        await expect(rangeControls).toHaveCount(0);
+        expect(checkboxesAfter).toEqual(checkboxesBefore);
         expect((await stored(page, "executeModeItems"))[eventName]).toEqual(
           before,
         );

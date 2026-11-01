@@ -900,7 +900,7 @@ describe("useShoppingItemMutationCommands", () => {
   );
 
   it.each(["candidate", "execute"] as const)(
-    "retains checks, range and sort for a same-order %s drop",
+    "ends a same-order %s drop range while retaining checks and sort",
     (column) => {
       const a = item("a", { number: "1" });
       const b = item("b", { number: "2" });
@@ -941,7 +941,7 @@ describe("useShoppingItemMutationCommands", () => {
       expect(harness.spies.queueShoppingMovePatch).toHaveBeenCalledTimes(1);
       expect(harness.spies.removeSelectedItemIds).not.toHaveBeenCalled();
       expect(harness.spies.clearSelection).not.toHaveBeenCalled();
-      expect(harness.spies.clearRangeSelection).not.toHaveBeenCalled();
+      expect(harness.spies.clearRangeSelection).toHaveBeenCalledTimes(1);
       expect(harness.spies.setSortState).not.toHaveBeenCalled();
       expect(harness.spies.setBlockSortDirection).not.toHaveBeenCalled();
       expect(
@@ -2521,7 +2521,7 @@ it.each(["add", "remove"] as const)(
   },
 );
 
-it("keeps a sole confirmed-group return quiet and unchanged when the queue reports same order", () => {
+it("ends a same-order confirmed-group drop range without changing checks or sort", () => {
   const key = `__mapless__:${DAY}`;
   const projected = projectConsistencySnapshot(
     {
@@ -2594,7 +2594,7 @@ it("keeps a sole confirmed-group return quiet and unchanged when the queue repor
   expect(h.spies.notify).not.toHaveBeenCalled();
   expect(h.spies.clearSelection).not.toHaveBeenCalled();
   expect(h.spies.removeSelectedItemIds).not.toHaveBeenCalled();
-  expect(h.spies.clearRangeSelection).not.toHaveBeenCalled();
+  expect(h.spies.clearRangeSelection).toHaveBeenCalledTimes(1);
   expect(h.spies.setSortState).not.toHaveBeenCalled();
   expect(h.spies.setBlockSortDirection).not.toHaveBeenCalled();
   expect(h.spies.setCandidateNumberSortDirection).not.toHaveBeenCalled();
@@ -2832,3 +2832,80 @@ it.each(
     expect(h.stores.blockSortDirection).toBe("asc");
   },
 );
+
+it("ends a valid same-order D&D range without consuming checks, sort or data", () => {
+  const entries = [0, 1, 2, 3].map((index) =>
+    item(`e${index}`, { number: `${index + 1}` }),
+  );
+  const h = createHarness({
+    eventLists: { [EVENT]: entries },
+    executeModeItems: { [EVENT]: { [DAY]: entries.map((value) => value.id) } },
+    blockSortDirection: "desc",
+  });
+  h.spies.queueShoppingMovePatch.mockReturnValue({
+    status: "noop",
+    reason: "same-order",
+  });
+  const capture = vi.fn();
+  const clearRange = vi.fn();
+  const { result } = renderHook(() => {
+    const selection = useListInteractionState();
+    const commands = useShoppingItemMutationCommands({
+      ...h.ports,
+      state: { ...h.ports.state, selectedItemIds: selection.selectedItemIds },
+      actions: {
+        ...h.ports.actions,
+        captureSelectionConsumption: (ids) => {
+          capture();
+          return selection.captureSelectionConsumption(ids);
+        },
+        removeSelectedItemIds: selection.removeSelectedItemIds,
+        clearRangeSelection: () => {
+          clearRange();
+          selection.clearRangeSelection();
+        },
+      },
+    });
+    return { selection, commands };
+  });
+  const presentation = buildRangePresentation({
+    scopeKey: "event/day/execute/flat",
+    grouping: "flat",
+    itemIds: entries.map((value) => value.id),
+  });
+  act(() => result.current.selection.selectItemForRange("e0", presentation));
+  act(() => result.current.selection.selectItemForRange("e2", presentation));
+  act(() =>
+    result.current.selection.toggleRangeItemIdsSelection(["e0", "e1", "e2"]),
+  );
+  expect(result.current.selection.rangeStart).not.toBeNull();
+  expect(result.current.selection.rangeEnd).not.toBeNull();
+  const selected = result.current.selection.selectedItemIds;
+  act(() =>
+    result.current.commands.moveItem(
+      "e0",
+      "e3",
+      "execute",
+      "execute",
+      frozenDrag(
+        "execute",
+        "execute",
+        ["e0", "e1", "e2"],
+        ["e0", "e1", "e2"],
+        entries.slice(0, 3),
+      ),
+    ),
+  );
+  expect(h.spies.queueShoppingMovePatch).toHaveBeenCalledTimes(1);
+  expect(result.current.selection.rangeStart).toBeNull();
+  expect(result.current.selection.rangeEnd).toBeNull();
+  expect(result.current.selection.selectedItemIds).toBe(selected);
+  expect([...selected].sort()).toEqual(["e0", "e1", "e2"]);
+  expect(clearRange).toHaveBeenCalledTimes(1);
+  expect(capture).not.toHaveBeenCalled();
+  expect(h.spies.setSortState).not.toHaveBeenCalled();
+  expect(h.stores.blockSortDirection).toBe("desc");
+  expect(h.spies.setEventLists).not.toHaveBeenCalled();
+  expect(h.spies.updateExecuteModeItems).not.toHaveBeenCalled();
+  expect(h.spies.notify).not.toHaveBeenCalled();
+});

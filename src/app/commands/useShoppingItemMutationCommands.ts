@@ -896,7 +896,10 @@ export const useShoppingItemMutationCommands = ({
             placementRejected(receipt.reason);
             return;
           }
-          if (receipt.status === "noop") return;
+          if (receipt.status === "noop") {
+            clearRangeSelection();
+            return;
+          }
           const selectionConsumption = result.transferredItemIds?.length
             ? captureSelectionConsumption?.(result.transferredItemIds)
             : undefined;
