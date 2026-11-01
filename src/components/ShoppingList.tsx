@@ -2563,7 +2563,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         ? `group:${JSON.stringify(group.key)}`
         : `item:${JSON.stringify(itemId)}`;
       dispatchListController(
-        shoppingListCommand.requestScroll(rowKey, "nearest", signal),
+        shoppingListCommand.requestScroll(rowKey, "center", signal),
       );
     },
   );
