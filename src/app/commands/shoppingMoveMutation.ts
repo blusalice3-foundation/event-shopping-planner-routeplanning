@@ -713,18 +713,47 @@ export function planShoppingMove(
     )
       throw new MutationTargetMissingError();
   }
-  const ids = command.placementBaseline
-    ? applyFrozenMoveOrder(
-        command.baselineItemIds,
-        command.itemIds,
-        currentIds,
-        effective,
+  let ids: string[];
+  if (command.placementBaseline && command.targetColumn === "candidate") {
+    const candidateSlots = items
+      .filter(
+        (item) =>
+          sameDay(item.eventDate, day) &&
+          (!currentExecuteIds.has(item.id) || effective.has(item.id)),
       )
-    : (applyChangedFields(
-        command.baselineItemIds,
-        command.itemIds,
-        currentIds,
-      ) as string[]);
+      .map((item) => item.id);
+    const frozenCandidateSlot = (id: string) =>
+      baselineDayIds.has(id) && (!baselineExecute.has(id) || effective.has(id));
+    const candidateOrder = applyFrozenMoveOrder(
+      command.baselineItemIds.filter(frozenCandidateSlot),
+      command.itemIds.filter(frozenCandidateSlot),
+      candidateSlots,
+      effective,
+    );
+    const slotIds = new Set(candidateSlots);
+    if (
+      candidateOrder.length !== candidateSlots.length ||
+      new Set(candidateOrder).size !== candidateSlots.length ||
+      candidateOrder.some((id) => !slotIds.has(id))
+    )
+      throw new MutationTargetMissingError();
+    let candidateIndex = 0;
+    ids = currentIds.map((id) =>
+      slotIds.has(id) ? candidateOrder[candidateIndex++] : id,
+    );
+  } else
+    ids = command.placementBaseline
+      ? applyFrozenMoveOrder(
+          command.baselineItemIds,
+          command.itemIds,
+          currentIds,
+          effective,
+        )
+      : (applyChangedFields(
+          command.baselineItemIds,
+          command.itemIds,
+          currentIds,
+        ) as string[]);
   const currentExecute = shoppingExecuteIds(snapshot, eventName, day);
   let executeIds = command.placementBaseline
     ? applyFrozenMoveOrder(

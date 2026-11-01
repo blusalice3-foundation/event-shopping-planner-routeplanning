@@ -546,3 +546,210 @@ it("aborts the original day review when its execute order changes", () => {
     ShoppingPlacementChangedError,
   );
 });
+
+describe("frozen candidate raw slots", () => {
+  function reverseFixture() {
+    const source = fixture();
+    source.eventLists.event = [
+      item("e1", "11a"),
+      item("e2", "12a"),
+      item("e3", "13a"),
+      { ...item("another-day", "90a"), eventDate: "2日目" },
+      item("c0", "90a"),
+      item("e0", "01a"),
+      item("c1", "100a"),
+      item("c2", "200a"),
+    ];
+    source.executeModeItems.event[day] = ["e1", "e2", "e3"];
+    return source;
+  }
+  function freezeCandidateMove(
+    source: PersistenceSnapshot,
+    sourceColumn: "execute" | "candidate",
+    effectiveIds: string[],
+    desired: string[],
+    hoverId: string,
+  ): ApplicationShoppingMove {
+    const input: ApplicationShoppingMove = {
+      version: 1,
+      eventName: "event",
+      day,
+      sourceColumn,
+      targetColumn: "candidate",
+      requestedIds: effectiveIds,
+      effectiveIds,
+      hoverId,
+      baselineItemIds: (source.eventLists.event as ShoppingItem[]).map(
+        (value) => value.id,
+      ),
+      itemIds: desired,
+      baselineExecuteIds: source.executeModeItems.event[day],
+      executeIds: source.executeModeItems.event[day].filter(
+        (id) => !effectiveIds.includes(id),
+      ),
+      baselineVisits: shoppingMoveVisitBaseline(source, "event", day),
+    };
+    input.placementBaseline = shoppingMovePlacementBaseline(source, input);
+    return input;
+  }
+
+  it("fills moving and candidate slots while keeping remaining execution and other-day slots", () => {
+    const source = reverseFixture();
+    const input = freezeCandidateMove(
+      source,
+      "execute",
+      ["e1", "e2"],
+      ["c0", "e0", "e3", "another-day", "e1", "e2", "c1", "c2"],
+      "c1",
+    );
+    const result = planShoppingMove(source, input);
+    expect(
+      (result.snapshot.eventLists.event as ShoppingItem[]).map(
+        (value) => value.id,
+      ),
+    ).toEqual(["c0", "e0", "e3", "another-day", "e1", "e2", "c1", "c2"]);
+    expect(result.snapshot.executeModeItems.event[day]).toEqual(["e3"]);
+  });
+
+  it("reorders candidate slots without moving an interleaved execution item", () => {
+    const source = fixture();
+    source.eventLists.event = [
+      item("c0", "90a"),
+      item("e0", "01a"),
+      item("c1", "100a"),
+    ];
+    source.executeModeItems.event[day] = ["e0"];
+    const input = freezeCandidateMove(
+      source,
+      "candidate",
+      ["c1"],
+      ["c1", "e0", "c0"],
+      "c0",
+    );
+    const result = planShoppingMove(source, input);
+    expect(
+      (result.snapshot.eventLists.event as ShoppingItem[]).map(
+        (value) => value.id,
+      ),
+    ).toEqual(["c1", "e0", "c0"]);
+    expect(result.snapshot.executeModeItems.event[day]).toEqual(["e0"]);
+  });
+
+  it("preserves later insertions, deletions, unrelated order and current content while filling current slots", () => {
+    const source = reverseFixture();
+    (source.eventLists.event as ShoppingItem[]).push(
+      item("far-a", "300a"),
+      item("far-b", "400a"),
+      item("deleted", "500a"),
+      item("e4", "14a"),
+    );
+    source.executeModeItems.event[day].push("e4");
+    const input = freezeCandidateMove(
+      source,
+      "execute",
+      ["e1", "e2"],
+      [
+        "c0",
+        "e0",
+        "e3",
+        "another-day",
+        "e1",
+        "e2",
+        "c1",
+        "c2",
+        "far-a",
+        "far-b",
+        "deleted",
+        "e4",
+      ],
+      "c1",
+    );
+    const current = structuredClone(source);
+    const currentById = new Map(
+      (current.eventLists.event as ShoppingItem[]).map((value) => [
+        value.id,
+        value,
+      ]),
+    );
+    currentById.set("inserted", item("inserted", "350a"));
+    Object.assign(currentById.get("e2")!, {
+      quantity: 7,
+      price: 1234,
+      remarks: "保存待ち中の入力",
+    });
+    current.eventLists.event = [
+      "e1",
+      "e2",
+      "e4",
+      "another-day",
+      "c0",
+      "e0",
+      "c1",
+      "c2",
+      "far-b",
+      "inserted",
+      "far-a",
+      "e3",
+    ].map((id) => currentById.get(id)!);
+    current.executeModeItems.event[day] = ["e1", "e2", "e4", "e3"];
+    freeze(current);
+    const result = planShoppingMove(current, input);
+    expect(
+      (result.snapshot.eventLists.event as ShoppingItem[]).map(
+        (value) => value.id,
+      ),
+    ).toEqual([
+      "c0",
+      "e0",
+      "e4",
+      "another-day",
+      "e1",
+      "e2",
+      "c1",
+      "c2",
+      "far-b",
+      "inserted",
+      "far-a",
+      "e3",
+    ]);
+    expect(result.snapshot.executeModeItems.event[day]).toEqual(["e4", "e3"]);
+    expect(
+      (result.snapshot.eventLists.event as ShoppingItem[]).find(
+        (value) => value.id === "e2",
+      ),
+    ).toMatchObject({ quantity: 7, price: 1234, remarks: "保存待ち中の入力" });
+    for (const value of result.snapshot.eventLists.event as ShoppingItem[])
+      expect(value).toBe(currentById.get(value.id));
+    expect(result.snapshot.eventLists.history).toBe(current.eventLists.history);
+  });
+
+  it("uses latest column membership for candidate slots and preserves unrelated transfers", () => {
+    const source = fixture();
+    source.eventLists.event = [
+      item("c0", "90a"),
+      item("e0", "01a"),
+      item("c1", "100a"),
+      item("e1", "20a"),
+      item("c2", "200a"),
+      item("c3", "300a"),
+      item("c4", "400a"),
+    ];
+    source.executeModeItems.event[day] = ["e0", "e1"];
+    const input = freezeCandidateMove(
+      source,
+      "candidate",
+      ["c1"],
+      ["c1", "e0", "c0", "e1", "c2", "c3", "c4"],
+      "c0",
+    );
+    const current = structuredClone(source);
+    current.executeModeItems.event[day] = ["e0", "c4"];
+    const result = planShoppingMove(current, input);
+    expect(
+      (result.snapshot.eventLists.event as ShoppingItem[]).map(
+        (value) => value.id,
+      ),
+    ).toEqual(["c1", "e0", "c0", "e1", "c2", "c3", "c4"]);
+    expect(result.snapshot.executeModeItems.event[day]).toEqual(["e0", "c4"]);
+  });
+});
