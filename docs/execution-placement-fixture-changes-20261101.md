@@ -47,6 +47,8 @@ readinessが既存の60 animation frames・2フレーム安定条件を満たせ
 
 da7b2e9の150/native/OFF実測は、直近2点がともにy=1136.84375（viewport高1000）、現在の実cardがconnected・初回slotがdetached、scrollY16856/max17096で余地240pxという安定した画面外残留を示した。この実測に基づき、既存60フレーム内で同じ元ID・辺の点が画面外の場合だけ、現在の同ID公開slot/targetを再取得し、connectedな対象へcenter scrollして次frameで再評価する。画面内なら追加scrollせず、元の点計算・2フレーム安定・60フレーム上限・dispatch・時計・終了点を保持する。古いdetached slotの再利用、別IDへの置換、強制mount、時間上限延長は行わない。変更前後には最終helperを同一適用し、元失敗rawとfailure-only診断を保持する。
 
+42a1809のOFF失敗を切り分ける追加診断では、hover responseへ既に計算・dispatch済みの`inputPoint {x,y}`だけを追加し、新しいgeometry読み取りを行わない。rejectedの準備失敗catchまたは既存scroll期待の失敗確定時だけ、既存の直前positive-control/initial-hover/response・cached viewport設定・使用fixtureを添付し、追加入力・scrollなしの3RAFで同じpriority公開行・guide/owner rect・status・windowYを観測する。元の入力から1RAF+taskまでのclock/終了点・成功経路のDOM read・全検証条件は保持する。遅延revealと同先dedup、前touchmove実Yと端scrollの関係を数値化する段階であり、readiness・verifier・製品動作は変更しない。元4pass/28指標・OFF4fail/欠測32・公式verifierfailedと原rawは保持する。
+
 ## 2026-11-01ユーザー承認によるdrop-save対象位置の対応
 
 - 明示回答source: `call_ffc847ef15264588957ed8343692485d`（「有効な同グループ位置で測り直す」）。

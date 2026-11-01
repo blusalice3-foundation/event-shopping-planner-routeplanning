@@ -654,6 +654,8 @@ async function hover(
       const ms = performance.now() - began;
       const response = {
         ms,
+        // Reuse the dispatched coordinates; no additional geometry reads.
+        inputPoint: { x, y },
         viewportScroll: { before: scrollBefore, after: window.scrollY },
         visibilityPreparation,
         status: root.querySelector<HTMLElement>("[data-shopping-drag-status]")
@@ -2990,6 +2992,87 @@ const summary = (values: number[]) => ({
   samples: values,
   ...summarizePerformanceSamples(values),
 });
+async function observeRejectedFailure(page: Page) {
+  return page.evaluate(async () => {
+    const began = performance.now();
+    const describe = (element: Element | null | undefined) => {
+      if (!element) return null;
+      const rect = element.getBoundingClientRect();
+      return {
+        tag: element.tagName,
+        connected: element.isConnected,
+        itemId: element.getAttribute("data-item-id"),
+        rowKey: element.getAttribute("data-row-key"),
+        viewportRowKey: element.getAttribute("data-viewport-row-key"),
+        viewportActive: element.getAttribute("data-viewport-active"),
+        viewportRetain: element.getAttribute("data-viewport-retain"),
+        rect: {
+          top: rect.top,
+          bottom: rect.bottom,
+          left: rect.left,
+          right: rect.right,
+          width: rect.width,
+          height: rect.height,
+        },
+        scrollTop: element.scrollTop,
+        scrollHeight: element.scrollHeight,
+        clientHeight: element.clientHeight,
+      };
+    };
+    const snapshot = (frame: number) => {
+      const root = document.querySelector(
+        '[data-shopping-drag-column="execute"]',
+      );
+      const priorityCard = document.querySelector(
+        '[data-item-id="priority"]:not([data-space-group-key]):not(.esp-shopping-touch-clone)',
+      );
+      const rowKey = `item:${JSON.stringify("priority")}`;
+      const publicRow = document.querySelector(
+        `[data-row-key=${JSON.stringify(rowKey)}], [data-viewport-row-key=${JSON.stringify(rowKey)}]`,
+      );
+      return {
+        frame,
+        diagnosticElapsedMs: performance.now() - began,
+        viewport: {
+          width: window.innerWidth,
+          height: window.innerHeight,
+          scrollX: window.scrollX,
+          scrollY: window.scrollY,
+          scrollHeight: document.scrollingElement?.scrollHeight ?? null,
+        },
+        status: root?.querySelector<HTMLElement>("[data-shopping-drag-status]")
+          ?.dataset.shoppingDragStatus,
+        priorityCard: describe(priorityCard),
+        priorityPublicRow: describe(publicRow),
+        priorityRetainedAncestor: describe(
+          priorityCard?.closest("[data-viewport-active]") ??
+            publicRow?.closest("[data-viewport-active]"),
+        ),
+        root: describe(root),
+        guides: Array.from(
+          root?.querySelectorAll<HTMLElement>("[data-shopping-drag-guide]") ??
+            [],
+        ).map((guide) => ({
+          kind: guide.dataset.shoppingDragGuide,
+          edge: guide.dataset.shoppingDragBoundary,
+          guide: describe(guide),
+          owner: describe(guide.parentElement),
+        })),
+      };
+    };
+    const snapshots = [snapshot(0)];
+    for (let frame = 1; frame <= 3; frame++) {
+      await new Promise(requestAnimationFrame);
+      snapshots.push(snapshot(frame));
+    }
+    return {
+      phase: "after-known-failure-only",
+      addedInputs: 0,
+      addedScrolls: 0,
+      snapshots,
+    };
+  });
+}
 async function attach(testInfo: TestInfo, name: string, data: unknown) {
   await testInfo.attach(name, {
     body: JSON.stringify(data, null, 2),
@@ -3428,6 +3511,9 @@ for (const count of [150, 500])
           }> = [];
           let previousBoundary = initialHover.guides[0]?.edge;
           for (let i = 0; i < performanceMeasurementSampleCount; i++) {
+            let rejectedPositiveControl: Awaited<
+              ReturnType<typeof hover>
+            > | null = null;
             if (scenario.name === "rejected") {
               const accepted = await hover(
                 page,
@@ -3436,6 +3522,7 @@ for (const count of [150, 500])
                 "after",
                 false,
               );
+              rejectedPositiveControl = accepted;
               expect(accepted.status).toBe("accepted");
               expect(
                 accepted.guides.some((line) => line.kind === "insert"),
@@ -3447,16 +3534,49 @@ for (const count of [150, 500])
               (scenario.alternating && i % 2 === 0)
                 ? "after"
                 : "before";
-            const response =
-              scenario.name === "auto-scroll"
-                ? await autoScroll(page, input)
-                : await hover(
-                    page,
-                    input,
-                    scenario.target,
-                    expectedEdge,
-                    grouped,
-                  );
+            let response:
+              | Awaited<ReturnType<typeof autoScroll>>
+              | Awaited<ReturnType<typeof hover>>;
+            try {
+              response =
+                scenario.name === "auto-scroll"
+                  ? await autoScroll(page, input)
+                  : await hover(
+                      page,
+                      input,
+                      scenario.target,
+                      expectedEdge,
+                      grouped,
+                    );
+            } catch (error) {
+              if (scenario.name === "rejected")
+                await attach(testInfo, "rejected-preparation-failure-context", {
+                  stage: "rejected-hover-preparation",
+                  count,
+                  input,
+                  grouped,
+                  sample: i,
+                  viewport: page.viewportSize(),
+                  restoredFixture: "performanceFixture(count) at case setup",
+                  fixtureRevision: "execution-placement-same-hall-2026-11-01",
+                  fixtureControl,
+                  fixturePersistenceBefore,
+                  scenario,
+                  expectedEdge,
+                  initialHover,
+                  positiveControl: rejectedPositiveControl,
+                  failure:
+                    error instanceof Error
+                      ? {
+                          name: error.name,
+                          message: error.message,
+                          stack: error.stack,
+                        }
+                      : String(error),
+                  afterFailure: await observeRejectedFailure(page),
+                });
+              throw error;
+            }
             samples.push(response.ms);
             const expectedGuides: Array<{
               kind: string;
@@ -3548,6 +3668,30 @@ for (const count of [150, 500])
                 scenario.name === "rejected" &&
                 process.env.ESP_EVIDENCE_PHASE !== "before"
               ) {
+                if (
+                  !(
+                    response.viewportScroll.after >
+                    response.viewportScroll.before
+                  )
+                )
+                  await attach(testInfo, "rejected-scroll-failure-context", {
+                    stage: "rejected-scroll-assertion-after-original-clock",
+                    count,
+                    input,
+                    grouped,
+                    sample: i,
+                    viewport: page.viewportSize(),
+                    restoredFixture: "performanceFixture(count) at case setup",
+                    fixtureRevision: "execution-placement-same-hall-2026-11-01",
+                    fixtureControl,
+                    fixturePersistenceBefore,
+                    scenario,
+                    expectedEdge,
+                    initialHover,
+                    positiveControl: rejectedPositiveControl,
+                    response,
+                    afterFailure: await observeRejectedFailure(page),
+                  });
                 expect(
                   response.viewportScroll.after,
                   scenario.name,
