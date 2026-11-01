@@ -4,8 +4,8 @@
 - 依頼プラン: D:/esp-placement-plan-20261101/docs/execution-placement-rules-remediation-plan-20261101.md
 - 変更前の製品source: 19c7541175b2a60076807dd17469127d67f8407d
 - 実装作業ツリー: D:/esp-placement-implementation-20261101
-- 最新の製品修正: 2d08eefbcc2f87934c1149b72295385c32b6cab4。文書だけの後続コミット、製品・計測器・採取HEADを区別する。
-- 最新の計測器修正: 382a7fe67039424986405a07359bbeb1416cf71f。承認済み対象変更、文書座標の2stableと実hit、時計後の補正可視性確認を含む。製品修正のsourceと区別する。
+- 最新の製品修正: 443f87322cdc989bc5e776bdf5e0bba2a931c278。文書だけの後続コミット、製品・計測器・採取HEADを区別する。
+- 最新の計測器修正: a96cfed131601d24be7e0c2367871a0668598190。承認済み対象変更、文書座標の2stableと実hit、時計後の補正可視性確認、および失敗時または明示診断時だけの描画・座標記録を含む。製品修正のsourceと区別する。
 - 状態: 製品実装、単体・統合試験、重点PWA確認を実施。標準completion全機能・全144性能条件、同条件の変更前後比較は未完了。保存測定位置の限定的な追加変更はユーザーが明示承認し、a861b39で計測器へ実装した。計画の完了判定、元作業ツリーへの反映はまだ行っていない。
 
 ## 実装した動作
@@ -142,3 +142,11 @@ shopping/range診断時の製品src/publicは8f8b0f1で、HEAD4423f18の後半�
 - 元作業ツリーは19cのまま、既存の未追跡資料を保護した。独立したクリーンな作業ツリーで実装した。
 - 既存ファイルのUTF-8/BOM/改行を確認して保存し、日本語代表行を再読込した。2d08eefの全体encoding検査は1,171テキスト、LF 1,167/CRLF 3/改行なし1、代表文字列「ユーザー登録」182件・「エラーが発生しました」74件、異常0。
 - 既存724ファイルの事前manifestと2d08eefを再読込比較し、BOM/改行種別/U+FFFDの異常0。疑問符数が変わった29ファイルについて、日本語を含む追加行6行はすべてTypeScriptのoptional/conditional演算子で、文字化けはなかった。対象724ファイル内の代表文字列は167/69件で、全1,171ファイルの182/74件とは対象範囲を区別する。最終反映前にも必要な再確認を行う。元作業ツリー反映・全性能受入・同条件前後比較は未完了。
+## 標準採取の中断・失敗と下端スクロールの追加確認
+
+- ec6b362の標準attempt1（run ID 2026-11-01T01-36-59-490Z-cba85cae-0db1-48b5-b78a-7c17574e0e33）は機能474通過/54スキップ後、shopping採取中の全機能report解析が測定へ重なった可能性を排除できず中断した。製品失敗や時間超過とは区別し、元raw・checkpointを保持した。以後の採取中監視はstdoutと小さい公式checkpointだけに限定し、report解析・hash照合は全採取終了後に行う。
+- 同sourceの独立attempt2（run ID 2026-11-01T02-17-58-647Z-907a45f9-896f-4d96-a85b-31ffd684abed）は機能473通過/1flaky/54スキップ、shopping16通過、range20通過、drag7通過/1失敗、transfer未実行で終了した。flakyは初回page.gotoのERR_NO_BUFFER_SPACEでUI前に失敗し、既存CIの機能retryで通過したもの。性能retryは0である。全144条件の完了として扱わない。
+- 失敗は500品目/native/grouping OFFの拒否hoverにおける新規3行のmount検出であり、D05拒否・正しい案内・offset・最終可視性・方向、既存行の再描画/再mountなしは通過した。probeの各2件は外側と内側のFiberが同一品目keyに対応し得るため、DOMの二重mountとは断定しない。243元ファイルのhashと未変更を外部outcomeに保全した。
+- a96cfedの明示診断1条件は11.011秒で通過したが、該当3行が開始時からmount済みであり、元の間欠失敗の解消証拠にはしない。10回すべての有効位置への入力がY約945〜953px（画面高1,000px）となり、nativeの下端帯で毎回20pxスクロールした。案内線は約994〜1,000px、最終スクロール位置から上限まで48pxあった。diagnosticOnly: true / acceptanceMeasurement: falseの独立記録として保持した。
+- この実数を受け443f873では、D05の補正案内専用callbackの整列をnearestからcenterへ変更した。通常の検索・フォーカス移動、対象ID/edge、入力点の75%式、gesture、fixture、時計、終了点、閾値、10回、描画局所性の期待は変更していない。関連82試験・型検査・lint・文字コード・formatは通過した。画面末尾の上限を含めた実際の配置、全8条件の局所性、transfer100、標準全条件と同条件before比較は引き続き実測待ちである。
+- 外部証拠はD:/esp-placement-after-evidence-20261101/standard-completion-ec6b362-attempt2-outcome.json、同raw-hashes.json、D:/esp-placement-feature-evidence-20261101/locality-context-diagnostic-a96cfed-500-native-off/diagnostic-outcome.jsonおよびgeometry-summary.jsonを参照する。既存runの成否・基準・rawを上書きしていない。
