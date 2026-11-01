@@ -1,12 +1,87 @@
 # 実行列の配置ルール統一・実装記録
 
-- 作業日: 2026-11-01（日本時間）
+- 作業日: 2026-11-01〜2026-11-02（日本時間）
 - 依頼プラン: D:/esp-placement-plan-20261101/docs/execution-placement-rules-remediation-plan-20261101.md
 - 変更前の製品source: 19c7541175b2a60076807dd17469127d67f8407d
 - 実装作業ツリー: D:/esp-placement-implementation-20261101
 - 最新の製品修正: 7b26f135b78d2c8de285a38d366c3be63f810ff7。文書だけの後続コミット、製品・計測器・採取HEADを区別する。
 - 最新の計測器修正: 7b26f135b78d2c8de285a38d366c3be63f810ff7。承認済み対象変更、文書座標の2stableと実hit、時計後の補正可視性確認、および失敗時または明示診断時だけの描画・座標記録を含む。製品修正のsourceと区別する。
-- 状態: 製品実装、単体・統合試験、重点PWA確認を実施。標準completion全機能・全144性能条件、同条件の変更前後比較は未完了。保存測定位置の限定的な追加変更はユーザーが明示承認し、a861b39で計測器へ実装した。計画の完了判定、元作業ツリーへの反映はまだ行っていない。
+- 状態: 製品実装・全必須試験を完了。同じURL・同じ計測器/fixtureの変更前後比較576指標と、増加422指標の個別レビューを行った。反映先はD:/event-shopping-planner-routeplanning-1.9.6.7。最終文書のコミットと、製品・計測器・採取HEADは区別する。
+
+## 最終検証結果（2026-11-02）
+
+本節が最新の結果である。後半の未完了表記・診断結果は当時の履歴として保持し、今回の正式runへ読み替えない。文書の最終更新によるコミットは採取sourceではなく、製品src/public・計測器・fixtureを変更しない。
+
+- 製品修正source: `7b26f135b78d2c8de285a38d366c3be63f810ff7`。最終採取checkout: `2d66ae7231c6db67e71a7601adac7bea55aee126`、clean。
+- 正式BEFORE checkout: `e5c2f6069acf5c561e7bc8095c4086c64bdf7c28`。製品src/publicの670ファイルは元`19c7541175b2a60076807dd17469127d67f8407d`とbyte一致し、checkout HEADを19cと偽装しない。旧PINの例外は適用していない。
+- BEFORE run: `2026-11-01T08-47-21-250Z-23f41745-8a45-4483-9cd0-f6479e4dd00d`。
+- AFTER run: `2026-11-01T13-26-29-449Z-b8d1687c-5b09-495c-a092-d39d7aebef1c`。2026-11-01 22:26〜2026-11-02 00:25（日本時間）に通常の`npm run test:browser:completion`全5群を実行しexit 0。再開後に測定child 0も確認した。
+- 両runのURLは`http://127.0.0.1:4182`、completion各10回、sampling policy/時間基準/品目数/地図・過去品目負荷/gesture/終了点/性能retry 0が一致する。
+- 公式25ファイルのinstrument aggregateは`2b63bdbcbcc75580aa7b2447f4c395d6e0eef46838d7111fe9eee73497533dd1`、18ファイルのfixture aggregateは`0c7e4de08d3b1fb40ee190e94c85a90cf5e1c4d75cee40d4788e1da76c23b8c6`。現diskも再計算一致した。
+
+| 確認                                                          | 最終結果                                                                                                            |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| 全Vitest                                                      | 3,816成功・88スキップ、280ファイル成功・1ファイルスキップ、144.81秒、exit 0                                         |
+| 型・lint・architecture・全体format・encoding・release-a build | 採取source 2d66で通過。PWA/cleanup forced-off、served/disk capability一致                                           |
+| 正式機能試験                                                  | 528登録、473成功・1flaky・54スキップ。既存CI retry 1で通過した1件を初回成功にしない                                 |
+| 正式性能試験                                                  | shopping 16・range 20・drag 8・transfer 100、全144条件成功、retry/skip/notrun/global error 0                        |
+| raw                                                           | 530主指標＋46保存補助、576系列すべて各10回。欠測・summary再計算不一致・基準超過0                                    |
+| 描画・保存                                                    | drag 52局所性区間と8保存配列、transferの全内容/順序/原子性/実frame検証を通過                                        |
+| 独立監査                                                      | 上記coverage・raw・metadata・負荷・保存・描画を別担当が再確認。AFTER元6,137ファイル＋外部process 3ファイルをSHA保全 |
+
+群内最大値を下表に示す。中央値と95%点の最大は異なる条件の場合があり、BEFOREの群内最大との比で改善率を作らない。保存完了時間は主指標と別に保持する。
+
+| 群       | 最大中央値 | 最大95%点 | 適用基準  |
+| -------- | ---------- | --------- | --------- |
+| shopping | 34.30ms    | 52.40ms   | 65/100ms  |
+| range    | 51.50ms    | 54.90ms   | 160/160ms |
+| drag     | 62.05ms    | 80.00ms   | 160/160ms |
+| transfer | 103.032ms  | 115.484ms | 160/160ms |
+
+### 前後比較と増加指標
+
+公式比較は576/576完備・欠測/非比較0・environment compatibility errors 0、`status: complete`、`absoluteStatus: passed`である。増加を機械的に検出した`deltaStatus: review-required`は元出力のまま保持し、別の個別レビュー記録で判断理由を付す。公式出力のSHAは`cc0f152c3b08b03235f384ef3ac0fd862fed9275b5db72f89817e0fb158e591b`である。
+
+| 群       | 中央値または95%点が増えた指標 | 中央値の最大増加 | 95%点の最大増加 |
+| -------- | ----------------------------- | ---------------- | --------------- |
+| shopping | 128                           | +3.30ms          | +16.30ms        |
+| range    | 63                            | +3.40ms          | +6.60ms         |
+| drag     | 46                            | +15.40ms         | +22.60ms        |
+| transfer | 185                           | +21.58ms         | +24.11ms        |
+
+- 全422増加行の前後raw各10・summary・参照先を照合し、処理別に個別レビューした。閾値内だけを理由に差を消さず、2026-10-28の特定ケースの受容を今回へ拡張していない。
+- shopping最大tail差は150品目/スマートフォン/地図ON/集中配置/back UIで36.10→52.40ms。中央値は34.45→34.10ms、after第9標本が52.40msだった。これだけでframeの揺れと原因を断定しない。
+- dragの4拒否指標はraw範囲が重ならず全10点が旧95%点を超えた。BEFOREで案内なし、AFTERでD05の正しいguide/所有scroll案内という必要な追加処理があり、増加をnoise扱いしない。
+- transferの最大中央値差は500品目/touch/折りたたみ/C→E frameの+21.58msで、DOM段階にも+19.65msの増加がある。撮影時点だけへ転嫁しない。500品目の保存補助にも多くで約6〜9msの実増加があり、保存補助を操作反応へ混ぜない。
+- 共通投影のcache、当日配置検証、D05案内、gesture lease/IO同期、候補raw slot replay、選択ownerをsourceと照合した。追加修正を必須とする大きな可避処理は現証拠で見つからなかったため、根拠のない最適化を追加しない。ただし各msの因果分離や統計的同等性を証明したわけではなく、増加を改善・解消またはユーザーが個別受容したとも記載しない。
+
+### 機能登録・再試行と確認限界
+
+BEFOREは515登録/453成功/62スキップ、AFTERは528登録/最終474通過（うち1flaky）/54スキップだった。階層込みの全テスト名比較で削除0、新規13（配置9・＋4）、既存の旧priority-after拒否8件がbeforeスキップからafter実行へ変わった。初回派生比較のdescribe階層省略による同名集計誤りは無効記録として保全し、正しい階層比較だけを使う。
+
+機能flaky 1件は`parent edit controls clear endpoints and allow a new chain: pc`のrestore準備中、設定backdrop clickが120秒でtimeoutした。保存PNGはAppが既定の未装飾HTMLで表示され、CSSの`.fixed/.inset-0/.hidden`が効かない状態と整合する。親編集の検証本体には未到達で、retry 1は4.553秒で通過した。単にselectorの揺れと決めつけない。失敗瞬間の通信/trace/CSSOMがなく根本原因は未特定である。
+
+index.html・global stylesheet入口・起動/recovery経路は19cと同一、ShoppingList.cssの追加7行はdrag所有属性の局所ruleで、全体CSS不適用を説明する変更ではない。buildは13:26:27UTC、run開始13:26:29UTC、当該初回は13:45:35UTCだった。正常回や144性能成功をCSS問題の解消証拠にせず、loader/timeout/再読込retryの変更は加えていない。
+
+全組合せの物理端末試験、全D10競合パターンの通常PWA操作、canvas画素からの全描線順の直接検証を実施したとは主張しない。T01〜T18の補助関数・保存hook・通常PWAの対応と適用範囲は後述の確認表で区別する。
+
+### 旧runと診断の保全
+
+- source 2d66の旧AFTER `2026-11-01T06-37-52-545Z-055f3909-9aa2-4294-a525-f08915c665a3` は全144成功だったがURL4181だった。BEFORE4182との公式比較はURL不一致の`incomplete`として保持した。rootの比較前提の確認不足を受け同じ4182で採り直し、metadataを書き換えていない。
+- same4182 attempt1 `2026-11-01T11-02-25-720Z-5b55096c-0c86-4710-8de2-7d56ebc65aef` は143成功/1失敗。transferの7つ目の新contextで初回起動待ちとなり、3主＋1保存系列が各6回、不足主12点/保存4点のまま保全した。機能でも別の初回起動待ちがretryで通過した。
+- 非受入起動診断はcold 1,050＋同context 100の計1,150回で停止再現なし、critical asset/SW/role/identityの通信失敗・pageerrorなし。preview metrics APIには404/abortと1回のERR_NO_BUFFER_SPACEがあり、その回も起動した。元2件の根因や解消とは扱わない。起動source同一性と、ネットワーク/ブラウザ側を含む証拠限界を外部メモへ記録した。
+- 今回正式AFTERは独立した全5群の一括成功であり、旧143成功＋別1成功、診断成功、PR2回、他sourceの成功prefixを合算していない。過去の中断/失敗/raw/当初基準/旧公式出力は不変である。
+
+### 証拠と文字コード
+
+- 正式AFTER監査: `D:/esp-placement-after-evidence-20261101/standard-completion-2d66ae7-origin4182-attempt2-audit/completion-outcome.json`。SHA `eeabb8c90636f27b709aa5ff5835c27ad50ca48407258e95a948c551dca9499c`。
+- 正式BEFORE監査: `D:/esp-placement-before-evidence-20261101/standard-completion-e5c2f60-attempt1-audit/completion-outcome.json`。
+- 公式比較/全増加行/個別レビュー: `D:/esp-placement-feature-evidence-20261101/comparison-2d66ae7-e5c2f60-origin4182-completion/`。
+- 全422レビューの照合結果: 上記folderの`relative-review-coverage-closure.json`（SHA `4d22e6d838a86cf893599489623b571d0e2143ed824c12ca04199f2512f79571`）。422一意・重複0・欠測0・未review0、各条件/指標/summary/差/raw順/参照SHAを元positive集合と突合した。公式比較の状態とrawは変更していない。
+- 独立監査/CSS所見: `D:/esp-placement-feature-evidence-20261101/canonical-after-attempt2-independent-audit-2d66ae7/`。
+- 現AFTER階層込み機能登録比較: `D:/esp-placement-feature-evidence-20261101/execution-placement-functional-registration-origin4182-attempt2-hierarchy.json`。
+- 保存後のencoding再監査は既存724ファイルでBOM/改行種別/U+FFFD異常0、疑問符差分32ファイル、日本語を含む追加6行の疑問符は全て正当なTypeScript演算子だった。不自然な連続疑問符文字列の追加0。元範囲の代表文字列「ユーザー登録」167件・「エラーが発生しました」69件を保持した。全体検査と最終文書保存後の再読込も行う。
+- 元作業ツリーの反映前確認はtracked clean/HEAD 19c、既存未追跡1,444ファイルと反映対象の衝突0。元未追跡資料を削除・上書きせず、反映後にpath/size/mtimeとdocsのSHAを照合する。
 
 ## 実装した動作
 
@@ -32,11 +107,11 @@
 - 本の上下は本、見出しの上下はスペースを対象とする。本順は元のrawスロットへ適用し、先頭本を動かしても別訪問へ基本位置を譲らない。
 - 実行列の未指定hitは、実際の行/見出し/内部余白と確認済み列空白を区別する。列空白は正規の列末尾、候補列の未指定hitは従来のENDとし、候補の本単位ソートを保つ。
 - 案内線の位置基準は専用属性と低優先度CSSで保持する。Reactの遅延class更新で基準を失わず、解除時は以前の属性・別所有者を保つ。この位置基準の保持ではポインターごとのstyle/矩形読取を増やさない。
-- ShoppingMoveReceiptで受付と保存完了を分ける。committed時だけ、その後の選択・範囲・日付/モード変更を照合して解除する。blocked/no-op/aborted/cancelledでは選択・範囲・ソートを消さない。
+- ShoppingMoveReceiptで受付と保存完了を分ける。committed時だけ、その後の選択・範囲・日付/モード変更を照合して解除する。blocked/aborted/cancelledとボタンのno-opは選択・範囲・ソートを保護する。有効な同順D&Dのreceipt.noopはチェック選択・順序・ソートを保ち、範囲表示だけを終了する。
 - 初めから存在する日付統合確認と、受付後に新たに変わった配置を区別する。ユーザーの取消はcancelled、確認token期限切れは中立な理由、実際の配置変更はabortedとし、誤った配置変更バナーを出さない。
 - I/O失敗はreceiptを未確定のまま保留し、再試行成功はcommitted、破棄はcancelledとする。終端エラーの固有理由、実際のD10中止、世代失効を維持する。
 
-## 最新の確認結果
+## 実装途中の確認記録（当時のsourceを保持）
 
 補助関数・jsdom/保存hook・通常PWAを区別する。重点PWAは通常起動、公開UIによるバックアップ復元、公開画面操作、実IndexedDB確認を使う。合成D&D/touchイベントを物理端末の実機確認と読み替えない。
 
@@ -109,7 +184,7 @@ shopping/range診断時の製品src/publicは8f8b0f1で、HEAD4423f18の後半�
 | T03/T04  | 明示本順、別訪問への全冊移動、分断rawスロットを検証。通常PWA本/スペース4件通過。                                                                                                                                                 |
 | T05/T06  | 既存末尾・外部選択・候補明示対象を検証。個別PWAで一括合流、フィルター、折りたたみ、異所属拒否・選択保持を確認。                                                                                                                  |
 | T07      | raw所属共有セル/同スペース/競合、確認待ちの編集接続を検証。PWA所属投影4件を確認。新D&D確認待ちの全PWA組合せは未実施。                                                                                                            |
-| T08      | 有効末尾/次グループ直前、無効境界、本/スペース上下、no-opの選択/範囲/ソート保持を検証。列空白PWA24件と関連既存並べ替えを確認。                                                                                                   |
+| T08      | 有効末尾/次グループ直前、無効境界、本/スペース上下、ボタンno-opの選択/範囲/ソート保持と合法同順D&Dのチェック保持/範囲終了を検証。列空白PWA24件と関連既存並べ替えを確認。                                                         |
 | T09/T10  | 画面外/保持行、最終hit、取消/日付/モード/世代/lock解放を検証。重点案内4件、既存PWAのleave/touchcancel/held cleanupを確認。                                                                                                       |
 | T11〜T13 | planner/依存/保存hook/commandの部分中止・最新数量・後続選択・取消/期限切れ・非再試行を検証。既存PWAの保存失敗・日付統合確認も個別runで通過。新D10の全競合組合せを通常PWAで実施したとは記録しない。                               |
 | T14/T15  | 優先度3種、混在選択、入力保持、文脈失効を検証。PC/スマートフォンPWA4件で同じ生成IDによる公開再試行・1件保存・最終入力・既存本不変を確認。                                                                                        |
