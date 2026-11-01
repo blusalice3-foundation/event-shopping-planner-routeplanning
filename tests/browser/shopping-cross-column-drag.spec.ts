@@ -24,6 +24,8 @@ const dropSaveTargetMapping = {
   previous: { id: "priority", edge: "after", priorityLevel: "priority" },
   current: { id: "a1", edge: "before", priorityLevel: "none" },
 } as const;
+const localityDiagnosticEnabled =
+  process.env.ESP_DRAG_LOCALITY_DIAGNOSTIC === "1";
 type Input = "native" | "touch";
 const makeItem = (
   id: string,
@@ -3028,6 +3030,87 @@ const summary = (values: number[]) => ({
   samples: values,
   ...summarizePerformanceSamples(values),
 });
+async function observeLocalityRows(page: Page, probeKeys: string[]) {
+  return page.evaluate((keys) => {
+    const describe = (element: HTMLElement) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        tag: element.tagName,
+        connected: element.isConnected,
+        itemId: element.dataset.itemId ?? null,
+        rowKey: element.dataset.rowKey ?? null,
+        viewportRowKey: element.dataset.viewportRowKey ?? null,
+        active: element.dataset.viewportActive ?? null,
+        retain: element.dataset.viewportRetain ?? null,
+        column:
+          element.closest<HTMLElement>("[data-shopping-drag-column]")?.dataset
+            .shoppingDragColumn ?? null,
+        rect: {
+          top: rect.top,
+          bottom: rect.bottom,
+          left: rect.left,
+          right: rect.right,
+          width: rect.width,
+          height: rect.height,
+        },
+      };
+    };
+    return {
+      phase: "after-known-failure-or-explicit-locality-diagnostic",
+      addedInputs: 0,
+      addedScrolls: 0,
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        scrollX: window.scrollX,
+        scrollY: window.scrollY,
+        scrollHeight: document.scrollingElement?.scrollHeight ?? null,
+      },
+      renderers: Array.from(
+        document.querySelectorAll<HTMLElement>("[data-list-renderer]"),
+      ).map((root) => ({
+        ...describe(root),
+        engine: root.dataset.listRenderer,
+        strategy: root.dataset.listRendererStrategy,
+        mountedItems: root.querySelectorAll(
+          "[data-item-id]:not([data-space-group-key])",
+        ).length,
+      })),
+      rows: keys.map((key) => {
+        const itemId = key.startsWith("item:") ? key.slice(5) : null;
+        const rowKey =
+          itemId === null
+            ? key.slice("group:".length)
+            : `item:${JSON.stringify(itemId)}`;
+        const selector = [
+          `[data-row-key=${JSON.stringify(rowKey)}]`,
+          `[data-viewport-row-key=${JSON.stringify(rowKey)}]`,
+          ...(itemId === null
+            ? []
+            : [
+                `[data-item-id=${JSON.stringify(itemId)}]:not([data-space-group-key])`,
+              ]),
+        ].join(", ");
+        return {
+          probeKey: key,
+          elements: Array.from(document.querySelectorAll<HTMLElement>(selector))
+            .filter((node) => !node.closest(".esp-shopping-touch-clone"))
+            .map((node) => {
+              const retainedAncestors = [];
+              for (
+                let ancestor = node.parentElement;
+                ancestor;
+                ancestor = ancestor.parentElement
+              )
+                if (ancestor.hasAttribute("data-viewport-active"))
+                  retainedAncestors.push(describe(ancestor));
+              return { ...describe(node), retainedAncestors };
+            }),
+        };
+      }),
+    };
+  }, probeKeys);
+}
 async function observeRejectedGuideVisibility(page: Page) {
   return page.evaluate(async () => {
     const snapshot = (frame: number) => {
@@ -3606,6 +3689,10 @@ for (const count of [150, 500])
             from: string;
             to: string;
           }> = [];
+          const positiveControls: Array<{
+            sample: number;
+            response: Awaited<ReturnType<typeof hover>>;
+          }> = [];
           let previousBoundary = initialHover.guides[0]?.edge;
           for (let i = 0; i < performanceMeasurementSampleCount; i++) {
             let rejectedPositiveControl: Awaited<
@@ -3620,6 +3707,7 @@ for (const count of [150, 500])
                 false,
               );
               rejectedPositiveControl = accepted;
+              positiveControls.push({ sample: i, response: accepted });
               expect(accepted.status).toBe("accepted");
               expect(
                 accepted.guides.some((line) => line.kind === "insert"),
@@ -3884,15 +3972,52 @@ for (const count of [150, 500])
               performanceMeasurementSampleCount,
             );
           const render = await renderCounts(page);
+          const mountKeys = Object.keys(render.mounts);
+          const remountedExisting = mountKeys.filter((key) =>
+            beforeRender.mounted.includes(key),
+          );
+          const unexpectedMounts =
+            scenario.name !== "auto-scroll" && mountKeys.length > 0;
+          const localityFailure =
+            remountedExisting.length > 0 || unexpectedMounts;
+          if (
+            localityFailure ||
+            (localityDiagnosticEnabled && scenario.name === "rejected")
+          )
+            await attach(testInfo, "drag-locality-context", {
+              stage: localityFailure
+                ? "known-locality-failure"
+                : "explicit-locality-diagnostic",
+              diagnosticOnly: true,
+              acceptanceMeasurement: false,
+              count,
+              input,
+              grouped,
+              scenario,
+              rendererBefore,
+              fixtureControl,
+              fixturePersistenceBefore,
+              beforeRender,
+              render,
+              initialHover,
+              positiveControls,
+              guideSamples,
+              remountedExisting,
+              unexpectedMountKeys: unexpectedMounts ? mountKeys : [],
+              afterObservation: await observeLocalityRows(page, [
+                ...new Set([
+                  ...mountKeys,
+                  "item:priority",
+                  "item:a1",
+                  "item:a2",
+                ]),
+              ]),
+            });
           expect(
             render.known.filter((key) => key.startsWith("item:")).length,
           ).toBeGreaterThan(0);
           expect(render.counts).toEqual({});
-          expect(
-            Object.keys(render.mounts).filter((key) =>
-              beforeRender.mounted.includes(key),
-            ),
-          ).toEqual([]);
+          expect(remountedExisting).toEqual([]);
           if (scenario.name !== "auto-scroll")
             expect(render.mounts, scenario.name).toEqual({});
           if (grouped)
@@ -4115,6 +4240,9 @@ for (const count of [150, 500])
         records.drop = summary(drops);
         await attach(testInfo, "shopping-drag-response", {
           ...shoppingEvidenceIdentity("drag"),
+          ...(localityDiagnosticEnabled
+            ? { diagnosticOnly: true, acceptanceMeasurement: false }
+            : {}),
           errors,
           environment: await shoppingBrowserEnvironment(page, testInfo.retry),
           build: "npm run build:app",
