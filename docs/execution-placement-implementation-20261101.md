@@ -4,7 +4,7 @@
 - 依頼プラン: D:/esp-placement-plan-20261101/docs/execution-placement-rules-remediation-plan-20261101.md
 - 変更前の製品source: 19c7541175b2a60076807dd17469127d67f8407d
 - 実装作業ツリー: D:/esp-placement-implementation-20261101
-- 最新の製品修正: 443f87322cdc989bc5e776bdf5e0bba2a931c278。文書だけの後続コミット、製品・計測器・採取HEADを区別する。
+- 最新の製品修正: 7534b7936e6c826883c8e18db3a2bc6a6977bf35。文書だけの後続コミット、製品・計測器・採取HEADを区別する。
 - 最新の計測器修正: a96cfed131601d24be7e0c2367871a0668598190。承認済み対象変更、文書座標の2stableと実hit、時計後の補正可視性確認、および失敗時または明示診断時だけの描画・座標記録を含む。製品修正のsourceと区別する。
 - 状態: 製品実装、単体・統合試験、重点PWA確認を実施。標準completion全機能・全144性能条件、同条件の変更前後比較は未完了。保存測定位置の限定的な追加変更はユーザーが明示承認し、a861b39で計測器へ実装した。計画の完了判定、元作業ツリーへの反映はまだ行っていない。
 
@@ -151,3 +151,12 @@ shopping/range診断時の製品src/publicは8f8b0f1で、HEAD4423f18の後半�
 - a96cfedの明示診断1条件は11.011秒で通過したが、該当3行が開始時からmount済みであり、元の間欠失敗の解消証拠にはしない。10回すべての有効位置への入力がY約945〜953px（画面高1,000px）となり、nativeの下端帯で毎回20pxスクロールした。案内線は約994〜1,000px、最終スクロール位置から上限まで48pxあった。diagnosticOnly: true / acceptanceMeasurement: falseの独立記録として保持した。
 - この実数を受け443f873では、D05の補正案内専用callbackの整列をnearestからcenterへ変更した。通常の検索・フォーカス移動、対象ID/edge、入力点の75%式、gesture、fixture、時計、終了点、閾値、10回、描画局所性の期待は変更していない。関連82試験・型検査・lint・文字コード・formatは通過した。画面末尾の上限を含めた実際の配置、全8条件の局所性、transfer100、標準全条件と同条件before比較は引き続き実測待ちである。
 - 外部証拠はD:/esp-placement-after-evidence-20261101/standard-completion-ec6b362-attempt2-outcome.json、同raw-hashes.json、D:/esp-placement-feature-evidence-20261101/locality-context-diagnostic-a96cfed-500-native-off/diagnostic-outcome.jsonおよびgeometry-summary.jsonを参照する。既存runの成否・基準・rawを上書きしていない。
+
+## 表示通知の反映タイミングの追加修正
+
+- 製品443f873の候補c4a7a34では、全単体3,784通過/88スキップ、全静的・文字コード・書式・release-aビルド・配信cap一致を確認した。通常フラグのdrag8診断は全件通過、60主指標各10回・時間超過0、52区間の描画/IO局所性と保存の独立期待も通過した。最大中央値64.40ms/95%点81.70msであり、全144条件の完了証拠とは区別する。
+- 直後の独立した明示座標診断500/native/OFFは新規4行のmount検証で失敗した。初回有効位置への入力はY904.84375で8pxスクロールして上限58404に達し、後続9回はY896.84375でスクロール0だった。center単独で間欠問題を解消したとは扱わない。初期reset時は4行ともmounted=false/known=trueだが、その時の座標・active・接続は未記録のため8pxを行高の変化と断定しない。
+- 診断フラグの追加DOM読取は10標本とmount snapshotの取得後だけであり、その後段読取が失敗済みsnapshotへmountを追加したとは説明できない。フラグ追加前のec6の失敗も独立した記録として保持する。
+- ViewportContentの既存IO callbackは表示範囲へ入った行のsetActivatedを非同期enqueueするため、補正スクロール後の通知から実commitが後続操作へ遅れる経路があった。7534b793ではgesture lease中に届いたIO entriesだけを既存flushSyncで1batch同期反映する。通常scrollは従来enqueue、未交差行の強制描画・全registryの座標走査・追加RAF・consume時刻・入力/測定条件の変更はない。document共通registryのため、同時に存在する未lease列のentriesも同batchのcommit timingに含まれ得る。
+- lease中の通知直後DOM期待は旧c4で失敗し、修正後は通過した。leaseなしの従来非同期対照、未交差行の非表示、lease解放後の復帰も確認し、関連6suite250件・型・lint・encoding・formatを通過した。IO通知自体の配送遅れまでは保証しない。実ブラウザーの間欠局所性、全性能群と前後比較は引き続き採取待ちであり、transferは開始していない。
+- 外部証拠はD:/esp-placement-feature-evidence-20261101/drag-completion-diagnostic-c4a7a34-center-attempt1およびlocality-context-diagnostic-c4a7a34-center-500-native-off。双方ともdiagnosticOnly: true / acceptanceMeasurement: falseで元rawとhashを保持し、部分成功を完了へ合算しない。比較用ツリー2349a585ではa96の計測器25/fixture18の全file/aggregate hash一致と製品src/public対19c差分0を確認した。新beforeの採取は全after成功後に行う。
