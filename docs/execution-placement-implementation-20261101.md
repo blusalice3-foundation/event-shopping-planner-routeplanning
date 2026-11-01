@@ -4,8 +4,8 @@
 - 依頼プラン: D:/esp-placement-plan-20261101/docs/execution-placement-rules-remediation-plan-20261101.md
 - 変更前の製品source: 19c7541175b2a60076807dd17469127d67f8407d
 - 実装作業ツリー: D:/esp-placement-implementation-20261101
-- 最新の製品修正: 71bd5f54a49ca14feb1f557abcda2d4eca7d5a0b。文書だけの後続コミット、製品・計測器・採取HEADを区別する。
-- 最新の計測器修正: a96cfed131601d24be7e0c2367871a0668598190。承認済み対象変更、文書座標の2stableと実hit、時計後の補正可視性確認、および失敗時または明示診断時だけの描画・座標記録を含む。製品修正のsourceと区別する。
+- 最新の製品修正: 7b26f135b78d2c8de285a38d366c3be63f810ff7。文書だけの後続コミット、製品・計測器・採取HEADを区別する。
+- 最新の計測器修正: 7b26f135b78d2c8de285a38d366c3be63f810ff7。承認済み対象変更、文書座標の2stableと実hit、時計後の補正可視性確認、および失敗時または明示診断時だけの描画・座標記録を含む。製品修正のsourceと区別する。
 - 状態: 製品実装、単体・統合試験、重点PWA確認を実施。標準completion全機能・全144性能条件、同条件の変更前後比較は未完了。保存測定位置の限定的な追加変更はユーザーが明示承認し、a861b39で計測器へ実装した。計画の完了判定、元作業ツリーへの反映はまだ行っていない。
 
 ## 実装した動作
@@ -179,3 +179,13 @@ shopping/range診断時の製品src/publicは8f8b0f1で、HEAD4423f18の後半�
 - 71bd5f54ではtarget=candidateかつplacementBaselineのeventList再適用だけを、最新の当日candidate∪moving subsequenceへ既存effective-order replayを適用し、その結果を最新rawの同じ対象枠へ充填する処理にした。既存sameDay・最新execute所属を使い、長さ・一意性・ID集合を検証する。古いsnapshotの内容/全順序は採用せず、他日・残存execute枠、無関係な最新insert/delete/order/content/列所属を保持する。実行列のreplay、配置依存guard、receiptは変更していない。
 - 旧ead/131eの実行→候補と候補内のraw枠2回帰は失敗し、修正後は通過した。追加2件で最新の無関係変更も確認し、関連7suite313件と型・lint・architecture・encoding・formatを通過した。root/saveの独立レビューに具体的な問題はなかった。実装2fileはUTF-8/BOMなし/LF/U+FFFDなしを維持した。計測器・fixture・gesture・時計・終了点・閾値・回数・独立期待は変更していない。全検査後の元3条件再診断、transfer100、標準全群・同条件before比較は引き続き未完了である。
 - 部分診断の外部証拠はD:/esp-placement-feature-evidence-20261101/transfer-failed-three-diagnostic-ead931e-attempt1。元の成否・欠測・元rawを保全し、修正後の別runでのみ再確認する。
+
+## 有効な同順D&D終了時の範囲表示と既存試験の整合
+
+- 製品71bd5f54の候補4f4d0e5は全単体3,815通過/88スキップ、全静的・文字コード・書式・release-aビルド・配信cap一致を確認した。元失敗3条件の独立再診断は全件通過、7主/2保存が各10回、逆raw配置枠と選択postcondition・旧warmup位置・実frameを通過した。この部分成功を全100条件へ流用していない。
+- 同候補のtransfer全100診断は96通過/4失敗、skip/notrun/retry/globalはいずれも0、31分32.354秒で完走し子process0だった。100keysを照合し、198主のうち192が各10回・6欠測、46保存補助はすべて各10回だった。収集238系列の中央値/95%点をrawから再計算して一致し、主指標の基準超過は0、最大中央値98.75ms・最大95%点112.24msだった。4欠測caseが残るため公式verifierはFAILとして保持した。5,658元ファイルのSHAを保全し、96成功を全100/144成功へ変更していない。
+- 失敗はterminal native/touch noop response/frameの4条件だった。これはselftargetではなく、選択e0/e1/e2を隣接する非移動e3の直前へ戻す合法な同順序dropである。元順・3checked・guide/clone消失は成立したが、range endpointsが5個残り、元の終了条件0個を満たさず15秒で失敗した。bodylock/sourceInteractiveは失敗記録に無くunknownとし、資源解放不良とは断定していない。
+- 4423f18では、計画6.4.2の保存前中止の範囲保全と6.4.7のボタン無操作保護を合法な同順D&D完了にも広げて解釈し、held touch機能3件をafterのみ範囲保持へ変更していた。同じ操作に対し元の性能終了条件0個と矛盾し、range保持を要求するユーザー明示仕様も確認されなかったため、この解釈を訂正した。チェック選択を保持しrange表示だけ終了する元19cの正常動作へそろえ、4423の過去変更・rawは保持する。
+- 7b26f135ではhandleMoveItemの有効D&D receipt.noop分岐だけclearRangeSelectionして終了する。checkbox/Set identity・順序・sort・data・保存・owner・非同期completionは変更しない。blocked/no result/private自己hover/ボタンNoOpは従来の保護を保つ。旧4f実hookは合法e3-beforeでrange残留の負controlが失敗し、修正後はrange null/3checked/sortとdata不変を通過した。合法同順単体3件のrange期待だけを合わせ、関連8suite315件と全静的検査・独立reviewを通過した。
+- held touch機能3layoutは両phaseとも元のrange0へ戻し、4423で強化した全5品目のチェック一致・CDP入力・clone消失時opacity/操作可能性・保存順は維持する。性能loop・gesture・fixture・時計・終了点・基準・回数・terminal期待には差分がない。whole specが公式hash対象のため、25instrument aggregateは2b63bdbcbcc75580aa7b2447f4c395d6e0eef46838d7111fe9eee73497533dd1、18fixture aggregateは0c7e4de08d3b1fb40ee190e94c85a90cf5e1c4d75cee40d4788e1da76c23b8c6へ変わる。同じspec/fixture文書を比較用へexact同期し、元製品src/public19c不変を再確認してから新しい前後採取に用いる。
+- 外部証拠はD:/esp-placement-feature-evidence-20261101/transfer-failed-three-diagnostic-4f4d0e5-attempt1、transfer-completion-diagnostic-4f4d0e5-attempt1、valid-dnd-noop-range-4f4d0e5。全検査後、held機能3件とterminal noop4件を独立診断し、その後に新sourceの通常全5群・144条件を採取する。旧96成功と新4成功を合算しない。前後比較・元作業ツリー反映を含む完了判定は引き続き未実施である。
