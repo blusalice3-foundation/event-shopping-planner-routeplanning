@@ -4,7 +4,7 @@
 - 依頼プラン: D:/esp-placement-plan-20261101/docs/execution-placement-rules-remediation-plan-20261101.md
 - 変更前の製品source: 19c7541175b2a60076807dd17469127d67f8407d
 - 実装作業ツリー: D:/esp-placement-implementation-20261101
-- 最新の製品修正: 9d0351e5e7bd5bceec26d2b9fb6a1faaabdf2767。文書だけの後続コミット、製品・計測器・採取HEADを区別する。
+- 最新の製品修正: 2d08eefbcc2f87934c1149b72295385c32b6cab4。文書だけの後続コミット、製品・計測器・採取HEADを区別する。
 - 最新の計測器修正: 382a7fe67039424986405a07359bbeb1416cf71f。承認済み対象変更、文書座標の2stableと実hit、時計後の補正可視性確認を含む。製品修正のsourceと区別する。
 - 状態: 製品実装、単体・統合試験、重点PWA確認を実施。標準completion全機能・全144性能条件、同条件の変更前後比較は未完了。保存測定位置の限定的な追加変更はユーザーが明示承認し、a861b39で計測器へ実装した。計画の完了判定、元作業ツリーへの反映はまだ行っていない。
 
@@ -42,8 +42,8 @@
 
 | 確認                                 | 結果・source・限界                                                                                                                                                            |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 全Vitest                             | 9d0351e、3,772件通過・88件スキップ。280ファイル通過・1ファイルスキップ、87.30秒、exit 0。                                                                                     |
-| 型・lint・依存構造・文字コード・書式 | 9d0351eですべて通過。文字コード1,171テキストはUTF-8/BOMなし、置換文字・文字化け・不自然な疑問符なし。                                                                         |
+| 全Vitest                             | 2d08eef、3,784件通過・88件スキップ。280ファイル通過・1ファイルスキップ、85.22秒、exit 0。                                                                                     |
+| 型・lint・依存構造・文字コード・書式 | 2d08eefですべて通過。文字コード1,171テキストはUTF-8/BOMなし、置換文字・文字化け・不自然な疑問符なし。                                                                         |
 | 保存境界の重点確認                   | 4cb9926、関連5 suites 209件通過。取消/期限切れ、I/O再試行/破棄、部分中止、後続選択、最新内容保持を含む。                                                                      |
 | 最新のブラウザー重点55件             | 4423f18、55通過・スキップ0・retry 0。held cleanup 3件、observer 39件、配置9件、＋4件。observerは計測器DOM/helperの試験で、全55件を通常PWAフローとは記載しない。               |
 | 列空白・候補・混在拒否               | 後述の個別診断で列空白24件、候補ソート6件、実際の混在拒否4件の選択保持・raw/保存0・reloadを確認。別sourceの部分結果を単一全体runへ集計しない。                                |
@@ -84,7 +84,18 @@ shopping/range診断時の製品src/publicは8f8b0f1で、HEAD4423f18の後半�
 - 可視時の重複要求は旧869で2回期待/実4回の負対照2失敗を確認した。修正後は関連132件と全Vitest3,772件を通過した。これは要求回数と機能の確認であり、製品の速度改善・全性能合格を未測定で主張しない。
 - 382a7feの準備では同frameのwindow scrollを加えた文書座標を2frame比較し、layout/mount移動とwindowだけの移動を区別する。最新viewport点が同owner/card/publicslotに実hitすることを確認し、既存a1-afterのa2までのspanを許容する。遮蔽/画面外は同IDの現在行へ表示し直す。上限60RAF・2stable・元point式・元event1回・時計を維持し、中間touchmoveやintervalの手動停止を追加しない。
 - native等の生response（ms/status/guide/scroll）は書き換えない。新D05の最終案内は時計後の別correctiveVisibility観測（最大60RAF、読取だけ）でexact identity/offset/可視性と必要方向のscrollを検証する。元endpointで既に可視なら不要なscroll増加を要求しない。主指標数・終了点・保存/原子性・locality基準を維持する。
-- 外部actual-callback検証は準備14件・時計後観測4件を通過した。旧bb7でactive-scroll/headerの負対照2失敗を保全している。現在の製品9d0351eと計測器382a7feでのPWA8件/drag8件の再採取、標準全5群、変更前後比較はこれからで、補助検証をその代用にしない。
+- 外部actual-callback検証は準備14件・時計後観測4件を通過した。旧bb7でactive-scroll/headerの負対照2失敗を保全している。現在の製品2d08eefと計測器382a7feでのPWA8件/drag8件の再採取、標準全5群、変更前後比較はこれからで、補助検証をその代用にしない。
+
+### 遅延スクロールの取消と既表示行の保持
+
+- 案内発行直後の保留RAF前に終了/取消する追加回帰で、native/touch2件とも、案内・clone・body lock解放と保存0・pin解放は成立していたが、80ms進行後にexact priority rowへのscrollIntoViewが1回走る失敗を再現した。
+- f354794は補正reveal専有のAbortControllerを使い、終了/取消/leave/所有list登録解除、新しいreveal、accepted hoverで古い補正要求だけを取り消す。既存controllerのUI一時ScrollRequestにoptional signalを渡し、通常/retained/virtualの消費側で発行前/最終scroll前の確認と保留RAF取消・ID一致consume・listener解放を行う。普通navigationや新しい要求を古いabortで消さない3controlを含む関連164件が通過した。保存schema/workerは変更せず、ViewportContentのpin解除2RAFも維持する。
+- source676e4c2のdrag診断はON4通過/OFF4失敗で、最後のrejected場面の更新countsは0だったが、開始時mountedにも存在した12keyの再mountで元locality条件に失敗した。前6場面は通過し、rejectedの後続mount全体/IOdelta/drop-saveは未到達だった。28利用可能主指標は各10回・閾値超過0、32指標欠測でverifierは群失敗を保全した。利用可能分の最大中央値59.10ms/95%点74.60msは部分診断であり、訂正sidecarと元値を保持して全群合格へ使わない。
+- このprobeは初回hoverと2RAF後のcurrent React rootからmountedを採り、以後10回の正対照priority-after・a1-after・表示準備・時計後可視性観測までを数える。knownは履歴だがmountedは現在のfiberであり、今回の12keyを単なるknown履歴とは扱わない。個別のunmount時系列は元rawに無いため、全12件の経過を再現済みとは記載しない。
+- 2d08eefは既存ViewportContent registryに最大2list-rootのgesture leaseを追加した。開始時に実activeな行と、その後visible/reveal等で実際にactivateした親group/子itemだけを操作中保持する。未表示行を強制activateせず、pointerごとの全subscriber走査や大きいindexを追加しない。開始/解除時のregistry走査と通常visibility更新の小さいflagで管理する。
+- accepted hover/leaveで案内要求を取り消しても、行保持はgesture寿命まで続ける。clear/drop/cancel/source登録解除で全leaseを、target登録解除ではそのrootだけを解除し、focus/dialog/data-retain/requestedKeys/他leaseを再評価して通常の退避へ戻す。temporary pin解除2RAFとAbortSignalは別所有のまま保つ。
+- 旧f354で既表示a2が最初の画面外IOで消えるnative/touch2失敗を確認し、修正後は同じcard参照・新訪問両列保持・未表示inactive・終了解除を検証した。Workspace4件とregistry3件の計7新回帰、関連6群248件を通過し、取消の2回帰も再確認した。独立read-onlyレビューでも具体的な寿命の欠陥は見つからなかった。
+- 最新製品2d08eefは全Vitest3,784件/88スキップ、型・lint・architecture（361製品ファイル/1,804辺/例外0）・encoding・書式を通過した。実PWAのlocality/性能はこれから再採取する。元条件や計測器のnomount期待を緩めて成功を作らない。
 
 追加レビューでは、無関係な別ホールの最後の品目の削除による不要な中止（499c9e2）、単独グループを元の有効境界へ戻すpreview/commandの不一致（e91675b）、既存グループの位置判定で実行中品目の有無へ過剰依存する問題（79241f9）も修正した。新規グループは現在の挿入境界、既存の位置指定は設定順上の関係、純粋合流・本順は実際の訪問構成を検証する。新しい所属競合や関係する設定順変更の中止は維持する。
 
@@ -129,5 +140,5 @@ shopping/range診断時の製品src/publicは8f8b0f1で、HEAD4423f18の後半�
 - 元の証拠索引とsource別の補遺は、参照raw/ログのSHA不変を確認して別ファイルに保存した。元索引を新しい成功へ上書きしない。
 - shopping診断: shopping-completion-diagnostic-4423f18-attempt1、run ID placement-shopping-diagnostic-20261101-4423f18-attempt1。range診断: range-completion-diagnostic-4423f18-attempt1、run ID placement-range-diagnostic-20261101-4423f18-attempt1。どちらも外側の分類はdiagnosticOnly: true / acceptanceMeasurement: false。
 - 元作業ツリーは19cのまま、既存の未追跡資料を保護した。独立したクリーンな作業ツリーで実装した。
-- 既存ファイルのUTF-8/BOM/改行を確認して保存し、日本語代表行を再読込した。4cb9926の全体encoding検査は1,171テキスト、LF 1,167/CRLF 3/改行なし1、代表文字列「ユーザー登録」182件・「エラーが発生しました」74件、異常0。
-- 既存724ファイルの事前manifestと9d0351eを再読込比較し、BOM/改行種別/U+FFFDの異常0。疑問符数が変わった25ファイルについて、日本語を含む追加行6行はすべてTypeScriptのoptional/conditional演算子で、文字化けはなかった。対象724ファイル内の代表文字列は167/69件で、全1,171ファイルの182/74件とは対象範囲を区別する。最終反映前にも必要な再確認を行う。元作業ツリー反映・全性能受入・同条件前後比較は未完了。
+- 既存ファイルのUTF-8/BOM/改行を確認して保存し、日本語代表行を再読込した。2d08eefの全体encoding検査は1,171テキスト、LF 1,167/CRLF 3/改行なし1、代表文字列「ユーザー登録」182件・「エラーが発生しました」74件、異常0。
+- 既存724ファイルの事前manifestと2d08eefを再読込比較し、BOM/改行種別/U+FFFDの異常0。疑問符数が変わった29ファイルについて、日本語を含む追加行6行はすべてTypeScriptのoptional/conditional演算子で、文字化けはなかった。対象724ファイル内の代表文字列は167/69件で、全1,171ファイルの182/74件とは対象範囲を区別する。最終反映前にも必要な再確認を行う。元作業ツリー反映・全性能受入・同条件前後比較は未完了。
