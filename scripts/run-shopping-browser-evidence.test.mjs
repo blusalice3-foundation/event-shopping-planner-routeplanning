@@ -700,25 +700,98 @@ test("Windows lowercase profile resolves once, canonicalizes only child env and 
     assert.equal(call.env.esp_performance_profile, undefined);
   }
 });
-test("CI and explicit package scripts choose PR2 or completion10 without changing the normal group chain", async () => {
+test("ordinary PR and main CI retain the functional selection without performance acceptance", async () => {
   const pkg = JSON.parse(
     await readFile(path.join(repository, "package.json"), "utf8"),
   );
-  for (const profile of ["pr", "completion"])
-    assert.equal(
-      pkg.scripts[`test:browser:${profile}`],
-      `npm run build:release-a && node scripts/run-shopping-browser-evidence.mjs --phase after --profile ${profile}`,
-    );
+  const functional = groupInvocation({
+    cwd: repository,
+    group: "functional",
+    script: null,
+    groupRoot: path.join(repository, "artifacts/playwright"),
+    env: {},
+    phase: "after",
+    runId: "functional-selection-contract",
+  });
+  const exclusion =
+    functional.args[functional.args.indexOf("--grep-invert") + 1];
+  assert.equal(
+    pkg.scripts["test:browser:functional"],
+    'npm run build:release-a && playwright test --grep-invert "' +
+      exclusion +
+      '"',
+  );
+  assert.equal(
+    pkg.scripts["test:browser:pr"],
+    pkg.scripts["test:browser:functional"],
+  );
+  assert.equal(
+    pkg.scripts["test:browser:completion"],
+    "npm run build:release-a && node scripts/run-shopping-browser-evidence.mjs --phase after --profile completion",
+  );
+  assert.equal(
+    pkg.scripts["test:browser"],
+    "npm run build:release-a && node scripts/run-shopping-browser-evidence.mjs --phase after",
+  );
   const ci = await readFile(
     path.join(repository, ".github/workflows/quality.yml"),
     "utf8",
   );
-  assert.match(
-    ci,
-    /ESP_PERFORMANCE_PROFILE:.*github\.event_name == 'pull_request'.*'pr'.*'completion'/,
+  const steps = ci.split(/^ {6}- name: /m).slice(1);
+  const step = (name) => {
+    const found = steps.filter((block) => block.startsWith(name + "\n"));
+    assert.equal(found.length, 1, name);
+    return found[0];
+  };
+  const browser = step("Browser");
+  assert.doesNotMatch(browser, /^ {8}if:/m);
+  assert.ok(browser.includes("run: npm run test:browser:functional"));
+  assert.ok(
+    browser.includes(
+      "github.event_name == 'pull_request' && 'pr' || 'completion'",
+    ),
   );
+  assert.ok(!ci.includes("run: npm run test:browser\n"));
+  assert.ok(!ci.includes("test:browser:completion"));
+  assert.ok(!ci.includes("artifacts/dnd-selection-rendering/"));
+  const report = step("Upload browser functional results");
+  assert.ok(report.includes("if: always()\n"));
+  assert.ok(report.includes("name: browser-functional-"));
+  assert.ok(report.includes("artifacts/playwright/"));
+  assert.ok(report.includes("artifacts/playwright-report/"));
   assert.deepEqual(
     GROUPS.map((g) => g.group),
     ["functional", "shopping", "range", "drag", "transfer"],
   );
+});
+
+test("performance measurement is dispatch-only and preserves full completion evidence", async () => {
+  const manual = await readFile(
+    path.join(repository, ".github/workflows/shopping-browser-performance.yml"),
+    "utf8",
+  );
+  const trigger = manual.match(/^on:\n([\s\S]*?)(?=\n\S)/m);
+  assert.equal(trigger?.[1].trim(), "workflow_dispatch:");
+  assert.ok(manual.includes("node-version: 24.19.0"));
+  assert.ok(manual.includes("npm install --global npm@11.19.0"));
+  assert.ok(manual.includes("run: npm ci\n"));
+  assert.ok(manual.includes("run: npm run verify:toolchain"));
+  assert.ok(manual.includes("npx playwright install --with-deps chromium"));
+  assert.ok(manual.includes("ESP_PERFORMANCE_PROFILE: completion"));
+  assert.equal(
+    manual.match(/run: npm run test:browser:completion\n/g)?.length,
+    1,
+  );
+  assert.doesNotMatch(
+    manual,
+    /--profile pr|ESP_PERFORMANCE_PROFILE: pr\b|--grep/,
+  );
+  assert.ok(manual.includes("if: always()\n"));
+  assert.ok(
+    manual.includes(
+      "name: shopping-browser-evidence-completion-${{ github.run_id }}-${{ github.run_attempt }}",
+    ),
+  );
+  assert.ok(manual.includes("path: artifacts/dnd-selection-rendering/"));
+  assert.ok(manual.includes("overwrite: false"));
 });

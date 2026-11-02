@@ -179,14 +179,16 @@ jobs:
       - name: Browser
         env:
           ESP_PERFORMANCE_PROFILE: ${{ github.event_name == 'pull_request' && 'pr' || 'completion' }}
-        run: npm run test:browser
+        run: npm run test:browser:functional
 
-      - name: Upload shopping browser evidence
+      - name: Upload browser functional results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: shopping-browser-evidence-${{ github.event_name == 'pull_request' && 'pr' || 'completion' }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: artifacts/dnd-selection-rendering/
+          name: browser-functional-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            artifacts/playwright/
+            artifacts/playwright-report/
           if-no-files-found: warn
           overwrite: false
 

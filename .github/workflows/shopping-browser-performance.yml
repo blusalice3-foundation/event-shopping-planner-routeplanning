@@ -1,0 +1,51 @@
+name: Shopping and D&D performance (manual)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  measure-performance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up pinned Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.19.0
+          cache: npm
+
+      - name: Pin npm
+        run: npm install --global npm@11.19.0
+
+      - name: Install
+        run: npm ci
+
+      - name: Verify toolchain
+        run: npm run verify:toolchain
+
+      - name: Install pinned Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Completion performance measurement
+        env:
+          ESP_PERFORMANCE_PROFILE: completion
+        run: npm run test:browser:completion
+
+      - name: Upload shopping browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shopping-browser-evidence-completion-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/dnd-selection-rendering/
+          if-no-files-found: warn
+          overwrite: false
