@@ -2164,10 +2164,10 @@ test("a standalone execute reorder writes only its changed payload and survives 
   page,
 }) => {
   const source = migrateLegacyConsistency(
-    // A card button changes book order inside one visit; space moves use D&D or the heading.
+    // A card button moves a whole space; these adjacent visits each contain one book.
     backup([
       { ...item("1"), number: "01a" },
-      { ...item("2"), number: "01a2" },
+      { ...item("2"), number: "02a" },
     ]).data,
   ).data;
   // A standalone fixture has no saved visit lists or routes to reorder.
@@ -3277,11 +3277,11 @@ for (const operation of ["ordinary reorder", "ordinary item edit"] as const) {
     }) => {
       const errors: string[] = [];
       page.on("pageerror", (error) => errors.push(error.message));
-      const reorderBooks = operation === "ordinary reorder";
+      const reorderSpaces = operation === "ordinary reorder";
       const source = migrateLegacyConsistency(
         backup([
-          { ...item("1"), ...(reorderBooks ? { number: "01a" } : {}) },
-          { ...item("2"), ...(reorderBooks ? { number: "01a2" } : {}) },
+          { ...item("1"), ...(reorderSpaces ? { number: "01a" } : {}) },
+          { ...item("2"), ...(reorderSpaces ? { number: "02a" } : {}) },
           item("3", "2日目"),
         ]).data,
       ).data;
@@ -3306,7 +3306,7 @@ for (const operation of ["ordinary reorder", "ordinary item edit"] as const) {
               .getByRole("dialog", { name: "アイテム編集" })
               .getByRole("button", { name: "保存", exact: true })
               .click();
-      if (reorderBooks)
+      if (reorderSpaces)
         await expect(
           page
             .locator('[data-item-id="2"]')
