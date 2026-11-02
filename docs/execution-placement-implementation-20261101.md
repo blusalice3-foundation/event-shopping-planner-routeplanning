@@ -264,3 +264,10 @@ shopping/range診断時の製品src/publicは8f8b0f1で、HEAD4423f18の後半�
 - 7b26f135ではhandleMoveItemの有効D&D receipt.noop分岐だけclearRangeSelectionして終了する。checkbox/Set identity・順序・sort・data・保存・owner・非同期completionは変更しない。blocked/no result/private自己hover/ボタンNoOpは従来の保護を保つ。旧4f実hookは合法e3-beforeでrange残留の負controlが失敗し、修正後はrange null/3checked/sortとdata不変を通過した。合法同順単体3件のrange期待だけを合わせ、関連8suite315件と全静的検査・独立reviewを通過した。
 - held touch機能3layoutは両phaseとも元のrange0へ戻し、4423で強化した全5品目のチェック一致・CDP入力・clone消失時opacity/操作可能性・保存順は維持する。性能loop・gesture・fixture・時計・終了点・基準・回数・terminal期待には差分がない。whole specが公式hash対象のため、25instrument aggregateは2b63bdbcbcc75580aa7b2447f4c395d6e0eef46838d7111fe9eee73497533dd1、18fixture aggregateは0c7e4de08d3b1fb40ee190e94c85a90cf5e1c4d75cee40d4788e1da76c23b8c6へ変わる。同じspec/fixture文書を比較用へexact同期し、元製品src/public19c不変を再確認してから新しい前後採取に用いる。
 - 外部証拠はD:/esp-placement-feature-evidence-20261101/transfer-failed-three-diagnostic-4f4d0e5-attempt1、transfer-completion-diagnostic-4f4d0e5-attempt1、valid-dnd-noop-range-4f4d0e5。全検査後、held機能3件とterminal noop4件を独立診断し、その後に新sourceの通常全5群・144条件を採取する。旧96成功と新4成功を合算しない。前後比較・元作業ツリー反映を含む完了判定は引き続き未実施である。
+
+## カード上下ボタンの仕様変更（2026-11-02）
+
+- ユーザー指定により、カードの上下ボタンもスペース見出しと同じスペース全体の移動へ統一した。上記の「本の上下は本」という2026-11-01時点の記録に対する後続変更であり、過去の測定値・判定・元artifactは変更しない。
+- 単体・ホール別・スペース別の表示とPC・スマートフォンで、カードと見出しの有効条件、移動対象、先頭・末尾の基準品目を共通化した。同じスペース内の品目順は維持する。
+- 実行列は既存のスペース移動計算と保存経路を使用する。日付・所属・優先度の境界、同スペースの展開、複数選択、保存直前検証・再試行・取消の扱いを維持する。候補列のカードも既存の候補スペース見出しと同じ要求を送る。
+- 同スペース内の本単位D&D、購入操作、列移動、範囲選択と性能基準は変更しない。過去の性能完了記録を今回の変更後の測定結果として扱わない。

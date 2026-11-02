@@ -1182,11 +1182,10 @@ export const useShoppingItemMutationCommands = ({
               ),
         allItems: currentAllItems,
         dayName: activeEventDate,
-        expansionPolicy:
-          targetColumn === "execute" && spaceGroupIds ? "same-visit" : "exact",
+        expansionPolicy: targetColumn === "execute" ? "same-visit" : "exact",
       });
       if (!plan.effective.includes(itemId)) return;
-      if (targetColumn === "execute" && spaceGroupIds) {
+      if (targetColumn === "execute") {
         const moved = moveExecuteSpacePriorityGroup({
           direction,
           itemId,
@@ -1211,7 +1210,7 @@ export const useShoppingItemMutationCommands = ({
             },
             manualSort: true,
           });
-        if (moved.handled) return;
+        return;
       }
       const result = computeMoveItemVertical(
         direction,
@@ -1234,7 +1233,6 @@ export const useShoppingItemMutationCommands = ({
         currentExecute,
         eventListItems: result.eventListItems,
         executeModeItems: result.executeModeItems,
-        reorderWithinVisit: targetColumn === "execute",
         manualSort: true,
       });
     },

@@ -2406,25 +2406,63 @@ it("does not clear a later selection when an accepted move commits", async () =>
   expect(h.spies.clearRangeSelection).not.toHaveBeenCalled();
 });
 
-it("a card up/down reorders only the book within its execution visit", () => {
-  const a = item("a", { number: "1" });
-  const b = item("b", { number: "1" });
-  const c = item("c", { number: "2" });
+it.each(["a", "b"])(
+  "moves the whole execution space from card %s while retaining its book order",
+  (clicked) => {
+    const a = item("a", { number: "1" });
+    const b = item("b", { number: "1" });
+    const c = item("c", { number: "2" });
+    const allItems = [a, b, c];
+    const h = createHarness({
+      eventLists: { [EVENT]: allItems },
+      executeModeItems: { [EVENT]: { [DAY]: ["a", "b", "c"] } },
+    });
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(h.ports),
+    );
+    act(() => result.current.moveItemDown(clicked, "execute"));
+    expect(h.stores.executeModeItems[EVENT][DAY]).toEqual(["c", "a", "b"]);
+    expect(h.stores.eventLists[EVENT]).toBe(allItems);
+    expect(h.spies.queueShoppingMovePatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requestedIds: [clicked],
+        effectiveIds: ["a", "b"],
+      }),
+    );
+    expect(h.spies.areItemsInSameHall).not.toHaveBeenCalled();
+  },
+);
+
+it("does not reorder books or consume selection when a card has no adjacent execution space", () => {
+  const allItems = [item("a"), item("b")];
+  const selected = new Set(["a"]);
+  const h = createHarness({
+    eventLists: { [EVENT]: allItems },
+    executeModeItems: { [EVENT]: { [DAY]: ["a", "b"] } },
+    selectedItemIds: selected,
+    blockSortDirection: "desc",
+  });
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  act(() => {
+    result.current.moveItemDown("a", "execute");
+    result.current.moveItemUp("b", "execute");
+  });
+  expect(h.spies.queueShoppingMovePatch).not.toHaveBeenCalled();
+  expect(h.spies.clearRangeSelection).not.toHaveBeenCalled();
+  expect(h.spies.setSortState).not.toHaveBeenCalled();
+  expect(h.spies.removeSelectedItemIds).not.toHaveBeenCalled();
+  expect(h.stores.executeModeItems[EVENT][DAY]).toEqual(["a", "b"]);
+  expect(h.ports.state.selectedItemIds).toBe(selected);
+  expect(h.stores.blockSortDirection).toBe("desc");
+});
+
+it("routes card movement through the frozen space-order save without clearing a rejected selection or sort", () => {
+  const a = item("a", { number: "1" }),
+    b = item("b", { number: "1" }),
+    c = item("c", { number: "2" });
   const h = createHarness({
     eventLists: { [EVENT]: [a, b, c] },
     executeModeItems: { [EVENT]: { [DAY]: ["a", "b", "c"] } },
-  });
-  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
-  act(() => result.current.moveItemDown("a", "execute"));
-  expect(h.stores.executeModeItems[EVENT][DAY]).toEqual(["b", "a", "c"]);
-});
-
-it("routes card movement through the frozen book-order save without clearing a rejected selection or sort", () => {
-  const a = item("a", { number: "1" }),
-    b = item("b", { number: "1" });
-  const h = createHarness({
-    eventLists: { [EVENT]: [a, b] },
-    executeModeItems: { [EVENT]: { [DAY]: ["a", "b"] } },
     selectedItemIds: new Set(["a"]),
   });
   h.spies.queueShoppingMovePatch.mockReturnValue({
@@ -2444,8 +2482,8 @@ it("routes card movement through the frozen book-order save without clearing a r
       sourceColumn: "execute",
       targetColumn: "execute",
       requestedIds: ["a"],
-      effectiveIds: ["a"],
-      reorderWithinVisit: true,
+      effectiveIds: ["a", "b"],
+      reorderWithinVisit: undefined,
     }),
   );
   expect(rejected).toHaveBeenCalledWith("配置が変わりました");
@@ -2626,7 +2664,7 @@ it.each(["drag", "vertical button"] as const)(
   "keeps selection, range and sort without a banner after user cancellation: %s",
   async (operation) => {
     const a = item("a", { number: "1", quantity: 3, remarks: "最新のメモ" });
-    const b = item("b", { number: operation === "drag" ? "2" : "1" });
+    const b = item("b", { number: "2" });
     const allItems = [a, b];
     const selected = new Set(["a"]);
     const order = operation === "drag" ? ["b"] : ["a", "b"];
@@ -2925,7 +2963,7 @@ it("ends a valid same-order D&D range without consuming checks, sort or data", (
   expect(h.spies.notify).not.toHaveBeenCalled();
 });
 
-describe("execute space header placement-group adjacency", () => {
+describe.each(["header", "card"])("execute %s adjacency", (control) => {
   const foreignKinds = ["hall", "priority"] as const;
   type ForeignKind = (typeof foreignKinds)[number];
   const entries = (kind: ForeignKind, fragmented = false) => [
@@ -2965,7 +3003,9 @@ describe("execute space header placement-group adjacency", () => {
         [EVENT]: createEventConsistency(),
         history: createEventConsistency(),
       },
-      executeModeItems: { [EVENT]: { [DAY]: rawIds, "day-2": ["other-day"] } },
+      executeModeItems: {
+        [EVENT]: { [DAY]: rawIds, "day-2": ["other-day"] },
+      },
       dayModes: { [EVENT]: { [DAY]: "edit" } },
       hallDefinitions: {
         [EVENT]: {
@@ -2985,7 +3025,7 @@ describe("execute space header placement-group adjacency", () => {
       items: allItems,
       executeModeItems: { [EVENT]: source.executeModeItems[EVENT] },
       selectedItemIds,
-      spaceGroupDragItemIds: requestedIds,
+      spaceGroupDragItemIds: control === "header" ? requestedIds : null,
       blockSortDirection: "desc",
       areItemsInSameHallGroup: (first, second) =>
         isSameExecutionPlacementGroup(byId.get(first)!, byId.get(second)!),
@@ -3028,7 +3068,11 @@ describe("execute space header placement-group adjacency", () => {
       replayed = planned.snapshot;
       h.stores.executeModeItems = replayed.executeModeItems;
       h.refs.executeModeItemsRef.current = replayed.executeModeItems;
-      return { status: "accepted", operationId: "header", moveId: "header:1" };
+      return {
+        status: "accepted",
+        operationId: "header",
+        moveId: "header:1",
+      };
     });
     return { ...h, source, selectedItemIds, replayed: () => replayed };
   }
@@ -3114,19 +3158,23 @@ describe("execute space header placement-group adjacency", () => {
     },
   );
 
-  it.each(foreignKinds)(
-    "moves every member of a split visit down past its logical neighbor with interleaved %s visits",
-    (kind) => {
+  it.each(
+    foreignKinds.flatMap((kind) =>
+      ["a1", "a2"].map((clicked) => ({ kind, clicked })),
+    ),
+  )(
+    "moves every member of a split visit from $clicked past its logical neighbor with interleaved $kind visits",
+    ({ kind, clicked }) => {
       const h = headerHarness(
         kind,
         ["a1", "foreign-1", "b", "a2", "foreign-2", "c"],
-        ["a1"],
+        [clicked],
         true,
       );
       const { result } = renderHook(() =>
         useShoppingItemMutationCommands(h.ports),
       );
-      act(() => result.current.moveItemDown("a1", "execute"));
+      act(() => result.current.moveItemDown(clicked, "execute"));
       expectSavedHeaderMove(
         h,
         ["foreign-1", "b", "foreign-2", "a1", "a2", "c"],

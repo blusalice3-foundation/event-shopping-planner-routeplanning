@@ -5,7 +5,6 @@ import {
   buildExecutionNavigationVisitId,
   createExecutionPlacementProjector,
   isSameExecutionPlacementGroup,
-  isSameExecutionPlacementVisit,
 } from "../utils/executionPlacement";
 import { useShoppingDragWorkspace } from "../features/shopping-list/drag/ShoppingDragWorkspace";
 import type {
@@ -159,6 +158,14 @@ interface SpaceGroup {
   isCollapsed: boolean;
   priority: PriorityLevel;
   hallGroupId: string | null;
+}
+
+interface SpaceMoveState {
+  effectiveIds: string[];
+  firstItemId: string;
+  lastItemId: string;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
 }
 
 interface ShoppingListProps {
@@ -1889,21 +1896,65 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     [listControllerState.selectedItemIds],
   );
 
-  const selectedPlacement = useMemo(() => {
-    const selected = items.filter((item) => selectedItemIds.has(item.id));
-    return {
-      groups: new Set(
-        selected.map((item) =>
-          buildExecutionPlacementGroupKey(item, placementContext),
-        ),
+  const selectedPlacementGroupCount = useMemo(
+    () =>
+      new Set(
+        items
+          .filter((item) => selectedItemIds.has(item.id))
+          .map((item) =>
+            buildExecutionPlacementGroupKey(item, placementContext),
+          ),
       ).size,
-      visits: new Set(
-        selected.map((item) =>
-          buildExecutionPlacementVisitKey(item, placementContext),
-        ),
-      ).size,
-    };
-  }, [items, selectedItemIds, placementContext]);
+    [items, selectedItemIds, placementContext],
+  );
+  const spaceMoveStates = useMemo(() => {
+    const states = new Map<string, SpaceMoveState>();
+    const selectionIds = Array.from(selectedItemIds);
+    executionVisits.forEach((visit, index) => {
+      const first = visit.items[0];
+      const itemIds = visit.items.map((item) => item.id);
+      const selectedCount = itemIds.reduce(
+        (count, id) => count + Number(selectedItemIds.has(id)),
+        0,
+      );
+      const selectionAllowed =
+        selectedCount === 0 || selectedPlacementGroupCount <= 1;
+      const state: SpaceMoveState = {
+        effectiveIds:
+          selectedCount > 0 && selectedCount < selectedItemIds.size
+            ? selectionIds
+            : itemIds,
+        firstItemId: first.id,
+        lastItemId: itemIds[itemIds.length - 1],
+        canMoveUp:
+          index > 0 &&
+          (columnType !== "execute" ||
+            (selectionAllowed &&
+              isSameExecutionPlacementGroup(
+                first,
+                executionVisits[index - 1].items[0],
+                placementContext,
+              ))),
+        canMoveDown:
+          index < executionVisits.length - 1 &&
+          (columnType !== "execute" ||
+            (selectionAllowed &&
+              isSameExecutionPlacementGroup(
+                first,
+                executionVisits[index + 1].items[0],
+                placementContext,
+              ))),
+      };
+      itemIds.forEach((id) => states.set(id, state));
+    });
+    return states;
+  }, [
+    columnType,
+    executionVisits,
+    placementContext,
+    selectedItemIds,
+    selectedPlacementGroupCount,
+  ]);
   const listReadModel = useMemo(
     () =>
       selectedItemIds.size === 0
@@ -2461,6 +2512,8 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     columnType,
     onMoveItemDown,
     onMoveItemUp,
+    onSetSpaceGroupDragItemIds,
+    spaceMoveStates,
     onSelectItem,
     openPostEventDistributionCheck,
     rangePresentation,
@@ -2470,6 +2523,8 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       columnType,
       onMoveItemDown,
       onMoveItemUp,
+      onSetSpaceGroupDragItemIds,
+      spaceMoveStates,
       onSelectItem,
       openPostEventDistributionCheck,
       rangePresentation,
@@ -2478,6 +2533,8 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     columnType,
     onMoveItemDown,
     onMoveItemUp,
+    onSetSpaceGroupDragItemIds,
+    spaceMoveStates,
     onSelectItem,
     openPostEventDistributionCheck,
     rangePresentation,
@@ -2487,16 +2544,40 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       cardActionContextRef.current;
     onSelectItem(itemId, columnType, rangePresentation);
   }, []);
-  const handleCardMoveUp = useCallback((itemId: string) => {
-    if (!allowReorderRef.current) return;
-    const { columnType, onMoveItemUp } = cardActionContextRef.current;
-    onMoveItemUp?.(itemId, columnType);
-  }, []);
-  const handleCardMoveDown = useCallback((itemId: string) => {
-    if (!allowReorderRef.current) return;
-    const { columnType, onMoveItemDown } = cardActionContextRef.current;
-    onMoveItemDown?.(itemId, columnType);
-  }, []);
+  const handleSpaceMove = useCallback(
+    (direction: "up" | "down", itemId: string) => {
+      if (!allowReorderRef.current) return;
+      const {
+        columnType,
+        onMoveItemUp,
+        onMoveItemDown,
+        onSetSpaceGroupDragItemIds,
+        spaceMoveStates,
+      } = cardActionContextRef.current;
+      const state = spaceMoveStates.get(itemId);
+      const move = direction === "up" ? onMoveItemUp : onMoveItemDown;
+      if (!state || !move) return;
+      if (direction === "up" ? !state.canMoveUp : !state.canMoveDown) return;
+      onSetSpaceGroupDragItemIds?.(state.effectiveIds);
+      try {
+        move(
+          direction === "up" ? state.firstItemId : state.lastItemId,
+          columnType,
+        );
+      } finally {
+        onSetSpaceGroupDragItemIds?.(null);
+      }
+    },
+    [],
+  );
+  const handleCardMoveUp = useCallback(
+    (itemId: string) => handleSpaceMove("up", itemId),
+    [handleSpaceMove],
+  );
+  const handleCardMoveDown = useCallback(
+    (itemId: string) => handleSpaceMove("down", itemId),
+    [handleSpaceMove],
+  );
   const handleCardPostEventDistributionCheckRequest = useCallback(
     (soldOutItem: ShoppingItem) => {
       cardActionContextRef.current.openPostEventDistributionCheck("single", [
@@ -3461,27 +3542,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         0,
       );
 
-      // 上下移動の可否
-      const canMoveGroupUp =
-        groupIndex > 0 &&
-        (columnType !== "execute" ||
-          (isSameExecutionPlacementGroup(
-            group.items[0],
-            spaceGroups[groupIndex - 1].items[0],
-            placementContext,
-          ) &&
-            (!group.items.some((item) => selectedItemIds.has(item.id)) ||
-              selectedPlacement.groups <= 1)));
-      const canMoveGroupDown =
-        groupIndex < spaceGroups.length - 1 &&
-        (columnType !== "execute" ||
-          (isSameExecutionPlacementGroup(
-            group.items[0],
-            spaceGroups[groupIndex + 1].items[0],
-            placementContext,
-          ) &&
-            (!group.items.some((item) => selectedItemIds.has(item.id)) ||
-              selectedPlacement.groups <= 1)));
+      // カードと見出しは同じスペース移動の可否を使う。
+      const moveState = spaceMoveStates.get(group.items[0].id);
+      const canMoveGroupUp = moveState?.canMoveUp ?? false;
+      const canMoveGroupDown = moveState?.canMoveDown ?? false;
 
       // スペースグループのチェックボックスクリック
       const handleSpaceCheckbox = (e: React.MouseEvent | React.ChangeEvent) => {
@@ -3516,30 +3580,12 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
       const handleSpaceGroupMoveUp = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!allowReorderRef.current || !canMoveGroupUp || !onMoveItemUp)
-          return;
-        const effectiveIds = getEffectiveDragIds(group);
-        if (onSetSpaceGroupDragItemIds) {
-          onSetSpaceGroupDragItemIds(effectiveIds);
-        }
-        onMoveItemUp(group.items[0].id, columnType);
-        if (onSetSpaceGroupDragItemIds) {
-          onSetSpaceGroupDragItemIds(null);
-        }
+        handleCardMoveUp(group.items[0].id);
       };
 
       const handleSpaceGroupMoveDown = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!allowReorderRef.current || !canMoveGroupDown || !onMoveItemDown)
-          return;
-        const effectiveIds = getEffectiveDragIds(group);
-        if (onSetSpaceGroupDragItemIds) {
-          onSetSpaceGroupDragItemIds(effectiveIds);
-        }
-        onMoveItemDown(group.items[group.items.length - 1].id, columnType);
-        if (onSetSpaceGroupDragItemIds) {
-          onSetSpaceGroupDragItemIds(null);
-        }
+        handleCardMoveDown(group.items[0].id);
       };
 
       // クロスグループチェーン表示情報
@@ -3553,7 +3599,6 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         crossSpaceGroupRangeInfo &&
         groupIndex === crossSpaceGroupRangeInfo.endGroupIndex;
       const isCrossMiddle = crossRangeInGroup && !isCrossStart && !isCrossEnd;
-
       return (
         <div className="space-y-1">
           {hallSectionHeader}
@@ -4381,26 +4426,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                           onMoveItemDown ? handleCardMoveDown : undefined
                         }
                         canMoveUp={
-                          globalIndex > 0 &&
-                          (columnType !== "execute" ||
-                            (isSameExecutionPlacementVisit(
-                              item,
-                              items[globalIndex - 1],
-                              placementContext,
-                            ) &&
-                              (!selectedItemIds.has(item.id) ||
-                                selectedPlacement.visits <= 1)))
+                          spaceMoveStates.get(item.id)?.canMoveUp ?? false
                         }
                         canMoveDown={
-                          globalIndex < items.length - 1 &&
-                          (columnType !== "execute" ||
-                            (isSameExecutionPlacementVisit(
-                              item,
-                              items[globalIndex + 1],
-                              placementContext,
-                            ) &&
-                              (!selectedItemIds.has(item.id) ||
-                                selectedPlacement.visits <= 1)))
+                          spaceMoveStates.get(item.id)?.canMoveDown ?? false
                         }
                         isDuplicateCircle={duplicateCircleItemIds.has(item.id)}
                         isSearchMatch={highlightedItemId === item.id}
@@ -4734,6 +4763,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           onSelectItem,
           onMoveItemUp,
           onMoveItemDown,
+          spaceMoveStates,
           onToggleRangeSelection,
           onToggleSpaceCollapse,
           onSetSpaceGroupDragItemIds,
@@ -5254,27 +5284,9 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                     blockBackgroundColor={blockColorMap.get(item.id)}
                     onMoveUp={onMoveItemUp ? handleCardMoveUp : undefined}
                     onMoveDown={onMoveItemDown ? handleCardMoveDown : undefined}
-                    canMoveUp={
-                      globalIndex > 0 &&
-                      (columnType !== "execute" ||
-                        (isSameExecutionPlacementVisit(
-                          item,
-                          items[globalIndex - 1],
-                          placementContext,
-                        ) &&
-                          (!selectedItemIds.has(item.id) ||
-                            selectedPlacement.visits <= 1)))
-                    }
+                    canMoveUp={spaceMoveStates.get(item.id)?.canMoveUp ?? false}
                     canMoveDown={
-                      globalIndex < items.length - 1 &&
-                      (columnType !== "execute" ||
-                        (isSameExecutionPlacementVisit(
-                          item,
-                          items[globalIndex + 1],
-                          placementContext,
-                        ) &&
-                          (!selectedItemIds.has(item.id) ||
-                            selectedPlacement.visits <= 1)))
+                      spaceMoveStates.get(item.id)?.canMoveDown ?? false
                     }
                     isDuplicateCircle={duplicateCircleItemIds.has(item.id)}
                     isSearchMatch={highlightedItemId === item.id}
@@ -5521,6 +5533,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           onSelectItem,
           onMoveItemUp,
           onMoveItemDown,
+          spaceMoveStates,
           onToggleRangeSelection,
           onToggleSpaceCollapse,
           onSetSpaceGroupDragItemIds,
@@ -5592,28 +5605,8 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           blockBackgroundColor={blockColorMap.get(item.id)}
           onMoveUp={onMoveItemUp ? handleCardMoveUp : undefined}
           onMoveDown={onMoveItemDown ? handleCardMoveDown : undefined}
-          canMoveUp={
-            index > 0 &&
-            (columnType !== "execute" ||
-              (isSameExecutionPlacementVisit(
-                item,
-                items[index - 1],
-                placementContext,
-              ) &&
-                (!selectedItemIds.has(item.id) ||
-                  selectedPlacement.visits <= 1)))
-          }
-          canMoveDown={
-            index < items.length - 1 &&
-            (columnType !== "execute" ||
-              (isSameExecutionPlacementVisit(
-                item,
-                items[index + 1],
-                placementContext,
-              ) &&
-                (!selectedItemIds.has(item.id) ||
-                  selectedPlacement.visits <= 1)))
-          }
+          canMoveUp={spaceMoveStates.get(item.id)?.canMoveUp ?? false}
+          canMoveDown={spaceMoveStates.get(item.id)?.canMoveDown ?? false}
           isDuplicateCircle={duplicateCircleItemIds.has(item.id)}
           isSearchMatch={highlightedItemId === item.id}
           layoutMode={layoutMode}
