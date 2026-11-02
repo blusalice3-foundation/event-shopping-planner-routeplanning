@@ -5,7 +5,10 @@ import {
   type ShoppingDragPresentation,
 } from "../../features/shopping-list/drag/shoppingDrag";
 import { projectItemsToExecutionVisits as projectVisits } from "../../utils/visitProjection";
-import { buildExecutionPlacementVisitKey } from "../../utils/executionPlacement";
+import {
+  buildExecutionPlacementVisitKey,
+  isSameExecutionPlacementGroup,
+} from "../../utils/executionPlacement";
 const projectItemsToExecutionVisits = (items: readonly ShoppingItem[]) =>
   projectVisits(items, buildExecutionPlacementVisitKey);
 // @vitest-environment jsdom
@@ -33,6 +36,7 @@ import type {
 } from "../../types/item";
 import { getItemKey } from "../../utils/itemComparison";
 import type { PendingDuplicateEventImport } from "../state/appOverlayTypes";
+import { createEventConsistency } from "../../types/consistency";
 import { createEventUpdateOperationRegistry } from "./eventUpdateOperation";
 import {
   useShoppingItemMutationCommands,
@@ -42,6 +46,16 @@ import {
   type ShoppingItemMutationStatePort,
 } from "./useShoppingItemMutationCommands";
 
+import type {
+  ApplicationShoppingMove,
+  PersistenceSnapshot,
+} from "../ports/PersistenceCommandPort";
+import {
+  planShoppingMove,
+  shoppingMoveInitialDayMergeSignature,
+  shoppingMovePlacementBaseline,
+  shoppingMoveVisitBaseline,
+} from "./shoppingMoveMutation";
 const EVENT = "event-a";
 const DAY = "day-1";
 const PADDED_DAY = ` \u3000${DAY}\u3000 `;
@@ -1727,7 +1741,8 @@ describe("useShoppingItemMutationCommands", () => {
       eventLists: { [EVENT]: items },
       items,
       executeModeItems: { [EVENT]: { [DAY]: ["a1", "b", "a2"] } },
-      areItemsInSameHallGroup: () => false,
+      areItemsInSameHallGroup: (first, second) =>
+        first.startsWith("a") && second.startsWith("a"),
     });
     const { result } = renderHook(() =>
       useShoppingItemMutationCommands(harness.ports),
@@ -2908,4 +2923,343 @@ it("ends a valid same-order D&D range without consuming checks, sort or data", (
   expect(h.spies.setEventLists).not.toHaveBeenCalled();
   expect(h.spies.updateExecuteModeItems).not.toHaveBeenCalled();
   expect(h.spies.notify).not.toHaveBeenCalled();
+});
+
+describe("execute space header placement-group adjacency", () => {
+  const foreignKinds = ["hall", "priority"] as const;
+  type ForeignKind = (typeof foreignKinds)[number];
+  const entries = (kind: ForeignKind, fragmented = false) => [
+    item("a1", { number: "01a", quantity: 3, price: 1200 }),
+    item("foreign-1", {
+      block: kind === "hall" ? "B" : "A",
+      number: "91a",
+      priorityLevel: kind === "priority" ? "priority" : "none",
+    }),
+    item("b", { number: "02a" }),
+    item("a2", { number: fragmented ? "01a2" : "03a" }),
+    item("foreign-2", {
+      block: kind === "hall" ? "B" : "A",
+      number: "92a",
+      priorityLevel: kind === "priority" ? "priority" : "none",
+    }),
+    item("c", { number: "04a" }),
+    item("d", { number: "05a" }),
+  ];
+  function headerHarness(
+    kind: ForeignKind,
+    rawIds: string[],
+    requestedIds: string[],
+    fragmented = false,
+  ) {
+    const source: PersistenceSnapshot = {
+      ...emptyApplicationSnapshotForImport(),
+      eventLists: {
+        [EVENT]: [
+          ...entries(kind, fragmented),
+          item("candidate", { number: "98a" }),
+          item("other-day", { eventDate: "day-2", number: "99a" }),
+        ],
+        history: [item("past", { eventDate: "previous-event" })],
+      },
+      eventConsistency: {
+        [EVENT]: createEventConsistency(),
+        history: createEventConsistency(),
+      },
+      executeModeItems: { [EVENT]: { [DAY]: rawIds, "day-2": ["other-day"] } },
+      dayModes: { [EVENT]: { [DAY]: "edit" } },
+      hallDefinitions: {
+        [EVENT]: {
+          [`__mapless__:${DAY}`]: [
+            { id: "east", name: "東館", vertices: [], blockNames: ["A"] },
+            { id: "west", name: "西館", vertices: [], blockNames: ["B"] },
+          ],
+        },
+      },
+    };
+    const displayed = projectConsistencySnapshot(source, EVENT, DAY);
+    const allItems = displayed.eventLists[EVENT] as ShoppingItem[];
+    const byId = new Map(allItems.map((entry) => [entry.id, entry]));
+    const selectedItemIds = new Set(requestedIds);
+    const h = createHarness({
+      eventLists: { [EVENT]: allItems },
+      items: allItems,
+      executeModeItems: { [EVENT]: source.executeModeItems[EVENT] },
+      selectedItemIds,
+      spaceGroupDragItemIds: requestedIds,
+      blockSortDirection: "desc",
+      areItemsInSameHallGroup: (first, second) =>
+        isSameExecutionPlacementGroup(byId.get(first)!, byId.get(second)!),
+    });
+    let replayed: PersistenceSnapshot | undefined;
+    h.spies.queueShoppingMovePatch.mockImplementation((input) => {
+      const command: ApplicationShoppingMove = {
+        version: 1,
+        eventName: input.eventName,
+        day: input.day,
+        sourceColumn: input.sourceColumn,
+        targetColumn: input.targetColumn,
+        requestedIds: input.requestedIds,
+        effectiveIds: input.effectiveIds,
+        hoverId: input.hoverId,
+        baselineItemIds: input.baselineItemIds,
+        itemIds: (input.eventListItems ?? allItems).map((entry) => entry.id),
+        baselineExecuteIds: input.baselineExecuteIds,
+        executeIds: input.executeModeItems![DAY],
+        baselineVisits: shoppingMoveVisitBaseline(source, EVENT, DAY),
+        initialDayMergeSignature: shoppingMoveInitialDayMergeSignature(
+          source,
+          EVENT,
+          DAY,
+        ),
+      };
+      command.placementBaseline = shoppingMovePlacementBaseline(
+        source,
+        command,
+      );
+      const latest = structuredClone(source);
+      (latest.eventLists[EVENT] as ShoppingItem[]).find(
+        (entry) => entry.id === "a1",
+      )!.quantity = 7;
+      (latest.eventLists[EVENT] as ShoppingItem[]).find(
+        (entry) => entry.id === "foreign-1",
+      )!.remarks = "保存待ちのメモ";
+      const planned = planShoppingMove(latest, command);
+      expect(planned.confirmation).toBeUndefined();
+      replayed = planned.snapshot;
+      h.stores.executeModeItems = replayed.executeModeItems;
+      h.refs.executeModeItemsRef.current = replayed.executeModeItems;
+      return { status: "accepted", operationId: "header", moveId: "header:1" };
+    });
+    return { ...h, source, selectedItemIds, replayed: () => replayed };
+  }
+  function expectSavedHeaderMove(
+    h: ReturnType<typeof headerHarness>,
+    expected: string[],
+    effectiveIds: string[],
+  ) {
+    expect(h.spies.queueShoppingMovePatch).toHaveBeenCalledOnce();
+    expect(h.spies.queueShoppingMovePatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceColumn: "execute",
+        targetColumn: "execute",
+        effectiveIds,
+        executeModeItems: {
+          ...h.source.executeModeItems[EVENT],
+          [DAY]: expected,
+        },
+      }),
+    );
+    const saved = h.replayed()!;
+    expect(saved.executeModeItems[EVENT][DAY]).toEqual(expected);
+    const moving = new Set(effectiveIds);
+    expect(
+      saved.executeModeItems[EVENT][DAY].filter((id) => !moving.has(id)),
+    ).toEqual(
+      h.source.executeModeItems[EVENT][DAY].filter((id) => !moving.has(id)),
+    );
+    expect(expected.filter((id) => id.startsWith("foreign-"))).toEqual([
+      "foreign-1",
+      "foreign-2",
+    ]);
+    expect(saved.executeModeItems[EVENT]["day-2"]).toEqual(["other-day"]);
+    expect(saved.eventLists.history).toBeDefined();
+    expect(saved.eventLists.history).toEqual(h.source.eventLists.history);
+    expect(saved.eventLists[EVENT]).toEqual(
+      (h.source.eventLists[EVENT] as ShoppingItem[]).map((entry) =>
+        entry.id === "a1"
+          ? { ...entry, quantity: 7 }
+          : entry.id === "foreign-1"
+            ? { ...entry, remarks: "保存待ちのメモ" }
+            : entry,
+      ),
+    );
+    expect(h.source.executeModeItems[EVENT][DAY]).toEqual(
+      h.spies.queueShoppingMovePatch.mock.calls[0][0].baselineExecuteIds,
+    );
+    expect(h.spies.removeSelectedItemIds).not.toHaveBeenCalled();
+  }
+
+  it.each(
+    foreignKinds.flatMap((kind) => [
+      {
+        kind,
+        direction: "up" as const,
+        moving: "a2",
+        expected: ["a2", "a1", "foreign-1", "foreign-2", "c"],
+      },
+      {
+        kind,
+        direction: "down" as const,
+        moving: "a1",
+        expected: ["foreign-1", "a2", "foreign-2", "a1", "c"],
+      },
+    ]),
+  )(
+    "moves $direction past the displayed neighbor despite interleaved $kind visits and replays only moved IDs",
+    ({ kind, direction, moving, expected }) => {
+      const h = headerHarness(
+        kind,
+        ["a1", "foreign-1", "a2", "foreign-2", "c"],
+        [moving],
+      );
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(h.ports),
+      );
+      act(() =>
+        direction === "up"
+          ? result.current.moveItemUp(moving, "execute")
+          : result.current.moveItemDown(moving, "execute"),
+      );
+      expectSavedHeaderMove(h, expected, [moving]);
+    },
+  );
+
+  it.each(foreignKinds)(
+    "moves every member of a split visit down past its logical neighbor with interleaved %s visits",
+    (kind) => {
+      const h = headerHarness(
+        kind,
+        ["a1", "foreign-1", "b", "a2", "foreign-2", "c"],
+        ["a1"],
+        true,
+      );
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(h.ports),
+      );
+      act(() => result.current.moveItemDown("a1", "execute"));
+      expectSavedHeaderMove(
+        h,
+        ["foreign-1", "b", "foreign-2", "a1", "a2", "c"],
+        ["a1", "a2"],
+      );
+    },
+  );
+
+  it.each(foreignKinds)(
+    "moves a visit up before the first raw member of a split neighbor with interleaved %s visits",
+    (kind) => {
+      const h = headerHarness(
+        kind,
+        ["a1", "foreign-1", "b", "a2", "foreign-2", "c"],
+        ["b"],
+        true,
+      );
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(h.ports),
+      );
+      act(() => result.current.moveItemUp("b", "execute"));
+      expectSavedHeaderMove(
+        h,
+        ["b", "a1", "foreign-1", "a2", "foreign-2", "c"],
+        ["b"],
+      );
+    },
+  );
+
+  it.each(foreignKinds)(
+    "moves down after a split neighbor's logical visit without passing the following visit with foreign %s visits",
+    (kind) => {
+      const h = headerHarness(
+        kind,
+        ["b", "a1", "c", "a2", "foreign-1", "foreign-2"],
+        ["b"],
+        true,
+      );
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(h.ports),
+      );
+      act(() => result.current.moveItemDown("b", "execute"));
+      expectSavedHeaderMove(
+        h,
+        ["a1", "b", "c", "a2", "foreign-1", "foreign-2"],
+        ["b"],
+      );
+    },
+  );
+  it.each(foreignKinds)(
+    "moves multiple same-group visits up without normalizing interleaved %s visits",
+    (kind) => {
+      const h = headerHarness(
+        kind,
+        ["a1", "foreign-1", "b", "a2", "foreign-2", "c", "d"],
+        ["b", "c"],
+        true,
+      );
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(h.ports),
+      );
+      act(() => result.current.moveItemUp("b", "execute"));
+      expectSavedHeaderMove(
+        h,
+        ["b", "c", "a1", "foreign-1", "a2", "foreign-2", "d"],
+        ["b", "c"],
+      );
+    },
+  );
+
+  it.each(foreignKinds)(
+    "moves noncontiguous selected visits down while retaining a split visit's book order and foreign %s order",
+    (kind) => {
+      const h = headerHarness(
+        kind,
+        ["a1", "foreign-1", "b", "a2", "foreign-2", "c", "d"],
+        ["a1", "c"],
+        true,
+      );
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(h.ports),
+      );
+      act(() => result.current.moveItemDown("a1", "execute"));
+      expectSavedHeaderMove(
+        h,
+        ["foreign-1", "b", "foreign-2", "d", "a1", "a2", "c"],
+        ["a1", "a2", "c"],
+      );
+    },
+  );
+
+  it.each(foreignKinds)(
+    "rejects mixed %s header targets without queueing, consuming selection, or clearing sort",
+    (kind) => {
+      const h = headerHarness(
+        kind,
+        ["a1", "foreign-1", "a2", "foreign-2", "c"],
+        ["a1", "foreign-1"],
+      );
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(h.ports),
+      );
+      act(() => result.current.moveItemDown("a1", "execute"));
+      expect(h.spies.queueShoppingMovePatch).not.toHaveBeenCalled();
+      expect(h.spies.clearRangeSelection).not.toHaveBeenCalled();
+      expect(h.spies.setSortState).not.toHaveBeenCalled();
+      expect(h.spies.removeSelectedItemIds).not.toHaveBeenCalled();
+      expect([...h.selectedItemIds]).toEqual(["a1", "foreign-1"]);
+      expect(h.stores.blockSortDirection).toBe("desc");
+    },
+  );
+
+  it.each(["up", "down"] as const)(
+    "keeps the logical %s edge as a no-op despite foreign raw visits",
+    (direction) => {
+      const moving = direction === "up" ? "a1" : "c";
+      const h = headerHarness(
+        "hall",
+        ["a1", "foreign-1", "a2", "foreign-2", "c"],
+        [moving],
+      );
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(h.ports),
+      );
+      act(() =>
+        direction === "up"
+          ? result.current.moveItemUp(moving, "execute")
+          : result.current.moveItemDown(moving, "execute"),
+      );
+      expect(h.spies.queueShoppingMovePatch).not.toHaveBeenCalled();
+      expect(h.spies.clearRangeSelection).not.toHaveBeenCalled();
+      expect(h.spies.setSortState).not.toHaveBeenCalled();
+      expect([...h.selectedItemIds]).toEqual([moving]);
+    },
+  );
 });

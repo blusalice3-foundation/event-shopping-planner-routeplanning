@@ -1,4 +1,7 @@
-import { inheritProjectedMembership } from "../../features/consistency/domain/projection";
+import {
+  inheritProjectedMembership,
+  projectedMembership,
+} from "../../features/consistency/domain/projection";
 import {
   beginShoppingMoveLifecycle,
   endShoppingMoveLifecycle,
@@ -58,7 +61,10 @@ import {
   getCandidateSourceOrderedIds,
 } from "../../features/lists/domain/movePlan";
 import { getSpaceKey } from "../../utils/spaceGrouping";
-import { buildExecutionPlacementVisitKey } from "../../utils/executionPlacement";
+import {
+  buildExecutionPlacementVisitKey,
+  isSameExecutionPlacementGroup,
+} from "../../utils/executionPlacement";
 import {
   EXECUTION_VISIT_MERGE_NOTICE,
   buildExecutionVisitProjectionKey,
@@ -215,16 +221,25 @@ const moveExecuteSpacePriorityGroup = ({
   areBoundaryItemsInSameHall: (firstId: string, secondId: string) => boolean;
 }): { handled: boolean; reordered?: string[] } => {
   const itemsById = new Map(items.map((item) => [item.id, item]));
+  const source = itemsById.get(itemId);
+  if (!source) return { handled: true };
+  const sourceMembership = projectedMembership(source);
+  const isInPlacementGroup = (item: ShoppingItem): boolean =>
+    sourceMembership && projectedMembership(item)
+      ? isSameExecutionPlacementGroup(source, item)
+      : areBoundaryItemsInSameHall(itemId, item.id);
+  if (!isInPlacementGroup(source)) return { handled: true };
   const getVisitKey = (id: string): string => {
     const item = itemsById.get(id);
     return item ? buildExecutionPlacementVisitKey(item) : `unknown:${id}`;
   };
   const movingGroupKeys = new Set<string>([getVisitKey(itemId)]);
-  effectiveIds.forEach((id) => {
-    if (dayItems.includes(id)) {
-      movingGroupKeys.add(getVisitKey(id));
-    }
-  });
+  for (const id of effectiveIds) {
+    if (!dayItems.includes(id)) continue;
+    const item = itemsById.get(id);
+    if (!item || !isInPlacementGroup(item)) return { handled: true };
+    movingGroupKeys.add(getVisitKey(id));
+  }
 
   const visitGroups: Array<{ key: string; itemIds: string[] }> = [];
   const visitGroupsByKey = new Map<
@@ -232,6 +247,8 @@ const moveExecuteSpacePriorityGroup = ({
     { key: string; itemIds: string[] }
   >();
   dayItems.forEach((id) => {
+    const item = itemsById.get(id);
+    if (!item || !isInPlacementGroup(item)) return;
     const key = getVisitKey(id);
     const existing = visitGroupsByKey.get(key);
     if (existing) {
@@ -289,11 +306,27 @@ const moveExecuteSpacePriorityGroup = ({
 
   const insertIndex =
     direction === "up" ? remainingAdjacentIndex : remainingAdjacentIndex + 1;
-  remainingGroups.splice(insertIndex, 0, ...movingGroups);
-  return {
-    handled: true,
-    reordered: remainingGroups.flatMap((group) => group.itemIds),
-  };
+  const movingIds = movingGroups.flatMap((group) => group.itemIds);
+  const movingSet = new Set(movingIds);
+  const remainingIds = dayItems.filter((id) => !movingSet.has(id));
+  const nextVisit = remainingGroups[insertIndex];
+  let rawInsertIndex: number;
+  if (nextVisit) rawInsertIndex = remainingIds.indexOf(nextVisit.itemIds[0]);
+  else {
+    const remainingGroupIds = new Set(
+      remainingGroups.flatMap((group) => group.itemIds),
+    );
+    rawInsertIndex = remainingIds.length;
+    for (let index = remainingIds.length - 1; index >= 0; index--) {
+      if (remainingGroupIds.has(remainingIds[index])) {
+        rawInsertIndex = index + 1;
+        break;
+      }
+    }
+  }
+  // Move only the selected visits so frozen save replay retains every other raw ID.
+  remainingIds.splice(rawInsertIndex, 0, ...movingIds);
+  return { handled: true, reordered: remainingIds };
 };
 
 export const useShoppingItemMutationCommands = ({

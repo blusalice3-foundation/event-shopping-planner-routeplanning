@@ -799,3 +799,192 @@ test("fragmented visits keep list, map visit list and navigator order without di
     contentType: "application/json",
   });
 });
+
+const headerMoveOrders = [
+  {
+    name: "interleaved hall",
+    raw: ["a1", "hall-b", "b1", "a2", "mixed-b", "a3", "priority-a"],
+    up: ["b1", "a1", "hall-b", "a2", "mixed-b", "a3", "priority-a"],
+    down: ["hall-b", "b1", "a1", "a2", "a3", "mixed-b", "priority-a"],
+  },
+  {
+    name: "interleaved priority",
+    raw: ["a1", "priority-a", "b1", "a2", "a3", "hall-b", "mixed-b"],
+    up: ["b1", "a1", "priority-a", "a2", "a3", "hall-b", "mixed-b"],
+    down: ["priority-a", "b1", "a1", "a2", "a3", "hall-b", "mixed-b"],
+  },
+  {
+    name: "contiguous control",
+    raw: ["priority-a", "a1", "a2", "a3", "b1", "hall-b", "mixed-b"],
+    up: ["priority-a", "b1", "a1", "a2", "a3", "hall-b", "mixed-b"],
+    down: ["priority-a", "b1", "a1", "a2", "a3", "hall-b", "mixed-b"],
+  },
+];
+
+async function collapsedHeaderIds(page: Page) {
+  return page
+    .locator('[data-shopping-drag-column="execute"] [data-space-group-key]')
+    .evaluateAll((elements) =>
+      elements.map((element) =>
+        element.getAttribute("data-shopping-drag-reference-id"),
+      ),
+    );
+}
+
+async function collapseExecutionSpaces(page: Page) {
+  const grouped = page
+    .getByRole("button", { name: "スペース別", exact: true })
+    .first();
+  if (!(await grouped.getAttribute("class"))?.includes("bg-blue-600"))
+    await grouped.click();
+  const toggle = page
+    .getByRole("button", { name: /^全て(?:折りたたむ|展開)$/ })
+    .first();
+  if ((await toggle.textContent())?.trim() === "全て折りたたむ")
+    await toggle.click();
+}
+
+for (const phone of [false, true])
+  test.describe(`space header arrows ${phone ? "smartphone" : "PC"}`, () => {
+    test.use({ hasTouch: phone });
+    for (const order of headerMoveOrders)
+      for (const direction of ["up", "down"] as const)
+        test(`space header arrows follow displayed adjacency: ${order.name} ${direction}`, async ({
+          page,
+        }, testInfo) => {
+          test.setTimeout(90000);
+          const source = backup();
+          source.data.executeModeItems[eventName][day] = [...order.raw];
+          await page.setViewportSize({ width: 1440, height: 1000 });
+          await restore(page, phone, true, false, source);
+          expect((await saved(page)).ids).toEqual(order.raw);
+
+          // Edit content through the public UI before reordering. The command
+          // must preserve the latest book rather than replay its restore value.
+          await ensureRow(page, "a1");
+          const card = row(page, "a1")
+            .locator(":scope > div.rounded-lg")
+            .first();
+          await card.dispatchEvent("pointerdown", {
+            button: 0,
+            isPrimary: true,
+            pointerType: "mouse",
+          });
+          const edit = page.getByRole("button", { name: "編集", exact: true });
+          await expect(edit).toBeVisible();
+          await card.dispatchEvent("pointerup", {
+            button: 0,
+            isPrimary: true,
+            pointerType: "mouse",
+          });
+          await edit.click();
+          const editor = page.getByRole("dialog", {
+            name: "アイテム編集",
+            exact: true,
+          });
+          const latestContent = {
+            title: "移動直前に更新した本",
+            price: 1234,
+            quantity: 3,
+            remarks: "移動直前のメモ ユーザー登録 エラーが発生しました",
+          };
+          await editor
+            .getByLabel("タイトル", { exact: true })
+            .fill(latestContent.title);
+          await editor
+            .getByLabel("購入金額", { exact: true })
+            .fill(String(latestContent.price));
+          await editor
+            .getByLabel("数量", { exact: true })
+            .selectOption(String(latestContent.quantity));
+          await editor
+            .getByLabel("利用者メモ", { exact: true })
+            .fill(latestContent.remarks);
+          await editor
+            .getByRole("button", { name: "保存", exact: true })
+            .click();
+          await expect(editor).toBeHidden();
+          await expect
+            .poll(async () =>
+              (await readBrowserEventLists(page))[eventName].find(
+                (book) => book.id === "a1",
+              ),
+            )
+            .toMatchObject(latestContent);
+          const latestItems = (await readBrowserEventLists(page))[eventName];
+          expect((await saved(page)).ids).toEqual(order.raw);
+
+          await collapseExecutionSpaces(page);
+          await expect.poll(() => collapsedHeaderIds(page)).toHaveLength(5);
+          const beforeHeaders = await collapsedHeaderIds(page);
+          expect([...beforeHeaders].sort()).toEqual(
+            ["a1", "b1", "hall-b", "mixed-b", "priority-a"].sort(),
+          );
+          expect(new Set(beforeHeaders).size).toBe(5);
+          expect(beforeHeaders[beforeHeaders.indexOf("a1") + 1]).toBe("b1");
+          const movingIds = direction === "up" ? ["b1"] : ["a1", "a2", "a3"];
+          const reference = direction === "up" ? "b1" : "a1";
+          const arrow = page
+            .locator(
+              `[data-shopping-drag-column="execute"] [data-space-group-key][data-shopping-drag-reference-id="${reference}"]`,
+            )
+            .getByRole("button", {
+              name:
+                direction === "up"
+                  ? "グループを上に移動"
+                  : "グループを下に移動",
+              exact: true,
+            });
+          await expect(arrow).toBeEnabled();
+          await arrow.click();
+          const expectedRaw = order[direction];
+          // Existing hall/priority settings determine the initial group order.
+          // This R1 oracle swaps only the adjacent same-group visits.
+          const expectedHeaders = beforeHeaders.map((id) =>
+            id === "a1" ? "b1" : id === "b1" ? "a1" : id,
+          );
+          await expect
+            .poll(async () => (await saved(page)).ids)
+            .toEqual(expectedRaw);
+          await expect
+            .poll(() => collapsedHeaderIds(page))
+            .toEqual(expectedHeaders);
+          // Other groups keep their internal and relative raw order. Their
+          // absolute slots may shift when only the moving visit is removed.
+          expect(
+            (await saved(page)).ids.filter((id) => !movingIds.includes(id)),
+          ).toEqual(order.raw.filter((id) => !movingIds.includes(id)));
+          expect((await readBrowserEventLists(page))[eventName]).toEqual(
+            latestItems,
+          );
+
+          await page.reload();
+          await page.getByText(eventName, { exact: true }).click();
+          await collapseExecutionSpaces(page);
+          expect((await saved(page)).ids).toEqual(expectedRaw);
+          await expect
+            .poll(() => collapsedHeaderIds(page))
+            .toEqual(expectedHeaders);
+          expect((await readBrowserEventLists(page))[eventName]).toEqual(
+            latestItems,
+          );
+          await testInfo.attach("space-header-arrow-proof", {
+            body: Buffer.from(
+              JSON.stringify({
+                phone,
+                direction,
+                order: order.name,
+                beforeRaw: order.raw,
+                beforeHeaders,
+                movingIds,
+                expectedRaw,
+                displayedHeaders: await collapsedHeaderIds(page),
+                durable: await saved(page),
+                items: latestItems,
+              }),
+              "utf8",
+            ),
+            contentType: "application/json",
+          });
+        });
+  });
