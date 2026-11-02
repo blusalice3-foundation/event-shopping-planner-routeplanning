@@ -1,3 +1,4 @@
+import { buildExecutionPlacementVisitKey as buildExecutionVisitProjectionKey } from "../../../utils/executionPlacement";
 import { normalizeItemOptionalFields } from "../../../utils/itemOptionalFields";
 import { recordEntry } from "../../../utils/ownRecord";
 import type {
@@ -10,7 +11,6 @@ import type {
 } from "../../../types/item";
 import { normalizeLimitedPurchaseFields } from "../../../utils/purchaseQuantity";
 import {
-  buildExecutionVisitProjectionKey,
   findExecutionDayBucketKey,
   normalizeExecutionVisitDay,
   removeExecutionVisitMemberPreservingBasePosition,
@@ -112,6 +112,7 @@ export function computeDeleteItem(
           recordEntry(executeModeItems, eventDate),
           deletedItem,
           items,
+          buildExecutionVisitProjectionKey,
         )
       : recordEntry(executeModeItems, eventDate).filter(
           (id) => id !== deletedId,

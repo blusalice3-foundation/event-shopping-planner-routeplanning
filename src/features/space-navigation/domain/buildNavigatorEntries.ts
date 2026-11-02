@@ -1,3 +1,5 @@
+import type { ShoppingItem } from "../../../types/item";
+import { buildExecutionNavigationVisitId } from "../../../utils/executionPlacement";
 import type {
   FocusNavigatorSources,
   NavigatorBuildSource,
@@ -63,7 +65,7 @@ function uniqueInOrder(values: readonly string[]): string[] {
  */
 export function buildNavigatorEntries(
   sources: readonly NavigatorBuildSource[],
-  options: { phase?: NavigatorPhase } = {},
+  options: { phase?: NavigatorPhase; executionPlacement?: boolean } = {},
 ): NavigatorEntry[] {
   const order: string[] = [];
   const grouped = new Map<string, MutableEntrySource>();
@@ -81,6 +83,9 @@ export function buildNavigatorEntries(
       number,
       priorityLevel: visit.priorityLevel ?? firstItem?.priorityLevel,
     });
+    if (options.executionPlacement && firstItem && "eventDate" in firstItem) {
+      identity.id = buildExecutionNavigationVisitId(firstItem as ShoppingItem);
+    }
     const existing = grouped.get(identity.id);
 
     if (existing) {
@@ -125,7 +130,7 @@ export function buildNavigatorEntries(
 export function buildExecutionNavigatorEntries(
   items: readonly NavigatorItem[],
 ): NavigatorEntry[] {
-  return buildNavigatorEntries(items);
+  return buildNavigatorEntries(items, { executionPlacement: true });
 }
 
 /**

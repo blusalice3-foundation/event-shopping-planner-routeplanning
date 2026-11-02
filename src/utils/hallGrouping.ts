@@ -374,7 +374,10 @@ export function groupItemsByHallOrderWithResolver(
 ): HallGroupResult[] {
   // ホール定義なしでも、priorityLevel でアイテムを 3 バケット (highest / priority / none) に分離する。
   // null バケット(通常)はキーを `null` のままにして既存の消費側 (`groupId ?? fallback`) と後方互換を保つ。
-  if (hallDefinitions.length === 0) {
+  if (
+    hallDefinitions.length === 0 &&
+    items.every((item) => parseGroupId(resolveGroupId(item)).hallId === null)
+  ) {
     const noneBucket: ShoppingItem[] = [];
     const priorityBucket: ShoppingItem[] = [];
     const highestBucket: ShoppingItem[] = [];

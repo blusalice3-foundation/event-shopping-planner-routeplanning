@@ -30,6 +30,7 @@ import {
   resolveMapRouteHallOrder,
 } from "../../utils/mapRouteOrder";
 import { isPointInPolygon } from "./HallDefinitionPanel";
+import { isSameExecutionPlacementGroup } from "../../utils/executionPlacement";
 import {
   isManualHallCompatibleForMapRoute,
   resolveMapRouteCellForItem,
@@ -672,6 +673,29 @@ const MapView: React.FC<MapViewProps> = ({
     [mapData],
   );
 
+  // Keep the full preview order independent of the selected hall.
+  const insertDialogVisitItemIds = useMemo(() => {
+    if (!insertDialogState.isOpen || smartInsertMode !== "preview") return [];
+    return buildMapRouteVisitItemIds({
+      executeModeItemIds,
+      items,
+      mapData,
+      hallDefinitions: halls,
+      hallOrder: effectiveRouteHallOrder,
+      dayName: mapDayName || normalizeDisplayText(mapName),
+    });
+  }, [
+    insertDialogState.isOpen,
+    smartInsertMode,
+    executeModeItemIds,
+    items,
+    mapData,
+    halls,
+    effectiveRouteHallOrder,
+    mapDayName,
+    mapName,
+  ]);
+
   const includeMapInsertRoute = smartInsertEnabled && smartInsertMode === "map";
   const routeCalculation = useRouteCalculation({
     kind: "pair",
@@ -1254,7 +1278,7 @@ const MapView: React.FC<MapViewProps> = ({
     invalidate,
   ]);
   const handleInsertPositionSelect = useCallback(
-    (position: InsertPosition) => {
+    (requestedPosition: InsertPosition) => {
       const session = insertDialogState.session;
       if (!session || !isCurrent(session, "relay")) return;
       const item = insertDialogState.item;
@@ -1263,6 +1287,45 @@ const MapView: React.FC<MapViewProps> = ({
       const isBatch =
         batchInsertPendingIds !== null && batchInsertPendingIds.length > 0;
       const idsToInsert = isBatch ? batchInsertPendingIds : [item.id];
+      // A displayed group boundary may have different neighbours in saved raw IDs.
+      let position = requestedPosition;
+      if (position.type === "before" || position.type === "after") {
+        const referenceIndex = insertDialogVisitItemIds.indexOf(
+          position.referenceItemId,
+        );
+        const adjacentId =
+          insertDialogVisitItemIds[
+            referenceIndex + (position.type === "after" ? 1 : -1)
+          ];
+        const matchesInsertGroup = (referenceId: string) => {
+          const reference = itemsById.get(referenceId);
+          return (
+            reference !== undefined &&
+            idsToInsert.every((id) => {
+              const inserting = itemsById.get(id);
+              return (
+                inserting !== undefined &&
+                isSameExecutionPlacementGroup(inserting, reference, {
+                  allItems: items,
+                  mapData,
+                  hallDefinitions: halls,
+                })
+              );
+            })
+          );
+        };
+        if (
+          referenceIndex >= 0 &&
+          adjacentId &&
+          !matchesInsertGroup(position.referenceItemId) &&
+          matchesInsertGroup(adjacentId)
+        ) {
+          position = {
+            type: position.type === "after" ? "before" : "after",
+            referenceItemId: adjacentId,
+          };
+        }
+      }
 
       const addBatchNormally = () => {
         let insertedIds: string[] | null = null;
@@ -1440,6 +1503,11 @@ const MapView: React.FC<MapViewProps> = ({
       onBatchAddToExecuteList,
       onBatchAddToExecuteListAtPosition,
       executeModeItemIds,
+      insertDialogVisitItemIds,
+      itemsById,
+      items,
+      mapData,
+      halls,
       batchAddToHallVisitList,
       normalizeInsertedItemIds,
     ],
@@ -1448,11 +1516,13 @@ const MapView: React.FC<MapViewProps> = ({
   const insertDialogNearbyItems = useMemo(() => {
     const item =
       insertDialogState.item && itemsById.get(insertDialogState.item.id);
-    return item ? selectNearbyVisits(item, executeModeItemIds, itemsById) : [];
+    return item
+      ? selectNearbyVisits(item, insertDialogVisitItemIds, itemsById)
+      : [];
   }, [
     insertDialogState.item,
     itemsById,
-    executeModeItemIds,
+    insertDialogVisitItemIds,
     selectNearbyVisits,
   ]);
 
@@ -1463,8 +1533,7 @@ const MapView: React.FC<MapViewProps> = ({
   }, [insertDialogState.item, getHallCandidatesForItem]);
 
   const insertDialogAllVisitItems = useMemo(() => {
-    if (smartInsertMode !== "preview") return [];
-    return executeModeItemIds
+    return insertDialogVisitItemIds
       .map((eid, idx) => {
         const item = itemsById.get(eid);
         return item ? { item, visitIndex: idx } : null;
@@ -1472,7 +1541,7 @@ const MapView: React.FC<MapViewProps> = ({
       .filter(
         (v): v is { item: ShoppingItem; visitIndex: number } => v !== null,
       );
-  }, [smartInsertMode, executeModeItemIds, itemsById]);
+  }, [insertDialogVisitItemIds, itemsById]);
 
   const handleRemoveFromVisitList = useCallback(
     (itemId: string) => {

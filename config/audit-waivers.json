@@ -13,15 +13,10 @@
       "installedVersion": "58.5.1",
       "affectedPackages": [
         "@vercel/backends",
-        "@vercel/build-utils",
         "@vercel/cervel",
         "@vercel/express",
-        "@vercel/gatsby-plugin-vercel-builder",
         "@vercel/hono",
-        "@vercel/node",
-        "@vercel/python",
         "@vercel/python-analysis",
-        "@vercel/static-build",
         "vercel",
         "zod"
       ],
@@ -33,10 +28,6 @@
         {
           "path": "node_modules/@vercel/backends/node_modules/zod",
           "version": "3.22.4"
-        },
-        {
-          "path": "node_modules/@vercel/build-utils",
-          "version": "14.0.1"
         },
         {
           "path": "node_modules/@vercel/cervel",
@@ -51,10 +42,6 @@
           "version": "3.22.4"
         },
         {
-          "path": "node_modules/@vercel/gatsby-plugin-vercel-builder",
-          "version": "2.2.35"
-        },
-        {
           "path": "node_modules/@vercel/hono",
           "version": "0.2.112"
         },
@@ -63,24 +50,12 @@
           "version": "3.22.4"
         },
         {
-          "path": "node_modules/@vercel/node",
-          "version": "5.9.5"
-        },
-        {
-          "path": "node_modules/@vercel/python",
-          "version": "6.55.1"
-        },
-        {
           "path": "node_modules/@vercel/python-analysis",
           "version": "0.13.1"
         },
         {
           "path": "node_modules/@vercel/python-analysis/node_modules/zod",
           "version": "3.22.4"
-        },
-        {
-          "path": "node_modules/@vercel/static-build",
-          "version": "2.12.1"
         },
         {
           "path": "node_modules/vercel",

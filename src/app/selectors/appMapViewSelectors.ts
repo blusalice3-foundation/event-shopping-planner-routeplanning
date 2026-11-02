@@ -17,7 +17,10 @@ import type { UIVisibilitySettings } from "../../hooks/useUIVisibilitySettings";
 import { extractEventDates } from "../../utils/eventDates";
 import { getHallIdForItem } from "../../utils/hallGrouping";
 import { resolveDayKey } from "../../features/consistency/domain/context";
-import { getSpaceKey } from "../../utils/spaceGrouping";
+import {
+  isSameExecutionPlacementGroup,
+  isSameExecutionPlacementVisit,
+} from "../../utils/executionPlacement";
 
 export type AppDayModeStore = Readonly<Record<string, DayModeState>>;
 export type FocusModeSessionStore = Readonly<
@@ -137,33 +140,15 @@ const selectHallRelationship = (
 ): boolean => {
   const firstItem = input.items.find((item) => item.id === input.firstItemId);
   const secondItem = input.items.find((item) => item.id === input.secondItemId);
-  if (!firstItem || !secondItem || input.halls.length === 0) return true;
-
-  const firstHallId = selectItemHallId({
-    item: firstItem,
-    halls: input.halls,
+  if (!firstItem || !secondItem) return false;
+  const context = {
     mapData: input.mapData,
+    hallDefinitions: input.halls,
     allItems: input.items,
-  });
-  const secondHallId = selectItemHallId({
-    item: secondItem,
-    halls: input.halls,
-    mapData: input.mapData,
-    allItems: input.items,
-  });
-  if (firstHallId === null || secondHallId === null) return true;
-
-  const firstPriority = firstItem.priorityLevel ?? "none";
-  const secondPriority = secondItem.priorityLevel ?? "none";
-  if (firstHallId !== secondHallId || firstPriority !== secondPriority) {
-    return false;
-  }
-
-  return (
-    !includeSpace ||
-    getSpaceKey(firstItem.block, firstItem.number) ===
-      getSpaceKey(secondItem.block, secondItem.number)
-  );
+  };
+  return includeSpace
+    ? isSameExecutionPlacementVisit(firstItem, secondItem, context)
+    : isSameExecutionPlacementGroup(firstItem, secondItem, context);
 };
 
 export const selectItemsInSameHallVisit = (

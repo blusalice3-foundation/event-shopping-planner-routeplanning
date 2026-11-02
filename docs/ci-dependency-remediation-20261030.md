@@ -35,3 +35,17 @@ run40927291107はcoverageを含む先行検査を通過したが、transferの�
 手元Windowsの4条件・completion各10回は部分診断として独立保存し、Linux CIの合格や全144条件の実装完了へ流用しない。修正後のPR可否はGitHub上の全チェックで確認する。測定終了点・fixture・ウォームアップ・保存整合性・retry 0・既存性能基準は変更しない。
 
 原transfer／dragのPlaywright reportには、表示用metadata.gitDiffとproject側の同じ表示欄だけに既存U+FFFDがあった。元ZIPと展開bytesは一致し、元reportは加工保存しない。独立raw・traceと該当6サンプルの30証拠ファイルは文字コード・ハッシュ・時刻計算を確認し、この表示用metadataの問題を測定値や製品ソースの文字化けへ読み替えない。
+
+## PR #28の監査対象の再照合（2026-11-02）
+
+run41460472174のqualityジョブは、Reachability-aware auditで13件の照合エラーとなった。同じHEAD1a74b77のローカル監査でも再現した。依存バージョンと対象GHSAは同じだが、現在のnpm監査では@vercel/build-utils、@vercel/gatsby-plugin-vercel-builder、@vercel/node、@vercel/python、@vercel/static-buildの5件がHighではなくModerateになり、既存例外の「現在のHighだけと完全一致」という条件を満たさなくなっていた。
+
+既存例外VERCEL-ZOD3-2026-10-30から、この5パッケージと対応する5配置だけを外し、7パッケージ・10配置へ縮小した。既存の脆弱性ID、Vercel58.5.1と4配置のZod3.22.4を含む残存version/path、開発用属性、2026-11-13T00:00:00Zの期限、到達性の説明は維持する。監査ロジック、依存関係、High/Criticalの拒否条件、本番依存の独立監査は変更しない。
+
+Zod3の脆弱性自体は引き続き未修正であり、今回の変更は修正済み・無害化という判定ではない。旧12パッケージ・15配置という当時の記録と、失敗した元runは保持する。最新の全依存監査はHigh7・Critical0、本番依存監査はHigh0・Critical0だった。通常品質検証では実Vercel deploy/dev/buildを実行せず、既存の信頼できない入力に関する制約も維持する。
+
+### カード上下の仕様変更に伴う機能試験の前提更新
+
+後続のブラウザ機能試験4件では、単一スペースの本順をカード上下で変える旧前提が残っていた。通常の上下移動と、その日付統合確認のcancel/save/abortという既存の目的を保ち、2品目目の番号だけを01a2から隣接する別スペース02aへ変更した。既存の保存順[2,1]、変更内容だけの書込み、再読込、確認・取消・中止時の原子性の期待は維持する。スペース見出し用のfixture、製品コード、性能fixture・基準・回数・測定終了点は変更しない。
+
+同じ検証済みプレビューに対し、変更前の対象4件がすべて無効な上矢印で失敗する負の対照を残し、変更後の4件はすべて通過した（workers1、retry0）。証拠はD:/esp-quality-audit-evidence-20261102/card-arrow-fixtures-before-after-4006d6e-a1b6e7c8/に保存した。4006d6eでの全体quality:localも成功し、Vitestは3,886件通過・既定88件スキップだった。PR全体の合否は後続のGitHubチェックで確認する。

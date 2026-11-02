@@ -1,14 +1,17 @@
 import type { ShoppingItem } from "../../../types/item";
 import type { DayMapData, HallDefinition } from "../../../types/map";
 import {
-  groupItemsByHallOrder,
-  getItemGroupId,
-} from "../../../utils/hallGrouping";
-import {
-  buildExecutionVisitProjectionKey,
-  flattenExecutionVisitProjection,
   projectItemsToExecutionVisits,
+  type ProjectedVisit,
 } from "../../../utils/visitProjection";
+import {
+  buildExecutionPlacementGroupKey,
+  isSameExecutionPlacementGroup,
+  buildExecutionPlacementVisitKey,
+  flattenExecutionPlacementItems,
+  projectExecutionPlacementVisits,
+  type ExecutionPlacementContext,
+} from "../../../utils/executionPlacement";
 
 export type ShoppingDragColumn = "execute" | "candidate";
 export interface ShoppingDragPresentation {
@@ -17,8 +20,12 @@ export interface ShoppingDragPresentation {
   readonly halls: HallDefinition[];
   readonly hallOrder: string[];
   readonly map: DayMapData | null;
+  /** Complete membership peers across both columns; the UI supplies its projected event items. */
+  readonly allItems?: readonly ShoppingItem[];
 }
 export interface ShoppingDragPlacement {
+  readonly kind?: "items";
+  readonly expectedItemIds?: readonly string[];
   readonly boundary: "before" | "after" | "end";
   readonly referenceId?: string;
   readonly referenceKey?: string;
@@ -33,6 +40,18 @@ export interface ShoppingDragPlacement {
     readonly itemIds: readonly string[];
   }[];
   readonly positionedIds: readonly string[];
+  /** Separate canonical slots used only when dropping into a column's blank area. */
+  readonly columnVisitKeys?: readonly string[];
+  readonly hallTailReferences?: readonly {
+    readonly key: string;
+    readonly itemIds: readonly string[];
+  }[];
+  readonly hallTailInsertions?: readonly {
+    readonly anchorId: string;
+    readonly insertVisitIndex: number;
+    readonly visitKeys: readonly string[];
+    readonly itemIds: readonly string[];
+  }[];
   readonly presentation: ShoppingDragPresentation;
 }
 export interface ShoppingDragMoveContext {
@@ -52,45 +71,38 @@ export interface ShoppingDragMoveContext {
   readonly isCurrent: () => boolean;
   readonly placement?: ShoppingDragPlacement;
 }
+export const shoppingPlacementContext = (
+  presentation: ShoppingDragPresentation,
+  fallbackItems?: readonly ShoppingItem[],
+): ExecutionPlacementContext => ({
+  mapData: presentation.map,
+  hallDefinitions: presentation.halls,
+  allItems: presentation.allItems ?? fallbackItems,
+});
+
 export function projectShoppingDragDisplay(
   items: readonly ShoppingItem[],
   presentation: ShoppingDragPresentation,
 ): ShoppingItem[] {
-  const visits = flattenExecutionVisitProjection(items);
-  if (presentation.spaceGroups || !presentation.hallGroups) return visits;
-  const index = new Map(visits.map((item, position) => [item.id, position]));
-  return groupItemsByHallOrder(
-    visits,
-    presentation.map,
-    presentation.halls,
+  return flattenExecutionPlacementItems(
+    items,
+    shoppingPlacementContext(presentation, items),
     presentation.hallOrder,
-  )
-    .sort((a, b) => index.get(a.items[0].id)! - index.get(b.items[0].id)!)
-    .flatMap((group) => group.items);
+  );
 }
 export interface ShoppingDragLayout {
+  readonly context: ExecutionPlacementContext;
+  readonly rawItems: readonly ShoppingItem[];
   readonly items: readonly ShoppingItem[];
-  readonly visits: ReturnType<typeof projectItemsToExecutionVisits>;
+  readonly visits: ProjectedVisit[];
   readonly itemsById: ReadonlyMap<string, ShoppingItem>;
   readonly rawIndexById: ReadonlyMap<string, number>;
-  readonly bucketPositions: ReadonlyMap<
-    string,
-    {
-      readonly first: number;
-      readonly firstRawIndex: number;
-      readonly size: number;
-      readonly ranks: readonly number[];
-      readonly counts: readonly number[];
-    }
-  >;
-  readonly visitsByKey: ReadonlyMap<
-    string,
-    ReturnType<typeof projectItemsToExecutionVisits>[number]
-  >;
-  readonly visitBucketTails: ReadonlyMap<string, ReadonlyMap<string, string>>;
+  readonly visitInitialRawEnd: ReadonlyMap<string, number>;
+  readonly visitsByKey: ReadonlyMap<string, ProjectedVisit>;
   readonly displayVisitKeys: readonly string[];
   readonly visitBoundaryByItemIndex: readonly number[];
   readonly presentation: ShoppingDragPresentation;
+  readonly absentGroupSlots: Map<string, number>;
   readonly ranges: ReadonlyMap<
     string,
     { first: number; last: number; contiguous: boolean }
@@ -100,221 +112,285 @@ export interface ShoppingDragLayout {
 export function buildShoppingDragLayout(
   items: readonly ShoppingItem[],
   presentation: ShoppingDragPresentation,
+  displayItems?: readonly ShoppingItem[],
 ): ShoppingDragLayout {
-  const display = projectShoppingDragDisplay(items, presentation);
-  const rawIndexById = new Map(items.map((item, index) => [item.id, index]));
-  const rawVisitFirst = new Map(
-    projectItemsToExecutionVisits(items).map((visit) => [
-      visit.key,
-      visit.firstIndex,
-    ]),
-  );
-  const bucketPositions = new Map<
-    string,
-    {
-      first: number;
-      firstRawIndex: number;
-      size: number;
-      ranks: number[];
-      counts: number[];
-    }
-  >();
-  const visitBucketTails = new Map<string, Map<string, string>>();
+  const context = shoppingPlacementContext(presentation, items);
+  const preparedPresentation = presentation.allItems
+    ? presentation
+    : { ...presentation, allItems: items };
+  const visits = displayItems
+    ? projectItemsToExecutionVisits(displayItems, (item) =>
+        buildExecutionPlacementVisitKey(item, context),
+      )
+    : projectExecutionPlacementVisits(items, context, presentation.hallOrder);
+  const display = visits.flatMap((visit) => visit.items);
   const ranges = new Map<
     string,
     { first: number; last: number; contiguous: boolean }
   >();
   const buckets = new Map<string, { first: number; last: number }>();
-  display.forEach((item, index) => {
-    const key = buildExecutionVisitProjectionKey(item);
-    const range = ranges.get(key);
-    if (range) {
-      range.contiguous &&= range.last === index - 1;
-      range.last = index;
-    } else ranges.set(key, { first: index, last: index, contiguous: true });
-    const bucket = dragBucket(item, presentation);
-    let tails = visitBucketTails.get(key);
-    if (!tails) {
-      tails = new Map();
-      visitBucketTails.set(key, tails);
-    }
-    tails.set(bucket, item.id);
-    const rank = rawVisitFirst.get(key)!;
-    let position = bucketPositions.get(bucket);
-    if (!position) {
-      position = {
-        first: index,
-        firstRawIndex: rank,
-        size: 0,
-        ranks: [],
-        counts: [],
-      };
-      bucketPositions.set(bucket, position);
-    }
-    position.size++;
-    if (position.ranks.at(-1) === rank)
-      position.counts[position.counts.length - 1]++;
-    else {
-      position.ranks.push(rank);
-      position.counts.push(1);
-    }
-    const existing = buckets.get(bucket);
-    if (existing) existing.last = index;
-    else buckets.set(bucket, { first: index, last: index });
+  const boundaries: number[] = [];
+  visits.forEach((visit, visitIndex) => {
+    const first = boundaries.length;
+    visit.items.forEach((item) => {
+      boundaries.push(visitIndex);
+      const group = buildExecutionPlacementGroupKey(item, context);
+      const bucket = buckets.get(group);
+      if (bucket) bucket.last = boundaries.length - 1;
+      else
+        buckets.set(group, {
+          first: boundaries.length - 1,
+          last: boundaries.length - 1,
+        });
+    });
+    ranges.set(visit.key, {
+      first,
+      last: boundaries.length - 1,
+      contiguous: true,
+    });
   });
-  const visits = projectItemsToExecutionVisits(display);
-  const displayVisitKeys: string[] = [];
-  const visitBoundaryByItemIndex: number[] = [];
-  display.forEach((item) => {
-    const key = buildExecutionVisitProjectionKey(item);
-    if (displayVisitKeys.at(-1) !== key) displayVisitKeys.push(key);
-    visitBoundaryByItemIndex.push(displayVisitKeys.length - 1);
-  });
-  visitBoundaryByItemIndex.push(displayVisitKeys.length);
+  boundaries.push(visits.length);
+  const rawIndexById = new Map(items.map((item, index) => [item.id, index]));
+  const visitInitialRawEnd = new Map<string, number>();
+  for (const visit of visits) {
+    let end = rawIndexById.get(visit.itemIds[0])! + 1;
+    while (
+      end < items.length &&
+      buildExecutionPlacementVisitKey(items[end], context) === visit.key
+    )
+      end++;
+    visitInitialRawEnd.set(visit.key, end);
+  }
   return {
+    context,
+    rawItems: items,
     items: display,
     visits,
     itemsById: new Map(display.map((item) => [item.id, item])),
     rawIndexById,
-    bucketPositions,
+    visitInitialRawEnd,
     visitsByKey: new Map(visits.map((visit) => [visit.key, visit])),
-    visitBucketTails,
-    displayVisitKeys,
-    visitBoundaryByItemIndex,
-    presentation,
+    displayVisitKeys: visits.map((visit) => visit.key),
+    visitBoundaryByItemIndex: boundaries,
+    presentation: preparedPresentation,
+    absentGroupSlots: new Map(),
     ranges,
     buckets,
   };
 }
-function dragBucket(
-  item: ShoppingItem,
+export function shoppingDragHasSingleGroup(
+  moving: readonly ShoppingItem[],
   presentation: ShoppingDragPresentation,
-): string {
-  return presentation.spaceGroups || !presentation.hallGroups
-    ? "all"
-    : (getItemGroupId(item, presentation.map, presentation.halls) ??
-        "undefined");
+  context = shoppingPlacementContext(presentation, moving),
+): boolean {
+  if (!moving.length) return false;
+  const key = buildExecutionPlacementGroupKey(moving[0], context);
+  return moving.every(
+    (item) =>
+      buildExecutionPlacementGroupKey(item, context) === key &&
+      isSameExecutionPlacementGroup(moving[0], item, context),
+  );
 }
-/** Uses the prepared visit/bucket indexes; pointer movement never projects a snapshot. */
+function suggestedGroupSlot(
+  layout: ShoppingDragLayout,
+  first: ShoppingItem,
+): number {
+  const context = layout.context;
+  const group = buildExecutionPlacementGroupKey(first, context);
+  const bucket = layout.buckets.get(group);
+  if (bucket) return bucket.last + 1;
+  const cached = layout.absentGroupSlots.get(group);
+  if (cached !== undefined) return cached;
+  const combined = projectExecutionPlacementVisits(
+    [...layout.rawItems, first],
+    context,
+    layout.presentation.hallOrder,
+  );
+  const desired = combined.findIndex((visit) =>
+    visit.itemIds.includes(first.id),
+  );
+  const slot = combined
+    .slice(0, desired)
+    .reduce((sum, visit) => sum + visit.items.length, 0);
+  layout.absentGroupSlots.set(group, slot);
+  return slot;
+}
+/** The shared group zone includes its boundary before the next group's first visit. */
+export function isShoppingDragGroupSlot(
+  layout: ShoppingDragLayout,
+  item: ShoppingItem,
+  index: number,
+): boolean {
+  if (!isSameExecutionPlacementGroup(item, item, layout.context)) return false;
+  const key = buildExecutionPlacementGroupKey(item, layout.context);
+  const bucket = layout.buckets.get(key);
+  return bucket
+    ? index >= bucket.first && index <= bucket.last + 1
+    : index === suggestedGroupSlot(layout, item);
+}
+/** Indexed boundaries keep pointer movement independent of total item count. */
 export function resolveShoppingDragPlacement(
   layout: ShoppingDragLayout,
   moving: readonly ShoppingItem[],
   referenceId: string | undefined,
   boundary: "before" | "after" | "end",
 ): ShoppingDragPlacement | null {
-  const movingVisits = projectItemsToExecutionVisits(moving);
-  const existingByKey = layout.visitsByKey;
-  const merged = movingVisits.filter((visit) => existingByKey.has(visit.key));
-  const positioned = movingVisits.filter(
-    (visit) => !existingByKey.has(visit.key),
-  );
-  const mergeTargetIds = new Set<string>();
-  for (const visit of merged) {
-    const tails = layout.visitBucketTails.get(visit.key)!;
-    for (const item of visit.items) {
-      const destination = tails.get(dragBucket(item, layout.presentation));
-      // A new hall segment would split the existing visit instead of appending to it.
-      if (!destination) return null;
-      mergeTargetIds.add(destination);
-    }
-  }
-  const reference = referenceId ? layout.itemsById.get(referenceId) : undefined;
-  const referenceKey = reference && buildExecutionVisitProjectionKey(reference);
-  const range = referenceKey ? layout.ranges.get(referenceKey) : undefined;
-  if (
-    positioned.length > 0 &&
-    boundary !== "end" &&
-    (!reference || !range?.contiguous)
-  )
+  if (!shoppingDragHasSingleGroup(moving, layout.presentation, layout.context))
     return null;
+  const context = layout.context;
+  const groupKey = buildExecutionPlacementGroupKey(moving[0], context);
+  const movingVisits = projectExecutionPlacementVisits(moving, context);
+  const merged = movingVisits.filter((visit) =>
+    layout.visitsByKey.has(visit.key),
+  );
+  const positioned = movingVisits.filter(
+    (visit) => !layout.visitsByKey.has(visit.key),
+  );
+  const reference = referenceId ? layout.itemsById.get(referenceId) : undefined;
+  const referenceKey =
+    reference && buildExecutionPlacementVisitKey(reference, context);
+  const range = referenceKey ? layout.ranges.get(referenceKey) : undefined;
+  if (boundary !== "end" && !range) return null;
   const insertionIndex =
-    boundary === "end" || positioned.length === 0
+    boundary === "end"
       ? layout.items.length
       : boundary === "before"
         ? range!.first
         : range!.last + 1;
-  const anchor = layout.items[insertionIndex];
-  const rawAnchorIndex = anchor
-    ? layout.rawIndexById.get(anchor.id)!
-    : layout.rawIndexById.size;
-  // Resolve the canonical slot from prepared ranks, including legacy non-contiguous raw members.
-  // This checks only the moving visits and indexed hall buckets; full projection remains a drop check.
-  let previousBucket: string | undefined;
-  let previousBucketHasSuffix = false;
-  const emittedBuckets = new Set<string>();
-  for (const visit of positioned) {
-    const bucket = dragBucket(visit.items[0], layout.presentation);
-    if (
-      visit.items.some(
-        (item) => dragBucket(item, layout.presentation) !== bucket,
-      )
-    )
-      return null;
-    const position = layout.bucketPositions.get(bucket);
-    let actualIndex = 0;
-    let prefixSize = 0;
-    if (position) {
-      actualIndex = position.first;
-      for (
-        let index = 0;
-        index < position.ranks.length && position.ranks[index] < rawAnchorIndex;
-        index++
-      )
-        prefixSize += position.counts[index];
-      actualIndex += prefixSize;
-    } else {
-      layout.bucketPositions.forEach((existing) => {
-        if (existing.firstRawIndex < rawAnchorIndex)
-          actualIndex += existing.size;
-      });
-    }
-    if (actualIndex !== insertionIndex) return null;
-    if (previousBucket !== bucket) {
-      // Across buckets, the moved visits must remain one contiguous sequence:
-      // only the first bucket may have an existing prefix and only the last a suffix.
-      // Individual canonical slots can coincide even when hall grouping reverses them.
-      if (
-        emittedBuckets.has(bucket) ||
-        (previousBucket !== undefined &&
-          (previousBucketHasSuffix || prefixSize > 0))
-      )
-        return null;
-    }
-    emittedBuckets.add(bucket);
-    previousBucket = bucket;
-    previousBucketHasSuffix = (position?.size ?? 0) > prefixSize;
-  }
-  const nextItem =
-    positioned.length > 0 ? layout.items[insertionIndex] : undefined;
+  if (
+    positioned.length &&
+    !isShoppingDragGroupSlot(layout, moving[0], insertionIndex)
+  )
+    return null;
+  const next = layout.items[insertionIndex];
+  const previous = layout.items[insertionIndex - 1];
+  const nextInGroup =
+    next && buildExecutionPlacementGroupKey(next, context) === groupKey;
+  const previousInGroup =
+    previous && buildExecutionPlacementGroupKey(previous, context) === groupKey;
+  const previousKey =
+    previous && buildExecutionPlacementVisitKey(previous, context);
+  const anchor = nextInGroup
+    ? next
+    : previousInGroup && previousKey
+      ? layout.rawItems[layout.visitInitialRawEnd.get(previousKey)!]
+      : next;
   return {
     boundary,
     referenceId,
     referenceKey,
     referenceMemberIds: referenceKey
-      ? (existingByKey.get(referenceKey)?.itemIds ?? [])
+      ? layout.visitsByKey.get(referenceKey)!.itemIds
       : [],
-    anchorId: nextItem?.id ?? "__END_OF_LIST__",
+    anchorId: anchor?.id ?? "__END_OF_LIST__",
     baseVisitKeys: layout.displayVisitKeys,
     insertVisitIndex: layout.visitBoundaryByItemIndex[insertionIndex],
     positionedVisitKeys: positioned.map((visit) => visit.key),
+    positionedIds: positioned.flatMap((visit) => visit.itemIds),
     mergeVisits: merged.map((visit) => ({
       key: visit.key,
-      itemIds: existingByKey.get(visit.key)!.itemIds,
+      itemIds: layout.visitsByKey.get(visit.key)!.itemIds,
     })),
-    mergeTargetIds: [...mergeTargetIds],
-    positionedIds: positioned.flatMap((visit) => visit.itemIds),
+    mergeTargetIds: merged.map(
+      (visit) => layout.visitsByKey.get(visit.key)!.itemIds.at(-1)!,
+    ),
     presentation: layout.presentation,
+  };
+}
+/** The suggested slot is guidance; the workspace still requires a valid drop. */
+export function resolveShoppingDragColumnPlacement(
+  layout: ShoppingDragLayout,
+  moving: readonly ShoppingItem[],
+): ShoppingDragPlacement | null {
+  if (!shoppingDragHasSingleGroup(moving, layout.presentation, layout.context))
+    return null;
+  const context = layout.context;
+  const index = suggestedGroupSlot(layout, moving[0]);
+  const next = layout.items[index];
+  const previous = layout.items[index - 1];
+  const base = resolveShoppingDragPlacement(
+    layout,
+    moving,
+    next?.id ?? previous?.id,
+    next ? "before" : previous ? "after" : "end",
+  );
+  if (!base) return null;
+  const visitKeys = base.positionedVisitKeys;
+  const referenceKey =
+    previous && buildExecutionPlacementVisitKey(previous, context);
+  return {
+    ...base,
+    hallTailInsertions: [
+      {
+        anchorId: base.anchorId,
+        insertVisitIndex: base.insertVisitIndex,
+        visitKeys,
+        itemIds: base.positionedIds,
+      },
+    ],
+    hallTailReferences: referenceKey
+      ? [
+          {
+            key: referenceKey,
+            itemIds: layout.visitsByKey.get(referenceKey)!.itemIds,
+          },
+        ]
+      : [],
+  };
+}
+/** Same-space book reorders use card edges, while visits keep their base slot. */
+export function resolveShoppingBookPlacement(
+  layout: ShoppingDragLayout,
+  moving: readonly ShoppingItem[],
+  referenceId: string,
+  boundary: "before" | "after",
+): ShoppingDragPlacement | null {
+  const reference = layout.itemsById.get(referenceId);
+  if (
+    !reference ||
+    !moving.length ||
+    !shoppingDragHasSingleGroup(moving, layout.presentation, layout.context)
+  )
+    return null;
+  const context = layout.context;
+  const key = buildExecutionPlacementVisitKey(reference, context);
+  if (
+    !moving.every(
+      (item) => buildExecutionPlacementVisitKey(item, context) === key,
+    )
+  )
+    return null;
+  const index =
+    layout.items.findIndex((item) => item.id === referenceId) +
+    (boundary === "after" ? 1 : 0);
+  const expected = [...layout.items];
+  expected.splice(index, 0, ...moving);
+  return {
+    kind: "items",
+    boundary,
+    referenceId,
+    referenceKey: key,
+    referenceMemberIds: layout.visitsByKey.get(key)!.itemIds,
+    anchorId: layout.items[index]?.id ?? "__END_OF_LIST__",
+    baseVisitKeys: layout.displayVisitKeys,
+    insertVisitIndex: 0,
+    positionedVisitKeys: [],
+    positionedIds: moving.map((item) => item.id),
+    mergeTargetIds: [],
+    mergeVisits: [],
+    presentation: layout.presentation,
+    expectedItemIds: expected.map((item) => item.id),
   };
 }
 export function sameDragIds(
   first: readonly string[],
   second: readonly string[],
 ): boolean {
-  const secondIds = new Set(second);
+  const ids = new Set(second);
   return (
     first.length === second.length &&
-    new Set(first).size === new Set(second).size &&
-    first.every((id) => secondIds.has(id))
+    new Set(first).size === ids.size &&
+    first.every((id) => ids.has(id))
   );
 }
 export function validateShoppingDragPlacement(
@@ -322,64 +398,55 @@ export function validateShoppingDragPlacement(
   before: readonly ShoppingItem[],
   after: readonly ShoppingItem[],
 ): boolean {
-  const beforeVisits = projectItemsToExecutionVisits(before);
-  const beforeVisitIds = new Map(
-    beforeVisits.map((visit) => [visit.key, visit.itemIds]),
+  const context = shoppingPlacementContext(placement.presentation, before);
+  const visits = projectExecutionPlacementVisits(
+    before,
+    context,
+    placement.presentation.hallOrder,
   );
-  const preservesVisitOrder =
-    placement.presentation.spaceGroups || !placement.presentation.hallGroups;
-  const beforeKeys: string[] = [];
-  if (preservesVisitOrder) {
-    beforeVisits.forEach((visit) => beforeKeys.push(visit.key));
-  } else {
-    projectShoppingDragDisplay(before, placement.presentation).forEach(
-      (item) => {
-        const key = buildExecutionVisitProjectionKey(item);
-        if (beforeKeys.at(-1) !== key) beforeKeys.push(key);
-      },
+  const byKey = new Map(visits.map((visit) => [visit.key, visit.itemIds]));
+  if (
+    placement.referenceKey &&
+    !sameDragIds(
+      byKey.get(placement.referenceKey) ?? [],
+      placement.referenceMemberIds,
+    )
+  )
+    return false;
+  if (
+    placement.mergeVisits.some(
+      (visit) => !sameDragIds(byKey.get(visit.key) ?? [], visit.itemIds),
+    )
+  )
+    return false;
+  if (placement.kind === "items") {
+    const actual = projectShoppingDragDisplay(
+      after,
+      placement.presentation,
+    ).map((item) => item.id);
+    return (
+      actual.length === placement.expectedItemIds?.length &&
+      actual.every((id, index) => id === placement.expectedItemIds![index])
     );
   }
+  const beforeKeys = visits.map((visit) => visit.key);
   if (
     beforeKeys.length !== placement.baseVisitKeys.length ||
     beforeKeys.some((key, index) => key !== placement.baseVisitKeys[index])
   )
     return false;
-  if (placement.positionedVisitKeys.some((key) => beforeVisitIds.has(key)))
-    return false;
-  if (
-    placement.mergeVisits.some(
-      (visit) =>
-        !sameDragIds(beforeVisitIds.get(visit.key) ?? [], visit.itemIds),
-    )
-  )
-    return false;
-  if (
-    placement.referenceKey &&
-    !sameDragIds(
-      beforeVisitIds.get(placement.referenceKey) ?? [],
-      placement.referenceMemberIds,
-    )
-  )
-    return false;
-  const actual: string[] = [];
-  if (preservesVisitOrder) {
-    projectItemsToExecutionVisits(after).forEach((visit) =>
-      actual.push(visit.key),
+  const expected = [...(placement.columnVisitKeys ?? placement.baseVisitKeys)];
+  if (!placement.columnVisitKeys)
+    expected.splice(
+      placement.insertVisitIndex,
+      0,
+      ...placement.positionedVisitKeys,
     );
-  } else {
-    projectShoppingDragDisplay(after, placement.presentation).forEach(
-      (item) => {
-        const key = buildExecutionVisitProjectionKey(item);
-        if (actual.at(-1) !== key) actual.push(key);
-      },
-    );
-  }
-  const expected = [...placement.baseVisitKeys];
-  expected.splice(
-    placement.insertVisitIndex,
-    0,
-    ...placement.positionedVisitKeys,
-  );
+  const actual = projectExecutionPlacementVisits(
+    after,
+    context,
+    placement.presentation.hallOrder,
+  ).map((visit) => visit.key);
   return (
     actual.length === expected.length &&
     actual.every((key, index) => key === expected[index])

@@ -1,3 +1,7 @@
+import {
+  flattenExecutionPlacementItems,
+  type ExecutionPlacementContext,
+} from "../../utils/executionPlacement";
 import { recordEntry } from "../../utils/ownRecord";
 import type { SortState } from "../../features/app-shell/types";
 import {
@@ -13,7 +17,6 @@ import {
 } from "../../utils/purchaseQuantity";
 import {
   findExecutionDayBucketKey,
-  flattenExecutionVisitProjection,
   normalizeExecutionVisitDay,
 } from "../../utils/visitProjection";
 
@@ -36,6 +39,8 @@ export interface MapVisitListItemsSelectorInput {
   readonly dayName: string;
   readonly activeEventName: string | null;
   readonly mapTabName: string | null;
+  readonly placementContext?: ExecutionPlacementContext;
+  readonly hallOrder?: readonly string[];
   readonly executeModeItems: AppExecuteModeStore;
   readonly items: readonly ShoppingItem[];
 }
@@ -57,15 +62,19 @@ export const selectMapVisitListItems = (
     findExecutionDayBucketKey(Object.keys(eventExecuteItems), dayName) ??
     dayName;
   const executeIds = eventExecuteItems[executeDayKey] ?? [];
-  return flattenExecutionVisitProjection(
+  return flattenExecutionPlacementItems(
     executeIds.flatMap((id) => {
       const item = dayItemsById.get(id);
       return item ? [item] : [];
     }),
+    input.placementContext,
+    input.hallOrder,
   );
 };
 
 export interface ExecuteColumnItemsSelectorInput {
+  readonly placementContext?: ExecutionPlacementContext;
+  readonly hallOrder?: readonly string[];
   readonly activeEventName: string | null;
   readonly activeEventDate: string;
   readonly executeModeItems: AppExecuteModeStore;
@@ -81,10 +90,12 @@ export const selectExecuteColumnItems = (
       input.activeEventDate
     ] ?? [];
   const itemsById = new Map(input.items.map((item) => [item.id, item]));
-  return flattenExecutionVisitProjection(
+  return flattenExecutionPlacementItems(
     executeIds
       .map((id) => itemsById.get(id))
       .filter((item): item is ShoppingItem => item != null),
+    input.placementContext,
+    input.hallOrder,
   );
 };
 

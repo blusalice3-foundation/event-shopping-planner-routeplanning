@@ -136,6 +136,13 @@ const sortLabels: Record<SortState, string> = {
 };
 
 const App: React.FC = () => {
+  const [placementRejection, setPlacementRejection] = useState<string | null>(
+    null,
+  );
+  const showPlacementRejection = useCallback(
+    (message: string) => setPlacementRejection(message || null),
+    [],
+  );
   const navigation = useAppNavigationController();
   const { activeEventName, activeTab, mapViewActive } =
     selectNavigationReadModel(navigation.state);
@@ -385,6 +392,7 @@ const App: React.FC = () => {
     setExecuteCollapsedSpaces,
     clearSelection,
     removeSelectedItemIds,
+    captureSelectionConsumption,
     clearRangeSelection,
     clearBlockFilters,
     toggleBlockFilter,
@@ -394,6 +402,21 @@ const App: React.FC = () => {
     selectSpaceGroupForRange,
     toggleRangeItemIdsSelection,
   } = useListInteractionState();
+  const selectionRevisionRef = useRef(0);
+  const selectionRevisionInputsRef = useRef([
+    selectedItemIds,
+    rangeStart,
+    rangeEnd,
+  ]);
+  const selectionInputs = [selectedItemIds, rangeStart, rangeEnd];
+  if (
+    selectionInputs.some(
+      (value, index) => value !== selectionRevisionInputsRef.current[index],
+    )
+  ) {
+    selectionRevisionRef.current++;
+    selectionRevisionInputsRef.current = selectionInputs;
+  }
 
   const pendingEventUpdateBaseItemsRef = useRef<ShoppingItem[] | null>(null);
   const eventUpdatePreviewEpochRef = useRef(0);
@@ -814,6 +837,7 @@ const App: React.FC = () => {
   } = useShoppingItemMutationCommands({
     state: {
       getEventGeneration: application.coordinator.generation,
+      getSelectionRevision: () => selectionRevisionRef.current,
       activeEventName,
       activeEventDate,
       eventLists,
@@ -836,6 +860,7 @@ const App: React.FC = () => {
       updateItemFields: application.updateItemFields,
       queueShoppingMovePatch: application.queueShoppingMovePatch,
       removeSelectedItemIds,
+      captureSelectionConsumption,
       setEventMetadata,
       setDayModes,
       updateExecuteModeItems,
@@ -853,7 +878,7 @@ const App: React.FC = () => {
       areItemsInSameHall,
       areItemsInSameHallGroup,
     },
-    alerts: { notify: alert },
+    alerts: { notify: alert, placementRejected: showPlacementRejection },
     persistence: { commitApplicationSnapshotPatch },
   });
 
@@ -2088,6 +2113,22 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-200 font-sans">
       <MutationConfirmationDialog application={application} />
+      {placementRejection && (
+        <div
+          role="alert"
+          data-shopping-placement-rejection
+          className="fixed left-4 right-4 top-20 z-[100] rounded bg-red-700 p-3 text-white shadow-lg"
+        >
+          {placementRejection}
+          <button
+            type="button"
+            className="ml-4 underline"
+            onClick={() => setPlacementRejection(null)}
+          >
+            閉じる
+          </button>
+        </div>
+      )}
       {migrationNotices.length > 0 && (
         <section role="status" className="bg-amber-50 text-amber-950 p-3">
           <h2 className="font-bold">保存データの移行内容</h2>
@@ -2467,6 +2508,7 @@ const App: React.FC = () => {
         commit={handleUpdateItems}
       >
         <AppMainContent
+          onPlacementRejected={showPlacementRejection}
           eventGeneration={
             activeEventName
               ? application.coordinator.generation(activeEventName)

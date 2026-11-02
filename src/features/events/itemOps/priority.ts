@@ -1,3 +1,4 @@
+import { inheritProjectedMembership } from "../../consistency/domain/projection";
 import type {
   DayMapData,
   HallDefinition,
@@ -23,9 +24,12 @@ export function computeUpdateItemPriority(
   currentHallRouteSettings: HallRouteSettings,
 ): UpdateItemPriorityResult {
   // アイテムの優先度更新
-  const newItems = allItems.map((item) =>
-    item.id === itemId ? { ...item, priorityLevel } : item,
-  );
+  const newItems = allItems.map((item) => {
+    if (item.id !== itemId) return item;
+    const updated = { ...item, priorityLevel };
+    inheritProjectedMembership(item, updated);
+    return updated;
+  });
 
   const item = allItems.find((i) => i.id === itemId);
   if (!item) {

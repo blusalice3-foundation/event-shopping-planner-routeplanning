@@ -7,6 +7,7 @@ import {
   fireEvent,
   render,
   screen,
+  within,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ShoppingItem } from "../types/item";
@@ -35,6 +36,7 @@ const makeProps = (): ListProps => ({
   onMoveItem: vi.fn(),
   onMoveItemUp: vi.fn(),
   onMoveItemDown: vi.fn(),
+  onSetSpaceGroupDragItemIds: vi.fn(),
   onEditRequest: vi.fn(),
   onDeleteRequest: vi.fn(),
   selectedItemIds: new Set(),
@@ -167,19 +169,206 @@ describe("shopping reorder mode boundary", () => {
     },
   );
 
-  it("keeps editing movement and selection available", () => {
-    const props = makeProps();
+  const spaceItems: ShoppingItem[] = [
+    { ...items[0], id: "a", number: "1" },
+    { ...items[0], id: "b1", number: "2" },
+    { ...items[0], id: "b2", number: "2" },
+    { ...items[1], id: "c", number: "3" },
+  ];
+  const cardArrow = (
+    container: HTMLElement,
+    id: string,
+    direction: "up" | "down",
+  ) =>
+    within(row(container, id)).getByRole("button", {
+      name: direction === "up" ? "上に移動" : "下に移動",
+    });
+
+  it.each(
+    layouts.flatMap((layoutMode) =>
+      (["flat", "hall", "space"] as const).map((grouping) => ({
+        layoutMode,
+        grouping,
+      })),
+    ),
+  )(
+    "moves a whole space from every card in $layoutMode/$grouping",
+    ({ layoutMode, grouping }) => {
+      const props: ListProps = {
+        ...makeProps(),
+        items: spaceItems,
+        layoutMode,
+        showSpaceGroups: grouping === "space",
+        showHallGroups: grouping === "hall",
+        hallDefinitions:
+          grouping === "hall"
+            ? [
+                {
+                  id: "east",
+                  name: "東ホール",
+                  vertices: [],
+                  blockNames: ["A"],
+                },
+              ]
+            : [],
+      };
+      const view = render(<ShoppingList {...props} />);
+      expect(cardArrow(view.container, "a", "up")).toBeDisabled();
+      expect(cardArrow(view.container, "a", "down")).toBeEnabled();
+      expect(cardArrow(view.container, "c", "up")).toBeEnabled();
+      expect(cardArrow(view.container, "c", "down")).toBeDisabled();
+      for (const id of ["b1", "b2"]) {
+        expect(cardArrow(view.container, id, "up")).toBeEnabled();
+        expect(cardArrow(view.container, id, "down")).toBeEnabled();
+      }
+      fireEvent.click(cardArrow(view.container, "b2", "up"));
+      expect(props.onMoveItemUp).toHaveBeenLastCalledWith("b1", "execute");
+      expect(props.onSetSpaceGroupDragItemIds).toHaveBeenNthCalledWith(1, [
+        "b1",
+        "b2",
+      ]);
+      expect(props.onSetSpaceGroupDragItemIds).toHaveBeenNthCalledWith(2, null);
+      fireEvent.click(cardArrow(view.container, "b1", "down"));
+      expect(props.onMoveItemDown).toHaveBeenLastCalledWith("b2", "execute");
+      expect(props.onSetSpaceGroupDragItemIds).toHaveBeenNthCalledWith(3, [
+        "b1",
+        "b2",
+      ]);
+      expect(props.onSetSpaceGroupDragItemIds).toHaveBeenNthCalledWith(4, null);
+      expect(row(view.container, "b1")).toHaveAttribute("draggable", "true");
+      fireEvent.click(within(row(view.container, "b1")).getByRole("checkbox"));
+      expect(props.onSelectItem).toHaveBeenCalledWith(
+        "b1",
+        "execute",
+        expect.any(Object),
+      );
+    },
+  );
+
+  it.each(["execute", "candidate"] as const)(
+    "matches header move requests and selection handling in the %s column",
+    (columnType) => {
+      const props: ListProps = {
+        ...makeProps(),
+        items: spaceItems,
+        columnType,
+        selectedItemIds: new Set(["b1", "c"]),
+      };
+      const view = render(<ShoppingList {...props} />);
+      fireEvent.click(cardArrow(view.container, "b2", "up"));
+      fireEvent.click(cardArrow(view.container, "b1", "down"));
+      expect(props.onMoveItemUp).toHaveBeenLastCalledWith("b1", columnType);
+      expect(props.onMoveItemDown).toHaveBeenLastCalledWith("b2", columnType);
+      expect(vi.mocked(props.onSetSpaceGroupDragItemIds!).mock.calls).toEqual([
+        [["b1", "c"]],
+        [null],
+        [["b1", "c"]],
+        [null],
+      ]);
+      vi.mocked(props.onMoveItemUp!).mockClear();
+      vi.mocked(props.onMoveItemDown!).mockClear();
+      vi.mocked(props.onSetSpaceGroupDragItemIds!).mockClear();
+      view.rerender(
+        <ShoppingList
+          {...props}
+          showSpaceGroups
+          collapsedSpaces={
+            new Set(
+              spaceItems.map((item) => getSpaceKey(item.block, item.number)),
+            )
+          }
+        />,
+      );
+      fireEvent.click(
+        screen.getAllByRole("button", {
+          name: "グループを上に移動",
+        })[1],
+      );
+      fireEvent.click(
+        screen.getAllByRole("button", {
+          name: "グループを下に移動",
+        })[1],
+      );
+      expect(props.onMoveItemUp).toHaveBeenLastCalledWith("b1", columnType);
+      expect(props.onMoveItemDown).toHaveBeenLastCalledWith("b2", columnType);
+      expect(vi.mocked(props.onSetSpaceGroupDragItemIds!).mock.calls).toEqual([
+        [["b1", "c"]],
+        [null],
+        [["b1", "c"]],
+        [null],
+      ]);
+    },
+  );
+
+  it.each(["execute", "candidate"] as const)(
+    "does not use %s card arrows to reorder books inside the only space",
+    (columnType) => {
+      const props: ListProps = {
+        ...makeProps(),
+        columnType,
+        items: spaceItems.slice(1, 3),
+      };
+      const view = render(<ShoppingList {...props} />);
+      for (const id of ["b1", "b2"]) {
+        for (const direction of ["up", "down"] as const) {
+          const arrow = cardArrow(view.container, id, direction);
+          expect(arrow).toBeDisabled();
+          fireEvent.click(arrow);
+        }
+      }
+      expectNoMove(props);
+      expect(props.onSetSpaceGroupDragItemIds).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["priority", "hall"] as const)(
+    "keeps the existing %s boundary on every card",
+    (boundary) => {
+      const props: ListProps = {
+        ...makeProps(),
+        items:
+          boundary === "priority"
+            ? [{ ...items[0], priorityLevel: "highest" }, items[1]]
+            : [items[0], { ...items[1], block: "B" }],
+        hallDefinitions:
+          boundary === "hall"
+            ? [
+                {
+                  id: "east",
+                  name: "東ホール",
+                  vertices: [],
+                  blockNames: ["A"],
+                },
+                {
+                  id: "west",
+                  name: "西ホール",
+                  vertices: [],
+                  blockNames: ["B"],
+                },
+              ]
+            : [],
+      };
+      const view = render(<ShoppingList {...props} />);
+      for (const id of ["first", "last"]) {
+        expect(cardArrow(view.container, id, "up")).toBeDisabled();
+        expect(cardArrow(view.container, id, "down")).toBeDisabled();
+      }
+    },
+  );
+
+  it("disables an unselected card when its space has a mixed placement selection", () => {
+    const props: ListProps = {
+      ...makeProps(),
+      items: [
+        ...spaceItems,
+        { ...items[1], id: "priority", number: "4", priorityLevel: "highest" },
+      ],
+      selectedItemIds: new Set(["b1", "priority"]),
+    };
     const view = render(<ShoppingList {...props} />);
-    const source = row(view.container, "first");
-    expect(source).toHaveAttribute("draggable", "true");
-    fireEvent.click(screen.getAllByRole("button", { name: "下に移動" })[0]);
-    expect(props.onMoveItemDown).toHaveBeenCalledWith("first", "execute");
-    fireEvent.click(
-      screen.getByRole("checkbox", {
-        name: "Select item 確認サークル1 - 確認品目1",
-      }),
-    );
-    expect(props.onSelectItem).toHaveBeenCalled();
+    expect(cardArrow(view.container, "b2", "up")).toBeDisabled();
+    expect(cardArrow(view.container, "b2", "down")).toBeDisabled();
+    expect(cardArrow(view.container, "a", "down")).toBeEnabled();
   });
 
   it.each(nonEditModes)(

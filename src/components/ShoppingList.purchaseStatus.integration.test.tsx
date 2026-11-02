@@ -607,10 +607,14 @@ describe("ShoppingList purchase status control mode", () => {
     await waitFor(() =>
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
     );
+    const priorityGroup = document
+      .querySelector<HTMLElement>('[data-item-id="priority"]')
+      ?.closest<HTMLElement>('[data-row-key^="group:"]');
+    if (!priorityGroup) throw new Error("Priority group missing");
     fireEvent.click(
-      screen.getAllByRole("button", {
+      within(priorityGroup).getByRole("button", {
         name: "スペースを閉じて次のスペースを展開",
-      })[1],
+      }),
     );
 
     expect(onCollapseAndOpenNext).not.toHaveBeenCalled();

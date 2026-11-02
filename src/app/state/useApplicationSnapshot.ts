@@ -1,3 +1,4 @@
+import type { ShoppingItem } from "../../types/item";
 import {
   sameDay,
   existingDayKey,
@@ -7,8 +8,15 @@ import {
   shoppingItemIds,
   shoppingExecuteIds,
   shoppingMoveVisitBaseline,
+  shoppingMovePlacementBaseline,
+  shoppingMoveInitialDayMergeSignature,
+  ShoppingPlacementChangedError,
+  SHOPPING_PLACEMENT_CHANGED_REASON,
 } from "../commands/shoppingMoveMutation";
-import type { QueueShoppingMovePatch } from "../commands/ApplicationSnapshotCommitPort";
+import type {
+  QueueShoppingMovePatch,
+  ShoppingMoveCompletion,
+} from "../commands/ApplicationSnapshotCommitPort";
 import type { ApplicationShoppingMove } from "../ports/PersistenceCommandPort";
 import {
   isPersistenceWriteStopReason,
@@ -72,6 +80,7 @@ import {
   projectConsistencySnapshot,
   createConsistencySnapshotProjector,
   canReuseProjectedItem,
+  inheritProjectedMembership,
 } from "../../features/consistency/domain/projection";
 import { createEventConsistency } from "../../types/consistency";
 import {
@@ -147,7 +156,26 @@ type Batch = {
   inputItemIds?: readonly string[];
   shoppingMoves?: readonly ApplicationShoppingMove[];
   shoppingOnly?: boolean;
+  shoppingMoveCompletions?: readonly ((
+    result: ShoppingMoveCompletion,
+  ) => void)[];
+  abortedShoppingMoves?: Set<number>;
 };
+function settleShoppingMoves(
+  batch: Batch | undefined,
+  result: ShoppingMoveCompletion = {
+    status: "aborted",
+    reason: SHOPPING_PLACEMENT_CHANGED_REASON,
+  },
+): void {
+  batch?.shoppingMoveCompletions?.forEach((resolve, index) => {
+    resolve(
+      result.status === "committed" && batch.abortedShoppingMoves?.has(index)
+        ? { status: "aborted", reason: SHOPPING_PLACEMENT_CHANGED_REASON }
+        : result,
+    );
+  });
+}
 function changedSnapshotStores(
   base: PersistenceSnapshot,
   snapshot: PersistenceSnapshot,
@@ -185,8 +213,58 @@ function planBatch(
   choices: MutationChoices = {},
 ): MutationPlan {
   batch.assertCurrent?.(latest);
-  if (batch.shoppingOnly && batch.shoppingMoves?.length === 1)
-    return planShoppingMove(latest, batch.shoppingMoves[0], choices);
+  if (batch.shoppingOnly && batch.shoppingMoves?.length) {
+    let snapshot = latest;
+    let accepted = 0;
+    const initialReviews: MutationConfirmation[] = [];
+    const invalidatedEvents = new Set<string>();
+    batch.shoppingMoves.forEach((move, index) => {
+      if (batch.abortedShoppingMoves?.has(index)) return;
+      try {
+        const planned = planShoppingMove(snapshot, move, choices);
+        if (planned.confirmation) initialReviews.push(planned.confirmation);
+        snapshot = planned.snapshot;
+        planned.invalidatedEvents?.forEach((event) =>
+          invalidatedEvents.add(event),
+        );
+        accepted++;
+      } catch (error) {
+        if (!(error instanceof ShoppingPlacementChangedError)) throw error;
+        batch.abortedShoppingMoves ??= new Set();
+        batch.abortedShoppingMoves.add(index);
+        batch.shoppingMoveCompletions?.[index]?.({
+          status: "aborted",
+          reason: error.message,
+        });
+      }
+    });
+    if (!accepted && batch.abortedShoppingMoves?.size)
+      throw new ShoppingPlacementChangedError();
+    batch.acceptedBase = latest;
+    batch.acceptedDraft = snapshot;
+    return {
+      snapshot,
+      ...(initialReviews.length
+        ? {
+            confirmation:
+              initialReviews.length === 1
+                ? initialReviews[0]
+                : {
+                    ...initialReviews[0],
+                    details: initialReviews.flatMap((review) => review.details),
+                    choices: initialReviews.flatMap(
+                      (review) => review.choices ?? [],
+                    ),
+                    comparison: initialReviews.map(
+                      (review) => review.comparison,
+                    ),
+                  },
+          }
+        : {}),
+      invalidatedEvents: [...invalidatedEvents],
+      ...(accepted ? {} : { skipCommit: true }),
+    };
+  }
   if (batch.itemContentEdits)
     return planItemContentMutation(latest, batch.itemContentEdits);
   let shoppingReview: MutationConfirmation | undefined;
@@ -635,6 +713,9 @@ export function useApplicationSnapshot(
         },
         onExpired: (ids) => {
           const expired = new Set(ids);
+          submitted.current
+            .filter((batch) => expired.has(batch.id))
+            .forEach((batch) => settleShoppingMoves(batch));
           submitted.current = submitted.current.filter(
             (batch) => !expired.has(batch.id),
           );
@@ -699,6 +780,36 @@ export function useApplicationSnapshot(
               batch.acceptedDraft ?? batch.draft,
               next,
             ) as PersistenceSnapshot);
+        if (!batch.itemContentEdits) {
+          const prepared = batch.acceptedDraft ?? batch.draft;
+          for (const [eventName, eventItems] of Object.entries(
+            next.eventLists,
+          )) {
+            if (eventItems === recordEntry(prepared.eventLists, eventName))
+              continue;
+            // A quantity/priority/order overlay does not change hall resolution.
+            // Never carry metadata across a map, definition or assignment edit.
+            if (
+              recordEntry(next.mapData, eventName) !==
+                recordEntry(prepared.mapData, eventName) ||
+              recordEntry(next.hallDefinitions, eventName) !==
+                recordEntry(prepared.hallDefinitions, eventName) ||
+              recordEntry(next.eventConsistency, eventName) !==
+                recordEntry(prepared.eventConsistency, eventName)
+            )
+              continue;
+            const preparedById = new Map(
+              (
+                (recordEntry(prepared.eventLists, eventName) ??
+                  []) as ShoppingItem[]
+              ).map((item) => [item.id, item]),
+            );
+            for (const item of eventItems as ShoppingItem[]) {
+              const before = preparedById.get(item.id);
+              if (before) inheritProjectedMembership(before, item);
+            }
+          }
+        }
       }
       previewRef.current = next;
       previewInputs.current = { raw: rawRef.current, ...context };
@@ -773,6 +884,18 @@ export function useApplicationSnapshot(
             setRetainedOperationIds([...retained.current]);
         }
       }
+      settleShoppingMoves(
+        submitted.current.find((batch) => batch.id === id),
+        result.status === "committed"
+          ? { status: "committed" }
+          : result.status === "cancelled"
+            ? { status: "cancelled" }
+            : {
+                status: "aborted",
+                reason:
+                  "確認が無効になったため移動を中止しました。現在の内容を確認してやり直してください。",
+              },
+      );
       releasePending(id);
       submitted.current = submitted.current.filter((batch) => batch.id !== id);
       rebuildPreview();
@@ -813,6 +936,9 @@ export function useApplicationSnapshot(
       return accepted;
     });
     suspended.current.clear();
+    batches.forEach((batch) =>
+      settleShoppingMoves(batch, { status: "aborted", reason: reason.message }),
+    );
     for (const resolver of resolvers.current.values()) resolver.reject(reason);
     resolvers.current.clear();
     setConfirmations([]);
@@ -862,6 +988,7 @@ export function useApplicationSnapshot(
         ((batch?.retainOnConflict || batch?.retryOnFailure) &&
           !(error instanceof MutationCancelledError) &&
           !(error instanceof MutationTargetMissingError) &&
+          !(error instanceof ShoppingPlacementChangedError) &&
           !(error instanceof CommittedStateApplyError))
       ) {
         suspended.current.add(id);
@@ -881,6 +1008,13 @@ export function useApplicationSnapshot(
         rebuildPreview();
         return;
       }
+      settleShoppingMoves(batch, {
+        status: "aborted",
+        reason:
+          error instanceof Error
+            ? error.message
+            : SHOPPING_PLACEMENT_CHANGED_REASON,
+      });
       coordinator.discard(id);
       releasePending(id);
       submitted.current = submitted.current.filter((batch) => batch.id !== id);
@@ -891,7 +1025,10 @@ export function useApplicationSnapshot(
       resolvers.current.get(id)?.reject(error);
       resolvers.current.delete(id);
       setPendingCount(resolvers.current.size);
-      if (!(error instanceof MutationCancelledError))
+      if (
+        !(error instanceof MutationCancelledError) &&
+        !(error instanceof ShoppingPlacementChangedError)
+      )
         setFailure(
           error instanceof Error ? error.message : "保存に失敗しました。",
         );
@@ -1002,15 +1139,16 @@ export function useApplicationSnapshot(
             ? batch.shoppingMoves[0]
             : undefined,
         // Snapshot guards must run in the planner, including on CAS retries.
-        dayMutation: batch.assertCurrent
-          ? undefined
-          : collectDayMutation(
-              batch.base,
-              batch.draft,
-              batch.context.eventName,
-              batch.context.day,
-              batch.context.routeDays,
-            ),
+        dayMutation:
+          batch.assertCurrent || batch.shoppingMoves?.length
+            ? undefined
+            : collectDayMutation(
+                batch.base,
+                batch.draft,
+                batch.context.eventName,
+                batch.context.day,
+                batch.context.routeDays,
+              ),
         plan: (latest, choices) => {
           const plan = planBatch(batch, latest, choices);
           if (batch.itemContentEdits) {
@@ -1062,6 +1200,7 @@ export function useApplicationSnapshot(
           `set${key[0].toUpperCase()}${key.slice(1)}`,
           (action: SetStateAction<PersistedStateValues[typeof key]>) => {
             if (writeStopReason.current) return;
+            if (draft.current?.shoppingOnly) flushDraft();
             const previous = (draft.current?.draft ?? previewRef.current)[key];
             // React state updaters are immutable. Preserve all untouched date branches
             // for day commands instead of cloning historical visits and route settings.
@@ -1197,6 +1336,7 @@ export function useApplicationSnapshot(
           effectiveIds: [...input.effectiveIds],
           hoverId: input.hoverId,
           candidateSortMode: input.candidateSortMode,
+          ...(input.reorderWithinVisit ? { reorderWithinVisit: true } : {}),
           baselineItemIds,
           itemIds,
           baselineExecuteIds,
@@ -1207,6 +1347,16 @@ export function useApplicationSnapshot(
             input.day,
           ),
         };
+        command.initialDayMergeSignature = shoppingMoveInitialDayMergeSignature(
+          rawRef.current,
+          input.eventName,
+          input.day,
+        );
+        command.placementBaseline = shoppingMovePlacementBaseline(
+          latest,
+          command,
+          true,
+        );
         // Validate and prepare every patch before touching the accepted draft.
         const index = new Map(
           items.map((item) => [(item as { id: string }).id, item]),
@@ -1296,7 +1446,8 @@ export function useApplicationSnapshot(
         // Keep content edits on their original accepted/retry path before a structural proposal.
         const boundary =
           draft.current &&
-          (draft.current.itemContentEdits ||
+          (!draft.current.shoppingOnly ||
+            draft.current.itemContentEdits ||
             draft.current.context.eventName !== input.eventName ||
             draft.current.context.day !== input.day);
         const previousBatch = boundary ? null : draft.current;
@@ -1305,16 +1456,21 @@ export function useApplicationSnapshot(
           ...(previousBatch?.shoppingMoves ?? []),
           command,
         ];
+        let resolveCompletion!: (result: ShoppingMoveCompletion) => void;
+        const completion = new Promise<ShoppingMoveCompletion>((resolve) => {
+          resolveCompletion = resolve;
+        });
+        const shoppingMoveCompletions = [
+          ...(previousBatch?.shoppingMoveCompletions ?? []),
+          resolveCompletion,
+        ];
         const batch: Batch = previousBatch
           ? {
               ...previousBatch,
               draft: next,
               shoppingMoves,
-              shoppingOnly: false,
-              itemContentEdits: collectItemContentEdits(
-                previousBatch.base,
-                next,
-              ),
+              shoppingOnly: true,
+              shoppingMoveCompletions,
             }
           : {
               id,
@@ -1324,6 +1480,7 @@ export function useApplicationSnapshot(
               retryOnFailure: true,
               shoppingMoves,
               shoppingOnly: true,
+              shoppingMoveCompletions,
             };
         const moveId = `${id}:move:${shoppingMoves.length}`;
         // Preparation can throw without changing the existing accepted draft.
@@ -1334,7 +1491,7 @@ export function useApplicationSnapshot(
         previewRef.current = next;
         previewInputs.current = { raw: rawRef.current, ...context };
         recordAcceptedShoppingMove(id, moveId);
-        return { status: "accepted", operationId: id, moveId };
+        return { status: "accepted", operationId: id, moveId, completion };
       } catch (error) {
         return {
           status: "blocked",

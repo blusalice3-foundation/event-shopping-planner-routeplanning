@@ -50,9 +50,19 @@ export interface ShoppingMovePatch {
   effectiveIds: readonly string[];
   hoverId: string;
   candidateSortMode?: string;
+  reorderWithinVisit?: boolean;
 }
+export type ShoppingMoveCompletion =
+  | { status: "committed" }
+  | { status: "cancelled" }
+  | { status: "aborted"; reason: string };
 export type ShoppingMoveReceipt =
-  | { status: "accepted"; operationId: string; moveId: string }
+  | {
+      status: "accepted";
+      operationId: string;
+      moveId: string;
+      completion?: Promise<ShoppingMoveCompletion>;
+    }
   | { status: "noop"; reason: "same-order" }
   | { status: "blocked"; reason: string };
 export type QueueShoppingMovePatch = (

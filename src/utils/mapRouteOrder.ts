@@ -3,9 +3,8 @@ import type { DayMapData, HallDefinition } from "../types/map";
 import {
   resolveItemGroupIdForMapRoute,
   sortItemsByGroupOrderWithResolver,
-  sortItemsByHallOrder,
 } from "./hallGrouping";
-import { projectItemsToExecutionVisits } from "./visitProjection";
+import { projectExecutionPlacementVisits } from "./executionPlacement";
 
 export const normalizeMapRouteDayText = (
   value: string | null | undefined,
@@ -63,23 +62,15 @@ function buildMapRouteExecuteVisits(params: {
         normalizeMapRouteDayText(item.eventDate) === normalizedDayName,
     );
 
-  const sortedItems =
-    params.selectedHallId !== undefined
-      ? sortItemsByMapRouteGroupOrder(
-          visitItems,
-          params.mapData,
-          params.hallDefinitions,
-          params.hallOrder,
-          params.selectedHallId,
-        )
-      : sortItemsByHallOrder(
-          visitItems,
-          params.mapData,
-          params.hallDefinitions,
-          params.hallOrder,
-        );
-
-  return projectItemsToExecutionVisits(sortedItems);
+  return projectExecutionPlacementVisits(
+    visitItems,
+    {
+      mapData: params.mapData,
+      hallDefinitions: params.hallDefinitions,
+      allItems: params.items,
+    },
+    params.hallOrder,
+  );
 }
 
 export function sortItemsByMapRouteGroupOrder(

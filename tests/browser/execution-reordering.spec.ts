@@ -7,14 +7,14 @@ const row = (id: string) =>
 
 test.use({ serviceWorkers: "block", video: "off", trace: "off" });
 
-async function restore(page: Page) {
+async function restore(page: Page, sameVisitBooks = false) {
   const items = ["1", "2", "3"].map((id) => ({
     id,
     eventDate: day,
     circle: "ユーザー登録" + id,
     title: "新刊" + id,
     block: "A",
-    number: id,
+    number: sameVisitBooks && id !== "3" ? (id === "1" ? "01a" : "01a2") : id,
     price: 500,
     quantity: 1,
     purchaseStatus: "None",
@@ -187,34 +187,82 @@ for (const layout of ["pc", "smartphone"] as const) {
   }
 }
 
-test("editing still changes the execution order and retains it after reload", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1440, height: 1000 });
-  await restore(page);
-  await page.locator('button[title="編集モード"]').click();
-  const execute = page.locator('[data-shopping-drag-column="execute"]');
-  const first = execute.locator(row("1"));
-  await expect(
-    first.getByRole("button", { name: "下に移動", exact: true }),
-  ).toBeEnabled();
-  await first.getByRole("button", { name: "下に移動", exact: true }).click();
-  await expect
-    .poll(() =>
-      execute
-        .locator("[data-item-id]:not([data-space-group-key])")
-        .evaluateAll((elements) => [
-          ...new Set(
-            elements
-              .filter((element) => element.getClientRects().length > 0)
-              .map((element) => element.getAttribute("data-item-id")),
-          ),
-        ]),
-    )
-    .toEqual(["2", "1", "3"]);
-  await page.locator('button[title="実行モード"]').click();
-  await expect.poll(() => visibleOrder(page)).toEqual(["2", "1", "3"]);
-  await page.reload();
-  await page.getByText(eventName, { exact: true }).click();
-  await expect.poll(() => visibleOrder(page)).toEqual(["2", "1", "3"]);
-});
+for (const layout of ["pc", "smartphone"] as const) {
+  for (const grouped of [false, true]) {
+    test(`${layout}, grouped=${grouped}: card arrows move the whole space like heading arrows and persist after reload`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(
+        layout === "pc"
+          ? { width: 1440, height: 1000 }
+          : { width: 390, height: 844 },
+      );
+      await restore(page, true);
+      await page.locator('button[title="編集モード"]').click();
+      const execute = page.locator('[data-shopping-drag-column="execute"]');
+      await expect(execute).toBeVisible();
+      const grouping = page
+        .locator("main")
+        .getByRole("button", { name: "スペース別", exact: true })
+        .first();
+      if (
+        (await grouping.getAttribute("class"))?.includes("bg-blue-600") !==
+        grouped
+      )
+        await grouping.click();
+      const inner = execute.locator(row("2"));
+      await expect.poll(() => visibleOrder(page)).toEqual(["1", "2", "3"]);
+      await expect(
+        inner.getByRole("button", { name: "上に移動", exact: true }),
+      ).toBeDisabled();
+      await expect(
+        inner.getByRole("button", { name: "下に移動", exact: true }),
+      ).toBeEnabled();
+      await inner
+        .getByRole("button", { name: "下に移動", exact: true })
+        .click();
+      await expect.poll(() => visibleOrder(page)).toEqual(["3", "1", "2"]);
+      for (const id of ["1", "2"]) {
+        const card = execute.locator(row(id));
+        await expect(
+          card.getByRole("button", { name: "下に移動", exact: true }),
+        ).toBeDisabled();
+        await expect(
+          card.getByRole("button", { name: "上に移動", exact: true }),
+        ).toBeEnabled();
+      }
+      await execute
+        .locator(row("1"))
+        .getByRole("button", { name: "上に移動", exact: true })
+        .click();
+      await expect.poll(() => visibleOrder(page)).toEqual(["1", "2", "3"]);
+      if (grouped) {
+        await page
+          .locator("main")
+          .getByRole("button", { name: "全て折りたたむ", exact: true })
+          .first()
+          .click();
+        const headingDown = execute
+          .getByRole("button", { name: "グループを下に移動", exact: true })
+          .first();
+        await expect(headingDown).toBeEnabled();
+        await headingDown.click();
+        await page
+          .locator("main")
+          .getByRole("button", { name: "全て展開", exact: true })
+          .first()
+          .click();
+      } else {
+        await inner
+          .getByRole("button", { name: "下に移動", exact: true })
+          .click();
+      }
+      await expect.poll(() => visibleOrder(page)).toEqual(["3", "1", "2"]);
+      await page.locator('button[title="実行モード"]').click();
+      await expect.poll(() => visibleOrder(page)).toEqual(["3", "1", "2"]);
+      await page.reload();
+      await page.getByText(eventName, { exact: true }).click();
+      await expect.poll(() => visibleOrder(page)).toEqual(["3", "1", "2"]);
+    });
+  }
+}

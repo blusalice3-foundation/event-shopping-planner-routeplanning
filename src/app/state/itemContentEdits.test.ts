@@ -1,3 +1,10 @@
+import type { ShoppingItem } from "../../types/item";
+import {
+  projectConsistencySnapshot,
+  projectedMembership,
+  inheritProjectedMembership,
+} from "../../features/consistency/domain/projection";
+import { buildExecutionPlacementVisitKey } from "../../utils/executionPlacement";
 import { describe, expect, it } from "vitest";
 import { emptyApplicationSnapshot } from "./useApplicationSnapshot";
 import {
@@ -115,4 +122,55 @@ describe("accepted item field edits", () => {
       }),
     ).toBeUndefined();
   });
+});
+
+it("retains resolved membership for an immediate quantity edit followed by placement", () => {
+  const raw = snapshot();
+  raw.hallDefinitions = {
+    event: {
+      "__mapless__:1日目": [
+        { id: "east", name: "東館", blockNames: ["A"], vertices: [] },
+      ],
+    },
+  };
+  const projected = projectConsistencySnapshot(raw, "event", "1日目");
+  const before = projected.eventLists.event[0] as ShoppingItem;
+  expect(projectedMembership(before)?.status).toBe("resolved");
+  const next = applyItemContentEdits(projected, [
+    {
+      eventName: "event",
+      itemId: "one",
+      baseline: {},
+      fields: { quantity: { present: true, value: 7 } },
+    },
+  ]);
+  const after = next.eventLists.event[0] as ShoppingItem;
+  expect(after).not.toBe(before);
+  expect(after.quantity).toBe(7);
+  expect(projectedMembership(after)).toBe(projectedMembership(before));
+  expect(buildExecutionPlacementVisitKey(after)).toBe(
+    buildExecutionPlacementVisitKey(before),
+  );
+});
+
+it("does not copy resolved membership across routing changes", () => {
+  const raw = snapshot();
+  raw.hallDefinitions = {
+    event: {
+      "__mapless__:1日目": [
+        { id: "east", name: "東館", blockNames: ["A"], vertices: [] },
+      ],
+    },
+  };
+  const projected = projectConsistencySnapshot(raw, "event", "1日目");
+  const before = projected.eventLists.event[0] as ShoppingItem;
+  for (const changed of [
+    { ...before, block: "B" },
+    { ...before, number: "2" },
+    { ...before, eventDate: "2日目" },
+    { ...before, manualHallId: undefined },
+  ]) {
+    inheritProjectedMembership(before, changed);
+    expect(projectedMembership(changed)).toBeUndefined();
+  }
 });

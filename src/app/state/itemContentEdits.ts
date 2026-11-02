@@ -1,3 +1,4 @@
+import { inheritProjectedMembership } from "../../features/consistency/domain/projection";
 import type { ShoppingItem } from "../../types/item";
 import { resolveLimitedPurchaseIntent } from "../../utils/limitedPurchaseIntent";
 import { recordEntry } from "../../utils/ownRecord";
@@ -143,6 +144,10 @@ export function applyItemContentEdits(
         }
       }
       if (value !== item) {
+        inheritProjectedMembership(
+          item as unknown as ShoppingItem,
+          value as unknown as ShoppingItem,
+        );
         if (next === items) next = items.slice();
         next[position] = value;
         changedIndices.push(position);

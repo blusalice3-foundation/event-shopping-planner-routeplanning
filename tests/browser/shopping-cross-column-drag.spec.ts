@@ -17,6 +17,20 @@ test.use({
 });
 const eventName = "列間ドラッグ検証";
 const day = "1日目";
+const dropSaveTargetMapping = {
+  policyId: "execution-placement-valid-drop-save-target-2026-11-01",
+  approvalSource: "call_ffc847ef15264588957ed8343692485d",
+  sourcePattern: "new-${i}",
+  previous: { id: "priority", edge: "after", priorityLevel: "priority" },
+  current: { id: "a1", edge: "before", priorityLevel: "none" },
+} as const;
+const localityDiagnosticEnabled =
+  process.env.ESP_DRAG_LOCALITY_DIAGNOSTIC === "1";
+const priorLocalityFailureKeys = [
+  "item:execute-220",
+  "item:execute-225",
+  "item:execute-230",
+] as const;
 type Input = "native" | "touch";
 const makeItem = (
   id: string,
@@ -111,6 +125,22 @@ function fixture(count = 150, candidateOrder = false) {
 }
 function performanceFixture(count: number) {
   const backup = fixture(count);
+  // Placement rules 2026-11-01: successful multi-space drags share one hall.
+  // Exchange two existing execution addresses so item count, both halls, and
+  // the map's distinct numeric cells/geometry remain exactly the same load.
+  const items = backup.data.eventLists[eventName];
+  const farA = items.find(
+    (item) => item.id === `execute-${Math.floor(count / 2) - 6}`,
+  )!;
+  const offscreen = items.find((item) => item.id === "offscreen")!;
+  const mergeOffscreen = items.find((item) => item.id === "merge-offscreen")!;
+  const farANumber = farA.number;
+  farA.block = offscreen.block;
+  farA.number = offscreen.number;
+  offscreen.block = "A";
+  offscreen.number = `${farANumber}a`;
+  mergeOffscreen.block = "A";
+  mergeOffscreen.number = `${farANumber}a2`;
   // One visible priority visit keeps all pointer cases inside the real viewport; both hall and priority constraints remain active.
   backup.data.eventLists[eventName].forEach((item) => {
     if (item.id.startsWith("execute-")) item.priorityLevel = "none";
@@ -167,6 +197,104 @@ function performanceFixture(count: number) {
   order.unshift("priority");
   return backup;
 }
+// Independent load guard for the narrowly authorized fixture revision.
+for (const count of [150, 500])
+  test(`same-hall drag fixture preserves original load: ${count}`, () => {
+    const original = fixture(count);
+    const revised = performanceFixture(count);
+    const originalItems = original.data.eventLists[eventName];
+    const revisedItems = revised.data.eventLists[eventName];
+    expect(revisedItems).toHaveLength(count);
+    expect(revised.data.executeModeItems).toEqual({
+      [eventName]: {
+        [day]: [
+          "priority",
+          ...original.data.executeModeItems[eventName][day].filter(
+            (id) => id !== "priority",
+          ),
+        ],
+      },
+    });
+    const originalPerformanceItems = originalItems.map((item) =>
+      item.id.startsWith("execute-")
+        ? { ...item, priorityLevel: "none" }
+        : item,
+    );
+    const originalFarA = originalPerformanceItems.find(
+      (item) => item.id === `execute-${Math.floor(count / 2) - 6}`,
+    )!;
+    const originalOffscreen = originalPerformanceItems.find(
+      (item) => item.id === "offscreen",
+    )!;
+    const expectedItems = originalPerformanceItems.map((item) =>
+      item.id === originalFarA.id
+        ? {
+            ...item,
+            block: originalOffscreen.block,
+            number: originalOffscreen.number,
+          }
+        : item.id === "offscreen"
+          ? { ...item, block: "A", number: `${originalFarA.number}a` }
+          : item.id === "merge-offscreen"
+            ? { ...item, block: "A", number: `${originalFarA.number}a2` }
+            : item,
+    );
+    // Compare with 19c's original performanceFixture transformations, not
+    // fixture()'s raw filler priorities. Only the three approved addresses differ.
+    expect(revisedItems).toEqual(expectedItems);
+    const expectedNumberCells = (block: string) =>
+      [
+        ...new Set(
+          originalItems
+            .filter((item) => item.block === block)
+            .map((item) => Number.parseInt(item.number, 10)),
+        ),
+      ].sort((a, b) => a - b);
+    const map = (
+      revised.data.mapData as Record<
+        string,
+        Record<
+          string,
+          {
+            blocks: Array<{
+              name: string;
+              numberCells: Array<{ value: number }>;
+            }>;
+            maxRow: number;
+            maxCol: number;
+          }
+        >
+      >
+    )[eventName][`${day}マップ`];
+    expect(map.blocks.map((block) => block.name)).toEqual(["A", "B"]);
+    for (const block of map.blocks)
+      expect(block.numberCells.map((cell) => cell.value)).toEqual(
+        expectedNumberCells(block.name),
+      );
+    expect(map.maxCol).toBe(27);
+    expect(map.maxRow).toBe(
+      Math.max(
+        ...["A", "B"].map(
+          (block) => Math.ceil(expectedNumberCells(block).length / 10) + 2,
+        ),
+      ),
+    );
+    expect(
+      revisedItems
+        .filter((item) =>
+          ["merge-a", "merge-b", "merge-offscreen", "offscreen"].includes(
+            item.id,
+          ),
+        )
+        .every((item) => item.block === "A" && item.priorityLevel === "none"),
+    ).toBe(true);
+    expect(originalItems.find((item) => item.id === "offscreen")!.block).toBe(
+      "B",
+    );
+    expect(
+      originalItems.find((item) => item.id === "merge-offscreen")!.block,
+    ).toBe("B");
+  });
 async function restore(
   page: Page,
   value: ReturnType<typeof fixture>,
@@ -304,34 +432,233 @@ async function hover(
   scroll = 0,
 ) {
   return page.evaluate(
-    async ({ input, id, edge, grouped, scroll }) => {
+    async ({ input, id, edge, grouped, scroll, observeGeometry }) => {
       const state = window as unknown as {
         __dragTransfer: DataTransfer;
         __dragSource: string;
       };
-      const target = document.querySelector<HTMLElement>(
-        `[data-item-id=${JSON.stringify(id)}]:not([data-space-group-key])`,
-      )!;
-      const root = target.closest<HTMLElement>("[data-shopping-drag-column]")!;
-      const header = grouped
-        ? root.querySelector<HTMLElement>(`[data-space-group-key]`)
-        : null;
-      const owner = grouped
-        ? target.closest<HTMLElement>('[data-row-key^="group:"]')
-        : null;
-      const top = (owner ?? target).getBoundingClientRect();
-      const next =
-        id === "a1"
-          ? root.querySelector<HTMLElement>(
-              '[data-item-id="a2"]:not([data-space-group-key])',
+      const itemElement = (itemId: string): HTMLElement | null => {
+        const card = document.querySelector<HTMLElement>(
+          `[data-item-id=${JSON.stringify(itemId)}]:not([data-space-group-key])`,
+        );
+        if (card && !card.closest(".esp-shopping-touch-clone")) return card;
+        const rowKey = `item:${JSON.stringify(itemId)}`;
+        return document.querySelector<HTMLElement>(
+          `[data-row-key=${JSON.stringify(rowKey)}], [data-viewport-row-key=${JSON.stringify(rowKey)}]`,
+        );
+      };
+      const readTarget = () => {
+        const target = itemElement(id);
+        if (!target) return null;
+        const root = target.closest<HTMLElement>("[data-shopping-drag-column]");
+        if (!root) return null;
+        const header = grouped
+          ? root.querySelector<HTMLElement>(`[data-space-group-key]`)
+          : null;
+        const owner = grouped
+          ? target.closest<HTMLElement>(
+              '[data-row-key^="group:"], [data-viewport-row-key^="group:"]',
             )
           : null;
-      const bottom = owner ? top : (next ?? target).getBoundingClientRect();
-      const y =
-        edge === "before"
-          ? top.top + Math.max(4, (bottom.bottom - top.top) * 0.25)
-          : top.top + Math.max(6, (bottom.bottom - top.top) * 0.75);
-      const x = top.left + 20;
+        const top = (owner ?? target).getBoundingClientRect();
+        const next = id === "a1" ? itemElement("a2") : null;
+        const bottom = owner ? top : (next ?? target).getBoundingClientRect();
+        const y =
+          edge === "before"
+            ? top.top + Math.max(4, (bottom.bottom - top.top) * 0.25)
+            : top.top + Math.max(6, (bottom.bottom - top.top) * 0.75);
+        const x = top.left + 20;
+        const viewportScroll = { x: window.scrollX, y: window.scrollY };
+        return {
+          target,
+          root,
+          header,
+          owner,
+          top,
+          next,
+          bottom,
+          x,
+          y,
+          documentPoint: { x: x + viewportScroll.x, y: y + viewportScroll.y },
+          hit: document.elementFromPoint(x, y),
+        };
+      };
+      const pointVisible = (
+        value: NonNullable<ReturnType<typeof readTarget>>,
+      ) =>
+        value.x >= 0 &&
+        value.x < window.innerWidth &&
+        value.y >= 0 &&
+        value.y < window.innerHeight;
+      const pointExposed = (
+        value: NonNullable<ReturnType<typeof readTarget>>,
+      ) => {
+        if (
+          !pointVisible(value) ||
+          !value.target.isConnected ||
+          !value.hit?.isConnected
+        )
+          return false;
+        if (value.owner) return value.owner.contains(value.hit);
+        const containsHit = (element: HTMLElement | null) => {
+          if (!element) return false;
+          const row = element.closest(
+            '[data-row-key^="item:"], [data-viewport-row-key^="item:"]',
+          );
+          return element.contains(value.hit) || !!row?.contains(value.hit);
+        };
+        // The original a1 boundary spans a1 through a2, including its after point.
+        return containsHit(value.target) || containsHit(value.next);
+      };
+      let ready = readTarget();
+      if (!ready)
+        throw new Error(
+          `Hover target ${id} has no card or retained logical item slot in a shopping column.`,
+        );
+      let visibilityPreparation: {
+        frames: number;
+        before: { x: number; y: number; scrollY: number };
+        after: { x: number; y: number; scrollY: number };
+      } | null = null;
+      if (!pointExposed(ready)) {
+        const before = { x: ready.x, y: ready.y, scrollY: window.scrollY };
+        const rowKey = `item:${JSON.stringify(id)}`;
+        const slot = document.querySelector<HTMLElement>(
+          `[data-row-key=${JSON.stringify(rowKey)}], [data-viewport-row-key=${JSON.stringify(rowKey)}]`,
+        );
+        (slot ?? ready.target).scrollIntoView({
+          block: "center",
+          inline: "nearest",
+          behavior: "instant",
+        });
+        let previousDocumentPoint: { x: number; y: number } | null = null;
+        let stable = false;
+        let previousRead: ReturnType<typeof readTarget> = null;
+        let lastRead: ReturnType<typeof readTarget> = ready;
+        for (let frame = 1; frame <= 60; frame++) {
+          await new Promise(requestAnimationFrame);
+          const current = readTarget();
+          previousRead = lastRead;
+          lastRead = current;
+          if (!current || !pointExposed(current)) {
+            previousDocumentPoint = null;
+            if (current) {
+              // Mounting or an overlay can hide the requested point. Reacquire
+              // only this same ID/edge's current connected public row.
+              const currentSlot = document.querySelector<HTMLElement>(
+                `[data-row-key=${JSON.stringify(rowKey)}], [data-viewport-row-key=${JSON.stringify(rowKey)}]`,
+              );
+              const currentTarget = currentSlot?.isConnected
+                ? currentSlot
+                : current.target;
+              if (currentTarget.isConnected)
+                currentTarget.scrollIntoView({
+                  block: "center",
+                  inline: "nearest",
+                  behavior: "instant",
+                });
+            }
+            continue;
+          }
+          if (
+            previousDocumentPoint &&
+            Math.abs(previousDocumentPoint.x - current.documentPoint.x) <= 1 &&
+            Math.abs(previousDocumentPoint.y - current.documentPoint.y) <= 1
+          ) {
+            ready = current;
+            visibilityPreparation = {
+              frames: frame,
+              before,
+              after: { x: current.x, y: current.y, scrollY: window.scrollY },
+            };
+            stable = true;
+            break;
+          }
+          // Window auto-scroll moves viewport coordinates without moving the target.
+          previousDocumentPoint = current.documentPoint;
+        }
+        if (!stable) {
+          // Failure-only observation: reuse the final two existing reads.
+          // Successful calls retain the same geometry reads, input and clock.
+          const bounds = (value: DOMRect) => ({
+            x: value.x,
+            y: value.y,
+            top: value.top,
+            bottom: value.bottom,
+            left: value.left,
+            right: value.right,
+            width: value.width,
+            height: value.height,
+          });
+          const cachedRead = (value: ReturnType<typeof readTarget>) =>
+            value
+              ? {
+                  point: { x: value.x, y: value.y },
+                  documentPoint: value.documentPoint,
+                  pointInsideViewport: pointVisible(value),
+                  pointExposed: pointExposed(value),
+                  top: bounds(value.top),
+                  bottom: bounds(value.bottom),
+                }
+              : null;
+          const describe = (element: Element | null | undefined) =>
+            element
+              ? {
+                  tag: element.tagName,
+                  connected: element.isConnected,
+                  itemId: element.getAttribute("data-item-id"),
+                  rowKey: element.getAttribute("data-row-key"),
+                  viewportRowKey: element.getAttribute("data-viewport-row-key"),
+                  viewportActive: element.getAttribute("data-viewport-active"),
+                  viewportRetain: element.getAttribute("data-viewport-retain"),
+                  column: element.getAttribute("data-shopping-drag-column"),
+                  className: element.getAttribute("class"),
+                  rect: bounds(element.getBoundingClientRect()),
+                }
+              : null;
+          const hit =
+            lastRead && typeof document.elementFromPoint === "function"
+              ? document.elementFromPoint(lastRead.x, lastRead.y)
+              : null;
+          const scrolling = document.scrollingElement;
+          const readinessFailure = {
+            requested: { id, edge, grouped, input, scroll },
+            limits: { maximumReadinessFrames: 60, requiredStableFrames: 2 },
+            before,
+            initialRead: cachedRead(ready),
+            previousRead: cachedRead(previousRead),
+            lastRead: cachedRead(lastRead),
+            target: describe(lastRead?.target),
+            retainedSlot: describe(slot),
+            owner: describe(lastRead?.owner),
+            root: describe(lastRead?.root),
+            hit: describe(hit),
+            hitRow: describe(
+              hit?.closest(
+                "[data-item-id], [data-row-key], [data-viewport-row-key]",
+              ),
+            ),
+            viewport: {
+              width: window.innerWidth,
+              height: window.innerHeight,
+              scrollX: window.scrollX,
+              scrollY: window.scrollY,
+              scrollHeight: scrolling?.scrollHeight ?? null,
+              clientHeight: scrolling?.clientHeight ?? null,
+              maxScrollY: scrolling
+                ? scrolling.scrollHeight - scrolling.clientHeight
+                : null,
+            },
+            responseClockStarted: false,
+            inputDispatched: false,
+            diagnosticReadsOnlyAfterFailure: true,
+          };
+          throw new Error(
+            `Hover target ${id} did not expose its requested ${edge} point in the viewport within 60 animation frames. readinessFailure=${JSON.stringify(readinessFailure)}`,
+          );
+        }
+      }
+      const { target, root, header, owner, top, next, bottom, x, y } = ready;
       const scrollBefore = window.scrollY;
       const began = performance.now();
       if (scroll) window.scrollBy(0, scroll);
@@ -368,9 +695,12 @@ async function hover(
       await new Promise((resolve) => setTimeout(resolve, 0));
       // Keep the existing response interval separate from the guide audit reads.
       const ms = performance.now() - began;
-      return {
+      const response = {
         ms,
+        // Reuse the dispatched coordinates; no additional geometry reads.
+        inputPoint: { x, y },
         viewportScroll: { before: scrollBefore, after: window.scrollY },
+        visibilityPreparation,
         status: root.querySelector<HTMLElement>("[data-shopping-drag-status]")
           ?.dataset.shoppingDragStatus,
         text: root.querySelector("[data-shopping-drag-status]")?.textContent,
@@ -400,8 +730,125 @@ async function hover(
         }),
         header: !!header,
       };
+      // Observe only after the original response clock and guide audit fields.
+      if (!observeGeometry && response.status !== undefined) return response;
+      const bounds = (value: DOMRect) => ({
+        x: value.x,
+        y: value.y,
+        top: value.top,
+        bottom: value.bottom,
+        left: value.left,
+        right: value.right,
+        width: value.width,
+        height: value.height,
+      });
+      const describe = (element: Element | null) =>
+        element
+          ? {
+              tag: element.tagName,
+              connected: element.isConnected,
+              itemId: element.getAttribute("data-item-id"),
+              referenceId: element.getAttribute(
+                "data-shopping-drag-reference-id",
+              ),
+              rowKey: element.getAttribute("data-row-key"),
+              viewportRowKey: element.getAttribute("data-viewport-row-key"),
+              viewportActive: element.getAttribute("data-viewport-active"),
+              viewportRetain: element.getAttribute("data-viewport-retain"),
+              column: element.getAttribute("data-shopping-drag-column"),
+              surface: element.getAttribute("data-shopping-drag-surface"),
+              spaceGroupKey: element.getAttribute("data-space-group-key"),
+              className: element.getAttribute("class"),
+              rect: bounds(element.getBoundingClientRect()),
+            }
+          : null;
+      const hit =
+        typeof document.elementFromPoint === "function"
+          ? document.elementFromPoint(x, y)
+          : null;
+      const ancestry = [];
+      for (
+        let element = hit;
+        element && ancestry.length < 12;
+        element = element.parentElement
+      )
+        ancestry.push(describe(element));
+      const currentTarget = itemElement(id);
+      const source =
+        typeof state.__dragSource === "string"
+          ? itemElement(state.__dragSource)
+          : null;
+      const clone = document.querySelector(".esp-shopping-touch-clone");
+      return {
+        ...response,
+        geometry: {
+          requested: { id, edge, grouped, input, scroll },
+          point: { x, y },
+          pointInsideViewport:
+            x >= 0 && x < window.innerWidth && y >= 0 && y < window.innerHeight,
+          initialVisitTop: bounds(top),
+          initialVisitBottom: bounds(bottom),
+          originalTarget: describe(target),
+          originalOwner: describe(owner),
+          nextVisitMember: describe(next),
+          currentTarget: describe(currentTarget),
+          hit: describe(hit),
+          hitAncestry: ancestry,
+          hitColumn: describe(
+            hit?.closest(
+              "[data-shopping-drag-column], [data-shopping-drag-surface]",
+            ) ?? null,
+          ),
+          root: describe(root),
+          header: describe(document.querySelector("header")),
+          viewport: {
+            scrollX: window.scrollX,
+            scrollY: window.scrollY,
+            width: window.innerWidth,
+            height: window.innerHeight,
+            scrollHeight: document.documentElement.scrollHeight,
+            devicePixelRatio: window.devicePixelRatio,
+            visual: window.visualViewport
+              ? {
+                  top: window.visualViewport.offsetTop,
+                  left: window.visualViewport.offsetLeft,
+                  width: window.visualViewport.width,
+                  height: window.visualViewport.height,
+                  scale: window.visualViewport.scale,
+                }
+              : null,
+          },
+          source: {
+            id: state.__dragSource,
+            element: describe(source),
+            retainedOwner: describe(
+              source?.closest("[data-viewport-retain]") ?? null,
+            ),
+            opacityDimmed: source?.classList.contains("opacity-40") ?? false,
+            clone: describe(clone),
+            cloneCount: document.querySelectorAll(".esp-shopping-touch-clone")
+              .length,
+            clonePointerEvents: clone
+              ? getComputedStyle(clone).pointerEvents
+              : null,
+            effectiveIds: Array.from(
+              document.querySelectorAll("[data-shopping-drag-effective]"),
+            ).map((element) => element.getAttribute("data-item-id")),
+            statusCount: document.querySelectorAll(
+              "[data-shopping-drag-status]",
+            ).length,
+          },
+        },
+      };
     },
-    { input, id, edge, grouped, scroll },
+    {
+      input,
+      id,
+      edge,
+      grouped,
+      scroll,
+      observeGeometry: process.env.ESP_DRAG_GEOMETRY_DIAGNOSTIC === "1",
+    },
   );
 }
 async function autoScroll(page: Page, input: Input) {
@@ -1206,68 +1653,85 @@ for (const input of ["native", "touch"] as const)
       }
       await restore(page, backup);
       await grouping(page, grouped);
-      await start(page, input, "merge-a");
-      await page.evaluate(async (input) => {
-        const root = document.querySelector<HTMLElement>(
-          '[data-shopping-drag-column="execute"]',
-        )!;
-        const target = Array.from(
-          root.querySelectorAll<HTMLElement>(
-            "[data-item-id]:not([data-space-group-key])",
-          ),
-        ).find((element) => {
-          const rect = element.getBoundingClientRect();
-          const x = rect.left + 20;
-          const y = Math.max(180, rect.top + 30);
-          return (
-            rect.bottom > y + 10 &&
-            y < window.innerHeight - 150 &&
-            document
-              .elementFromPoint(x, y)
-              ?.closest("[data-shopping-drag-column]") === root
-          );
-        });
-        if (!target)
-          throw new Error("No visible execution target after scrolling");
-        const rect = target.getBoundingClientRect();
-        const point = {
-          clientX: rect.left + 20,
-          clientY: Math.max(180, rect.top + 30),
-        };
-        const state = window as unknown as {
-          __dragTransfer: DataTransfer;
-          __dragSource: string;
-        };
-        if (input === "native")
-          target.dispatchEvent(
-            new DragEvent("dragover", {
-              bubbles: true,
-              cancelable: true,
-              dataTransfer: state.__dragTransfer,
-              ...point,
-            }),
-          );
-        else {
-          const source = document.querySelector<HTMLElement>(
-            `[data-item-id=${JSON.stringify(state.__dragSource)}]:not([data-space-group-key])`,
+      const currentRules = process.env.ESP_EVIDENCE_PHASE !== "before";
+      const beforeOrder = (await stored(page, "executeModeItems"))[eventName];
+      const sourceId = currentRules ? "merge-offscreen" : "merge-a";
+      await start(page, input, sourceId);
+      if (currentRules) {
+        // Source B must point at A explicitly; another space in B is already valid.
+        await revealFunctionalTarget(page, "a1");
+        const wrong = await hover(page, input, "a1", "after", grouped);
+        expect(wrong.status).toBe("rejected");
+        expect(wrong.guides.some((line) => line.kind === "suggestion")).toBe(
+          true,
+        );
+      } else {
+        await page.evaluate(async (input) => {
+          const root = document.querySelector<HTMLElement>(
+            '[data-shopping-drag-column="execute"]',
           )!;
-          const touch = new Touch({ identifier: 1, target: source, ...point });
-          source.dispatchEvent(
-            new TouchEvent("touchmove", {
-              bubbles: true,
-              cancelable: true,
-              touches: [touch],
-              changedTouches: [touch],
-            }),
-          );
-        }
-        await new Promise(requestAnimationFrame);
-      }, input);
+          const target = Array.from(
+            root.querySelectorAll<HTMLElement>(
+              "[data-item-id]:not([data-space-group-key])",
+            ),
+          ).find((element) => {
+            const rect = element.getBoundingClientRect();
+            const x = rect.left + 20;
+            const y = Math.max(180, rect.top + 30);
+            return (
+              rect.bottom > y + 10 &&
+              y < window.innerHeight - 150 &&
+              document
+                .elementFromPoint(x, y)
+                ?.closest("[data-shopping-drag-column]") === root
+            );
+          });
+          if (!target)
+            throw new Error("No visible execution target after scrolling");
+          const rect = target.getBoundingClientRect();
+          const point = {
+            clientX: rect.left + 20,
+            clientY: Math.max(180, rect.top + 30),
+          };
+          const state = window as unknown as {
+            __dragTransfer: DataTransfer;
+            __dragSource: string;
+          };
+          if (input === "native")
+            target.dispatchEvent(
+              new DragEvent("dragover", {
+                bubbles: true,
+                cancelable: true,
+                dataTransfer: state.__dragTransfer,
+                ...point,
+              }),
+            );
+          else {
+            const source = document.querySelector<HTMLElement>(
+              `[data-item-id=${JSON.stringify(state.__dragSource)}]:not([data-space-group-key])`,
+            )!;
+            const touch = new Touch({
+              identifier: 1,
+              target: source,
+              ...point,
+            });
+            source.dispatchEvent(
+              new TouchEvent("touchmove", {
+                bubbles: true,
+                cancelable: true,
+                touches: [touch],
+                changedTouches: [touch],
+              }),
+            );
+          }
+          await new Promise(requestAnimationFrame);
+        }, input);
+      }
       const status = page.locator(
-        '[data-shopping-drag-column="execute"] [data-shopping-drag-status="accepted"]',
+        `[data-shopping-drag-column="execute"] [data-shopping-drag-status="${currentRules ? "rejected" : "accepted"}"]`,
       );
       const expectVisibleNotice = async () => {
-        await expect(status).toContainText("画面外");
+        await expect(status).toContainText(currentRules ? "案内" : "画面外");
         await expect(status).toBeInViewport({ ratio: 1 });
         await expect
           .poll(() =>
@@ -1286,7 +1750,20 @@ for (const input of ["native", "touch"] as const)
           .toBe(true);
       };
       await expectVisibleNotice();
-      expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
+      if (currentRules) {
+        await expect(
+          page.locator('[data-shopping-drag-guide="suggestion"]'),
+        ).toBeAttached();
+        expect((await stored(page, "executeModeItems"))[eventName]).toEqual(
+          beforeOrder,
+        );
+      }
+      if (currentRules)
+        await expect
+          .poll(() => page.evaluate(() => scrollY))
+          .toBeGreaterThan(500);
+      else
+        expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
       const beforeScroll = await page.evaluate(() => window.scrollY);
       await page.evaluate(() => window.scrollBy(0, -120));
       await expect
@@ -1297,6 +1774,15 @@ for (const input of ["native", "touch"] as const)
         body: await page.screenshot(),
         contentType: "image/png",
       });
+      if (currentRules) {
+        expect((await stored(page, "executeModeItems"))[eventName]).toEqual(
+          beforeOrder,
+        );
+        await revealFunctionalTarget(page, "offscreen");
+        const valid = await hover(page, input, "offscreen", "after", grouped);
+        expect(valid.status).toBe("accepted");
+        expect(valid.guides.some((line) => line.kind === "merge")).toBe(true);
+      }
       await finish(page, input, true);
       await expect(
         page.locator("[data-shopping-drag-status], [data-shopping-drag-guide]"),
@@ -1309,20 +1795,73 @@ for (const input of ["native", "touch"] as const)
               string[]
             >
           )[day];
-          return order.slice(order.indexOf("a1"), order.indexOf("a1") + 3);
+          const anchor = currentRules ? "offscreen" : "a1";
+          return order.slice(
+            order.indexOf(anchor),
+            order.indexOf(anchor) + (currentRules ? 2 : 3),
+          );
         })
-        .toEqual(["a1", "a2", "merge-a"]);
+        .toEqual(
+          currentRules
+            ? ["offscreen", "merge-offscreen"]
+            : ["a1", "a2", "merge-a"],
+        );
+      if (currentRules)
+        expect(
+          (
+            (await stored(page, "executeModeItems"))[eventName] as Record<
+              string,
+              string[]
+            >
+          )[day],
+        ).toEqual([
+          ...(beforeOrder as Record<string, string[]>)[day],
+          "merge-offscreen",
+        ]);
       await reopen(page);
-      await expect.poll(() => ids(page, "candidate")).not.toContain("merge-a");
+      await expect.poll(() => ids(page, "candidate")).not.toContain(sourceId);
     });
-    test(`offscreen merge follows its own destination: ${input} grouping ${grouped}`, async ({
+    test(`mixed-hall offscreen selection rejects atomically: ${input} grouping ${grouped}`, async ({
       page,
     }) => {
       await restore(page, fixture());
       await grouping(page, grouped);
+      const beforeOrder = (await stored(page, "executeModeItems"))[eventName];
+      const beforeItems = (await stored(page, "eventLists"))[eventName];
       await select(page, ["merge-a", "merge-offscreen"]);
       await start(page, input, "merge-a");
       const result = await hover(page, input, "a1", "before", grouped);
+      // Preserve the original cross-hall success expectation as a before-only
+      // observation. It is never timing evidence for the new same-hall success.
+      if (process.env.ESP_EVIDENCE_PHASE !== "before") {
+        expect(result.status).toBe("rejected");
+        expect(result.guides).toHaveLength(0);
+        expect(result.text).toMatch(/ホール|所属/);
+        await finish(page, input, true);
+        for (const id of ["merge-a", "merge-offscreen"]) {
+          // Read retained checkbox state after the exact public row is visible.
+          await page
+            .getByRole("listitem", {
+              name: new RegExp(` ${id} ユーザー登録$`),
+            })
+            .scrollIntoViewIfNeeded();
+          await expect(selectionBox(page, id)).toBeChecked();
+        }
+        expect((await stored(page, "executeModeItems"))[eventName]).toEqual(
+          beforeOrder,
+        );
+        expect((await stored(page, "eventLists"))[eventName]).toEqual(
+          beforeItems,
+        );
+        await reopen(page);
+        expect((await stored(page, "executeModeItems"))[eventName]).toEqual(
+          beforeOrder,
+        );
+        expect((await stored(page, "eventLists"))[eventName]).toEqual(
+          beforeItems,
+        );
+        return;
+      }
       expect(
         result.guides.filter((line) => line.kind === "merge"),
       ).toHaveLength(2);
@@ -1347,6 +1886,177 @@ for (const input of ["native", "touch"] as const)
         .not.toContain("merge-offscreen");
     });
   }
+type RejectedDropPhysicalIO = {
+  mutationRequests: Array<{ store: string; method: string }>;
+  readwriteTransactions: number;
+  completedReadwriteTransactions: number;
+};
+async function observeRejectedDropPhysicalIO(page: Page) {
+  const worker = page
+    .workers()
+    .find((value) => value.url().includes("persistence.worker"));
+  expect(worker).toBeDefined();
+  await worker!.evaluate(() => {
+    const state: RejectedDropPhysicalIO = {
+      mutationRequests: [],
+      readwriteTransactions: 0,
+      completedReadwriteTransactions: 0,
+    };
+    const transaction = IDBDatabase.prototype.transaction;
+    IDBDatabase.prototype.transaction = function (
+      ...args: Parameters<IDBDatabase["transaction"]>
+    ) {
+      const result = transaction.apply(this, args);
+      if (result.mode === "readwrite") {
+        state.readwriteTransactions++;
+        result.addEventListener("complete", () => {
+          state.completedReadwriteTransactions++;
+        });
+      }
+      return result;
+    };
+    for (const method of ["put", "add", "delete", "clear"] as const) {
+      const original = IDBObjectStore.prototype[method];
+      Object.defineProperty(IDBObjectStore.prototype, method, {
+        configurable: true,
+        writable: true,
+        value: function (this: IDBObjectStore, ...args: unknown[]) {
+          state.mutationRequests.push({ store: this.name, method });
+          return (original as (...values: unknown[]) => IDBRequest).apply(
+            this,
+            args,
+          );
+        },
+      });
+    }
+    Object.assign(globalThis, {
+      __legacyPriorityDropIO: () => ({
+        ...state,
+        mutationRequests: [...state.mutationRequests],
+      }),
+    });
+  });
+  return () =>
+    worker!.evaluate(() =>
+      (
+        globalThis as unknown as {
+          __legacyPriorityDropIO: () => RejectedDropPhysicalIO;
+        }
+      ).__legacyPriorityDropIO(),
+    );
+}
+for (const count of [150, 500])
+  for (const input of ["native", "touch"] as const)
+    for (const grouped of [false, true])
+      test(`old priority-after drop rejects without saving: ${count} ${input} grouping ${grouped}`, async ({
+        page,
+      }, testInfo) => {
+        test.skip(
+          process.env.ESP_EVIDENCE_PHASE === "before",
+          "The old product accepts this legacy operation; D05 rejection is after-only.",
+        );
+        test.setTimeout(240000);
+        const errors: string[] = [];
+        page.on("pageerror", (error) => errors.push(error.message));
+        const backup = performanceFixture(count);
+        expect(
+          backup.data.eventLists[eventName].find((item) => item.id === "new-0")
+            ?.priorityLevel,
+        ).toBe("none");
+        expect(
+          backup.data.eventLists[eventName].find(
+            (item) => item.id === "priority",
+          )?.priorityLevel,
+        ).toBe("priority");
+        await restore(page, backup);
+        await grouping(page, grouped);
+        // Observe after restore settles; retain the 500ms-debounce exclusion
+        // window for the rejected hover and stationary pointer release.
+        await page.waitForTimeout(600);
+        const physicalIO = await observeRejectedDropPhysicalIO(page);
+        const beforeItems = await stored(page, "eventLists");
+        const beforeOrder = await stored(page, "executeModeItems");
+        await select(page, ["new-0"]);
+        await expect(headerMove(page, "candidate")).toHaveText(/\(1件\)$/u);
+        const beforeIO = await physicalIO();
+        expect(beforeIO).toEqual({
+          mutationRequests: [],
+          readwriteTransactions: 0,
+          completedReadwriteTransactions: 0,
+        });
+        await start(page, input, "new-0");
+        const response = await hover(page, input, "priority", "after", grouped);
+        expect(response.status).toBe("rejected");
+        expect(response.text).toMatch(/所属|優先度/u);
+        expect(
+          response.guides.map(({ kind, edge, owner }) => ({
+            kind,
+            edge,
+            owner,
+          })),
+        ).toEqual([
+          {
+            kind: "suggestion",
+            edge: "after",
+            owner: grouped
+              ? `group:"A-${Math.floor(count / 2) + 4}a"`
+              : "offscreen",
+          },
+        ]);
+        expect(Number.isFinite(response.guides[0].offsetPx)).toBe(true);
+        expect(response.guides[0].offsetPx).toBeLessThanOrEqual(1);
+        // No second hover or accepted resultId: scrolling alone cannot
+        // authorize the original pointer's release.
+        await finish(page, input, true);
+        await expect(page.locator(".esp-shopping-touch-clone")).toHaveCount(0);
+        await page
+          .getByRole("listitem", { name: / new-0 ユーザー登録$/u })
+          .scrollIntoViewIfNeeded();
+        await expect(selectionBox(page, "new-0")).toBeChecked();
+        await expect(headerMove(page, "candidate")).toHaveText(/\(1件\)$/u);
+        const selectedIdsAfterRelease = await page
+          .locator(
+            '[data-item-id]:not([data-space-group-key]) input[type="checkbox"]:checked',
+          )
+          .evaluateAll((boxes) =>
+            boxes.map(
+              (box) =>
+                box.closest<HTMLElement>(
+                  "[data-item-id]:not([data-space-group-key])",
+                )!.dataset.itemId,
+            ),
+          );
+        expect(selectedIdsAfterRelease).toEqual(["new-0"]);
+        await page.waitForTimeout(600);
+        const afterIO = await physicalIO();
+        expect(afterIO).toEqual(beforeIO);
+        const afterItems = await stored(page, "eventLists");
+        const afterOrder = await stored(page, "executeModeItems");
+        expect(afterItems).toEqual(beforeItems);
+        expect(afterOrder).toEqual(beforeOrder);
+        await reopen(page);
+        expect(await stored(page, "eventLists")).toEqual(beforeItems);
+        expect(await stored(page, "executeModeItems")).toEqual(beforeOrder);
+        expect(errors).toEqual([]);
+        await attach(testInfo, "legacy-priority-after-rejection", {
+          count,
+          input,
+          grouped,
+          phase: "after-only",
+          mapping: dropSaveTargetMapping,
+          source: "new-0",
+          target: dropSaveTargetMapping.previous,
+          response,
+          selectedIdsAfterRelease,
+          settleMs: 600,
+          physicalIO: { before: beforeIO, after: afterIO },
+          beforeItems,
+          afterItems,
+          beforeOrder,
+          afterOrder,
+          reloadUnchanged: true,
+        });
+      });
 for (const input of ["native", "touch"] as const)
   test(`impossible OFF boundary rejects a mixed drop atomically: ${input}`, async ({
     page,
@@ -1993,6 +2703,36 @@ for (const input of ["native", "touch"] as const)
       )
       .toEqual(["two", "one", "three"]);
   });
+/** Public scrolling for functional setup only; timing scenarios never call this. */
+async function revealFunctionalTarget(page: Page, id: string) {
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(
+          async ({ id, key }) => {
+            const cardSelector = `[data-item-id=${JSON.stringify(id)}]:not([data-space-group-key]):not(.esp-shopping-touch-clone)`;
+            const card = document.querySelector<HTMLElement>(cardSelector);
+            const pending = document.querySelector<HTMLElement>(
+              `[data-row-key=${JSON.stringify(key)}]`,
+            );
+            const target = card ?? pending;
+            if (!target) return false;
+            target.scrollIntoView({ block: "center", behavior: "instant" });
+            await new Promise(requestAnimationFrame);
+            await new Promise(requestAnimationFrame);
+            const actual = document.querySelector<HTMLElement>(cardSelector);
+            if (!actual) return false;
+            const bounds = actual.getBoundingClientRect();
+            return (
+              bounds.height > 0 && bounds.bottom > 0 && bounds.top < innerHeight
+            );
+          },
+          { id, key: `item:${JSON.stringify(id)}` },
+        ),
+      { timeout: 10000, intervals: [50, 100, 250] },
+    )
+    .toBe(true);
+}
 async function rendererState(page: Page) {
   return page.locator("[data-list-renderer]").evaluateAll((roots) =>
     roots.map((root, index) => {
@@ -2261,7 +3001,9 @@ async function fixturePresentationControl(page: Page) {
   ).toBe(true);
   expect(
     observations.some((value) =>
-      value.visitIds.some((id) => id?.endsWith(":priority")),
+      value.visitIds.some((id) =>
+        id?.split("@placement:")[0].endsWith(":priority"),
+      ),
     ),
   ).toBe(true);
   return observations;
@@ -2293,6 +3035,241 @@ const summary = (values: number[]) => ({
   samples: values,
   ...summarizePerformanceSamples(values),
 });
+async function observeLocalityRows(page: Page, probeKeys: string[]) {
+  return page.evaluate((keys) => {
+    const describe = (element: HTMLElement) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        tag: element.tagName,
+        connected: element.isConnected,
+        itemId: element.dataset.itemId ?? null,
+        rowKey: element.dataset.rowKey ?? null,
+        viewportRowKey: element.dataset.viewportRowKey ?? null,
+        active: element.dataset.viewportActive ?? null,
+        retain: element.dataset.viewportRetain ?? null,
+        column:
+          element.closest<HTMLElement>("[data-shopping-drag-column]")?.dataset
+            .shoppingDragColumn ?? null,
+        rect: {
+          top: rect.top,
+          bottom: rect.bottom,
+          left: rect.left,
+          right: rect.right,
+          width: rect.width,
+          height: rect.height,
+        },
+      };
+    };
+    return {
+      phase: "after-known-failure-or-explicit-locality-diagnostic",
+      addedInputs: 0,
+      addedScrolls: 0,
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        scrollX: window.scrollX,
+        scrollY: window.scrollY,
+        scrollHeight: document.scrollingElement?.scrollHeight ?? null,
+      },
+      renderers: Array.from(
+        document.querySelectorAll<HTMLElement>("[data-list-renderer]"),
+      ).map((root) => ({
+        ...describe(root),
+        engine: root.dataset.listRenderer,
+        strategy: root.dataset.listRendererStrategy,
+        mountedItems: root.querySelectorAll(
+          "[data-item-id]:not([data-space-group-key])",
+        ).length,
+      })),
+      rows: keys.map((key) => {
+        const itemId = key.startsWith("item:") ? key.slice(5) : null;
+        const rowKey =
+          itemId === null
+            ? key.slice("group:".length)
+            : `item:${JSON.stringify(itemId)}`;
+        const selector = [
+          `[data-row-key=${JSON.stringify(rowKey)}]`,
+          `[data-viewport-row-key=${JSON.stringify(rowKey)}]`,
+          ...(itemId === null
+            ? []
+            : [
+                `[data-item-id=${JSON.stringify(itemId)}]:not([data-space-group-key])`,
+              ]),
+        ].join(", ");
+        const elements = Array.from(
+          document.querySelectorAll<HTMLElement>(selector),
+        )
+          .filter((node) => !node.closest(".esp-shopping-touch-clone"))
+          .map((node) => {
+            const retainedAncestors = [];
+            for (
+              let ancestor = node.parentElement;
+              ancestor;
+              ancestor = ancestor.parentElement
+            )
+              if (ancestor.hasAttribute("data-viewport-active"))
+                retainedAncestors.push(describe(ancestor));
+            return { ...describe(node), retainedAncestors };
+          });
+        return {
+          probeKey: key,
+          elements,
+          card:
+            itemId === null
+              ? null
+              : (elements.find((element) => element.itemId === itemId) ?? null),
+          publicRow:
+            elements.find(
+              (element) =>
+                element.rowKey === rowKey || element.viewportRowKey === rowKey,
+            ) ?? null,
+        };
+      }),
+    };
+  }, probeKeys);
+}
+async function observeRejectedGuideVisibility(page: Page) {
+  return page.evaluate(async () => {
+    const snapshot = (frame: number) => {
+      const root = document.querySelector(
+        '[data-shopping-drag-column="execute"]',
+      );
+      const guides = Array.from(
+        root?.querySelectorAll<HTMLElement>("[data-shopping-drag-guide]") ?? [],
+      ).map((line) => {
+        const owner = line.parentElement!;
+        const ownerRect = owner.getBoundingClientRect();
+        const guideRect = line.getBoundingClientRect();
+        const rowKey = owner.dataset.rowKey ?? owner.dataset.viewportRowKey;
+        return {
+          kind: line.dataset.shoppingDragGuide,
+          edge: line.dataset.shoppingDragBoundary,
+          owner:
+            owner.dataset.itemId ??
+            (rowKey?.startsWith("item:")
+              ? (JSON.parse(rowKey.slice(5)) as string)
+              : rowKey),
+          offsetPx: Math.abs(guideRect.bottom - ownerRect.bottom),
+          ownerRect: { top: ownerRect.top, bottom: ownerRect.bottom },
+          guideRect: { top: guideRect.top, bottom: guideRect.bottom },
+        };
+      });
+      const status = root?.querySelector<HTMLElement>(
+        "[data-shopping-drag-status]",
+      )?.dataset.shoppingDragStatus;
+      return {
+        frame,
+        scrollY: window.scrollY,
+        viewportHeight: window.innerHeight,
+        status,
+        guides,
+        visible:
+          status === "rejected" &&
+          guides.length === 1 &&
+          guides[0].kind === "suggestion" &&
+          guides[0].edge === "after" &&
+          guides[0].owner === "priority" &&
+          Number.isFinite(guides[0].offsetPx) &&
+          guides[0].offsetPx <= 1 &&
+          guides[0].guideRect.bottom > 0 &&
+          guides[0].guideRect.top < window.innerHeight,
+      };
+    };
+    const snapshots = [snapshot(0)];
+    for (let frame = 1; !snapshots.at(-1)!.visible && frame <= 60; frame++) {
+      await new Promise(requestAnimationFrame);
+      snapshots.push(snapshot(frame));
+    }
+    return {
+      phase: "after-original-response-clock",
+      maximumFrames: 60,
+      addedInputs: 0,
+      addedScrolls: 0,
+      snapshots,
+    };
+  });
+}
+async function observeRejectedFailure(page: Page) {
+  return page.evaluate(async () => {
+    const began = performance.now();
+    const describe = (element: Element | null | undefined) => {
+      if (!element) return null;
+      const rect = element.getBoundingClientRect();
+      return {
+        tag: element.tagName,
+        connected: element.isConnected,
+        itemId: element.getAttribute("data-item-id"),
+        rowKey: element.getAttribute("data-row-key"),
+        viewportRowKey: element.getAttribute("data-viewport-row-key"),
+        viewportActive: element.getAttribute("data-viewport-active"),
+        viewportRetain: element.getAttribute("data-viewport-retain"),
+        rect: {
+          top: rect.top,
+          bottom: rect.bottom,
+          left: rect.left,
+          right: rect.right,
+          width: rect.width,
+          height: rect.height,
+        },
+        scrollTop: element.scrollTop,
+        scrollHeight: element.scrollHeight,
+        clientHeight: element.clientHeight,
+      };
+    };
+    const snapshot = (frame: number) => {
+      const root = document.querySelector(
+        '[data-shopping-drag-column="execute"]',
+      );
+      const priorityCard = document.querySelector(
+        '[data-item-id="priority"]:not([data-space-group-key]):not(.esp-shopping-touch-clone)',
+      );
+      const rowKey = `item:${JSON.stringify("priority")}`;
+      const publicRow = document.querySelector(
+        `[data-row-key=${JSON.stringify(rowKey)}], [data-viewport-row-key=${JSON.stringify(rowKey)}]`,
+      );
+      return {
+        frame,
+        diagnosticElapsedMs: performance.now() - began,
+        viewport: {
+          width: window.innerWidth,
+          height: window.innerHeight,
+          scrollX: window.scrollX,
+          scrollY: window.scrollY,
+          scrollHeight: document.scrollingElement?.scrollHeight ?? null,
+        },
+        status: root?.querySelector<HTMLElement>("[data-shopping-drag-status]")
+          ?.dataset.shoppingDragStatus,
+        priorityCard: describe(priorityCard),
+        priorityPublicRow: describe(publicRow),
+        priorityRetainedAncestor: describe(
+          priorityCard?.closest("[data-viewport-active]") ??
+            publicRow?.closest("[data-viewport-active]"),
+        ),
+        root: describe(root),
+        guides: Array.from(
+          root?.querySelectorAll<HTMLElement>("[data-shopping-drag-guide]") ??
+            [],
+        ).map((guide) => ({
+          kind: guide.dataset.shoppingDragGuide,
+          edge: guide.dataset.shoppingDragBoundary,
+          guide: describe(guide),
+          owner: describe(guide.parentElement),
+        })),
+      };
+    };
+    const snapshots = [snapshot(0)];
+    for (let frame = 1; frame <= 3; frame++) {
+      await new Promise(requestAnimationFrame);
+      snapshots.push(snapshot(frame));
+    }
+    return {
+      phase: "after-known-failure-only",
+      addedInputs: 0,
+      addedScrolls: 0,
+      snapshots,
+    };
+  });
+}
 async function attach(testInfo: TestInfo, name: string, data: unknown) {
   await testInfo.attach(name, {
     body: JSON.stringify(data, null, 2),
@@ -2320,9 +3297,39 @@ test.describe("held touch drag cleanup", () => {
       await restore(page, backup);
       await grouping(page, layout === "space");
       await select(page, selected);
-      await expect(
-        page.getByTitle("範囲内のチェックを外す", { exact: true }).first(),
-      ).toBeVisible();
+      const rangeControls = page.getByTitle("範囲内のチェックを外す", {
+        exact: true,
+      });
+      await expect(rangeControls.first()).toBeVisible();
+      const rangeControlsBefore = await rangeControls.count();
+      const allIds = backup.data.eventLists[eventName].map((item) => item.id);
+      const checkboxState = () =>
+        page.evaluate(
+          (ids) =>
+            ids.map((id) => {
+              const row = document.querySelector<HTMLElement>(
+                `[data-item-id="${id}"]:not([data-space-group-key]):not(.esp-shopping-touch-clone)`,
+              );
+              const checkbox = row?.querySelector<HTMLInputElement>(
+                'input[type="checkbox"]',
+              );
+              if (!checkbox) throw new Error(`Missing checkbox for ${id}`);
+              return {
+                id,
+                checked: checkbox.checked,
+                indeterminate: checkbox.indeterminate,
+              };
+            }),
+          allIds,
+        );
+      const checkboxesBefore = await checkboxState();
+      expect(checkboxesBefore).toEqual(
+        allIds.map((id) => ({
+          id,
+          checked: selected.includes(id),
+          indeterminate: false,
+        })),
+      );
       const before = (await stored(page, "executeModeItems"))[eventName];
       const source = page.locator(rowSelector(selected[0]));
       const handle = await source
@@ -2436,8 +3443,18 @@ test.describe("held touch drag cleanup", () => {
               }
             ).__heldTouchCleanup,
         );
+        const rangeControlsAfter = await rangeControls.count();
+        const checkboxesAfter = await checkboxState();
         await testInfo.attach("held-touch-cleanup", {
-          body: JSON.stringify({ layout, ...cleanup }),
+          body: JSON.stringify({
+            layout,
+            ...cleanup,
+            rangeControls: {
+              before: rangeControlsBefore,
+              after: rangeControlsAfter,
+            },
+            checkboxes: { before: checkboxesBefore, after: checkboxesAfter },
+          }),
           contentType: "application/json",
         });
         expect(cleanup.opacities).toEqual([1, 1, 1]);
@@ -2446,9 +3463,8 @@ test.describe("held touch drag cleanup", () => {
           await expect(
             page.locator(rowSelector(id)).getByRole("checkbox"),
           ).toBeChecked();
-        await expect(
-          page.getByTitle("範囲内のチェックを外す", { exact: true }),
-        ).toHaveCount(0);
+        await expect(rangeControls).toHaveCount(0);
+        expect(checkboxesAfter).toEqual(checkboxesBefore);
         expect((await stored(page, "executeModeItems"))[eventName]).toEqual(
           before,
         );
@@ -2686,8 +3702,15 @@ for (const count of [150, 500])
             from: string;
             to: string;
           }> = [];
+          const positiveControls: Array<{
+            sample: number;
+            response: Awaited<ReturnType<typeof hover>>;
+          }> = [];
           let previousBoundary = initialHover.guides[0]?.edge;
           for (let i = 0; i < performanceMeasurementSampleCount; i++) {
+            let rejectedPositiveControl: Awaited<
+              ReturnType<typeof hover>
+            > | null = null;
             if (scenario.name === "rejected") {
               const accepted = await hover(
                 page,
@@ -2696,6 +3719,8 @@ for (const count of [150, 500])
                 "after",
                 false,
               );
+              rejectedPositiveControl = accepted;
+              positiveControls.push({ sample: i, response: accepted });
               expect(accepted.status).toBe("accepted");
               expect(
                 accepted.guides.some((line) => line.kind === "insert"),
@@ -2707,16 +3732,49 @@ for (const count of [150, 500])
               (scenario.alternating && i % 2 === 0)
                 ? "after"
                 : "before";
-            const response =
-              scenario.name === "auto-scroll"
-                ? await autoScroll(page, input)
-                : await hover(
-                    page,
-                    input,
-                    scenario.target,
-                    expectedEdge,
-                    grouped,
-                  );
+            let response:
+              | Awaited<ReturnType<typeof autoScroll>>
+              | Awaited<ReturnType<typeof hover>>;
+            try {
+              response =
+                scenario.name === "auto-scroll"
+                  ? await autoScroll(page, input)
+                  : await hover(
+                      page,
+                      input,
+                      scenario.target,
+                      expectedEdge,
+                      grouped,
+                    );
+            } catch (error) {
+              if (scenario.name === "rejected")
+                await attach(testInfo, "rejected-preparation-failure-context", {
+                  stage: "rejected-hover-preparation",
+                  count,
+                  input,
+                  grouped,
+                  sample: i,
+                  viewport: page.viewportSize(),
+                  restoredFixture: "performanceFixture(count) at case setup",
+                  fixtureRevision: "execution-placement-same-hall-2026-11-01",
+                  fixtureControl,
+                  fixturePersistenceBefore,
+                  scenario,
+                  expectedEdge,
+                  initialHover,
+                  positiveControl: rejectedPositiveControl,
+                  failure:
+                    error instanceof Error
+                      ? {
+                          name: error.name,
+                          message: error.message,
+                          stack: error.stack,
+                        }
+                      : String(error),
+                  afterFailure: await observeRejectedFailure(page),
+                });
+              throw error;
+            }
             samples.push(response.ms);
             const expectedGuides: Array<{
               kind: string;
@@ -2761,9 +3819,20 @@ for (const count of [150, 500])
                 expectedGuides.push({
                   kind: "merge",
                   edge: "after",
-                  owner: grouped ? 'group:"B-999a"' : "offscreen",
+                  owner: grouped
+                    ? `group:"A-${Math.floor(count / 2) + 4}a"`
+                    : "offscreen",
                 });
             }
+            if (
+              scenario.name === "rejected" &&
+              process.env.ESP_EVIDENCE_PHASE !== "before"
+            )
+              expectedGuides.push({
+                kind: "suggestion",
+                edge: "after",
+                owner: "priority",
+              });
             const identity = (line: {
               kind?: string;
               edge?: string;
@@ -2791,11 +3860,63 @@ for (const count of [150, 500])
               });
               previousBoundary = observedBoundary;
             }
-            guideSamples.push({ ...response, expectedGuides });
-            if ("viewportScroll" in response)
-              expect(response.viewportScroll.after, scenario.name).toBe(
-                response.viewportScroll.before,
-              );
+            let correctiveVisibility: Awaited<
+              ReturnType<typeof observeRejectedGuideVisibility>
+            > | null = null;
+            if ("viewportScroll" in response) {
+              if (
+                scenario.name === "rejected" &&
+                process.env.ESP_EVIDENCE_PHASE !== "before"
+              ) {
+                correctiveVisibility =
+                  await observeRejectedGuideVisibility(page);
+                const final = correctiveVisibility.snapshots.at(-1)!;
+                const originalGuide = response.guides[0].guideRect;
+                const directionCorrect =
+                  originalGuide.bottom <= 0
+                    ? final.scrollY < response.viewportScroll.after
+                    : originalGuide.top >= final.viewportHeight
+                      ? final.scrollY > response.viewportScroll.after
+                      : true;
+                if (!final.visible || !directionCorrect)
+                  await attach(testInfo, "rejected-scroll-failure-context", {
+                    stage: "rejected-final-visibility-after-original-clock",
+                    count,
+                    input,
+                    grouped,
+                    sample: i,
+                    viewport: page.viewportSize(),
+                    restoredFixture: "performanceFixture(count) at case setup",
+                    fixtureRevision: "execution-placement-same-hall-2026-11-01",
+                    fixtureControl,
+                    fixturePersistenceBefore,
+                    scenario,
+                    expectedEdge,
+                    initialHover,
+                    positiveControl: rejectedPositiveControl,
+                    response,
+                    correctiveVisibility,
+                    afterFailure: await observeRejectedFailure(page),
+                  });
+                expect(
+                  final.visible,
+                  `${scenario.name} final correct tail visibility`,
+                ).toBe(true);
+                expect(
+                  directionCorrect,
+                  `${scenario.name} offscreen correction direction`,
+                ).toBe(true);
+              } else {
+                expect(response.viewportScroll.after, scenario.name).toBe(
+                  response.viewportScroll.before,
+                );
+              }
+            }
+            guideSamples.push({
+              ...response,
+              expectedGuides,
+              ...(correctiveVisibility ? { correctiveVisibility } : {}),
+            });
             if ("scrollBefore" in response) {
               expect(response.scrollAfter).toBeGreaterThan(
                 response.scrollBefore,
@@ -2808,16 +3929,40 @@ for (const count of [150, 500])
               );
               expect(response.guides.map((line) => line.owner).sort()).toEqual(
                 (grouped
-                  ? ['group:"A-01a"', 'group:"A-02a"', 'group:"B-999a"']
+                  ? [
+                      'group:"A-01a"',
+                      'group:"A-02a"',
+                      `group:"A-${Math.floor(count / 2) + 4}a"`,
+                    ]
                   : ["a2", "b1", "offscreen"]
                 ).sort(),
               );
             }
             if (scenario.name === "rejected") {
-              expect(response.status).toBe("rejected");
-              expect(response.guides).toHaveLength(0);
+              expect(
+                response.status,
+                response.status === "rejected"
+                  ? undefined
+                  : JSON.stringify({
+                      scenario: scenario.name,
+                      sample: i,
+                      response,
+                    }),
+              ).toBe("rejected");
+              expect(response.guides).toHaveLength(
+                process.env.ESP_EVIDENCE_PHASE === "before" ? 0 : 1,
+              );
             } else {
-              expect(response.status).toBe("accepted");
+              expect(
+                response.status,
+                response.status === "accepted"
+                  ? undefined
+                  : JSON.stringify({
+                      scenario: scenario.name,
+                      sample: i,
+                      response,
+                    }),
+              ).toBe("accepted");
               if (
                 scenario.name === "multiple-merges" ||
                 scenario.name === "offscreen-merge"
@@ -2840,15 +3985,58 @@ for (const count of [150, 500])
               performanceMeasurementSampleCount,
             );
           const render = await renderCounts(page);
+          const mountKeys = Object.keys(render.mounts);
+          const remountedExisting = mountKeys.filter((key) =>
+            beforeRender.mounted.includes(key),
+          );
+          const unexpectedMounts =
+            scenario.name !== "auto-scroll" && mountKeys.length > 0;
+          const localityFailure =
+            remountedExisting.length > 0 || unexpectedMounts;
+          if (
+            localityFailure ||
+            (localityDiagnosticEnabled && scenario.name === "rejected")
+          )
+            await attach(testInfo, "drag-locality-context", {
+              stage: localityFailure
+                ? "known-locality-failure"
+                : "explicit-locality-diagnostic",
+              diagnosticOnly: true,
+              acceptanceMeasurement: false,
+              count,
+              input,
+              grouped,
+              scenario,
+              rendererBefore,
+              fixtureControl,
+              fixturePersistenceBefore,
+              beforeRender,
+              render,
+              initialHover,
+              positiveControls,
+              guideSamples,
+              remountedExisting,
+              unexpectedMountKeys: unexpectedMounts ? mountKeys : [],
+              priorFailureMountKeys: localityDiagnosticEnabled
+                ? priorLocalityFailureKeys
+                : [],
+              afterObservation: await observeLocalityRows(page, [
+                ...new Set([
+                  ...mountKeys,
+                  ...(localityDiagnosticEnabled
+                    ? priorLocalityFailureKeys
+                    : []),
+                  "item:priority",
+                  "item:a1",
+                  "item:a2",
+                ]),
+              ]),
+            });
           expect(
             render.known.filter((key) => key.startsWith("item:")).length,
           ).toBeGreaterThan(0);
           expect(render.counts).toEqual({});
-          expect(
-            Object.keys(render.mounts).filter((key) =>
-              beforeRender.mounted.includes(key),
-            ),
-          ).toEqual([]);
+          expect(remountedExisting).toEqual([]);
           if (scenario.name !== "auto-scroll")
             expect(render.mounts, scenario.name).toEqual({});
           if (grouped)
@@ -2929,6 +4117,16 @@ for (const count of [150, 500])
             }
           ).__dragRenderProbe.setEnabled(false),
         );
+        // This independent raw-order expectation retains the initial priority
+        // slot and every unrelated ID; it does not normalize display groups.
+        const expectedDropExecuteIds = [
+          ...(
+            (await stored(page, "executeModeItems"))[eventName] as Record<
+              string,
+              string[]
+            >
+          )[day],
+        ];
         for (
           let i = 0;
           i < performanceMeasurementSampleCount * (compareProbe ? 2 : 1);
@@ -2946,8 +4144,17 @@ for (const count of [150, 500])
             await new Promise(requestAnimationFrame);
             await new Promise((resolve) => setTimeout(resolve, 0));
           });
-          const target = await hover(page, input, "priority", "after", grouped);
-          expect(target.status).toBe("accepted");
+          const target = await hover(page, input, "a1", "before", grouped);
+          expect(
+            target.status,
+            target.status === "accepted"
+              ? undefined
+              : JSON.stringify({
+                  scenario: "drop-warmup",
+                  sample: i,
+                  response: target,
+                }),
+          ).toBe("accepted");
           // Balanced E,D,D,E pairs compare the same evolving fixture without changing the product or threshold.
           const probeEnabled = compareProbe && (i % 4 === 0 || i % 4 === 3);
           await page.evaluate(
@@ -3018,6 +4225,19 @@ for (const count of [150, 500])
           (probeEnabled ? enabledSaveCompletionMs : saveCompletionMs).push(
             Date.now() - began,
           );
+          // Validate the target mapping only after both existing clocks and
+          // the original save poll have ended.
+          const targetRawIndex = expectedDropExecuteIds.indexOf("a1");
+          expect(targetRawIndex).toBeGreaterThanOrEqual(0);
+          expectedDropExecuteIds.splice(targetRawIndex, 0, id);
+          expect(
+            (
+              (await stored(page, "executeModeItems"))[eventName] as Record<
+                string,
+                string[]
+              >
+            )[day],
+          ).toEqual(expectedDropExecuteIds);
         }
         await page.evaluate(() =>
           (
@@ -3039,11 +4259,19 @@ for (const count of [150, 500])
         records.drop = summary(drops);
         await attach(testInfo, "shopping-drag-response", {
           ...shoppingEvidenceIdentity("drag"),
+          ...(localityDiagnosticEnabled
+            ? { diagnosticOnly: true, acceptanceMeasurement: false }
+            : {}),
           errors,
           environment: await shoppingBrowserEnvironment(page, testInfo.retry),
           build: "npm run build:app",
           fixture: {
             count,
+            revision: "execution-placement-same-hall-2026-11-01",
+            previousFixtureSource: "19c7541175b2a60076807dd17469127d67f8407d",
+            offscreenSpace: `A-${Math.floor(count / 2) + 4}a`,
+            addressExchangeId: `execute-${Math.floor(count / 2) - 6}`,
+            dropSaveTargetMapping,
             halls: ["A", "B"],
             priorities: ["none", "priority"],
           },
@@ -3072,6 +4300,7 @@ for (const count of [150, 500])
           rendererBefore,
           rendererAfter: await rendererState(page),
           saveCompletionMs,
+          dropSavedRawExecuteIds: expectedDropExecuteIds,
           ...(diagnosticPerformanceMetrics.length
             ? { diagnosticPerformanceMetrics }
             : {}),

@@ -2,11 +2,19 @@ import {
   buildShoppingDragLayout,
   resolveShoppingDragPlacement,
   type ShoppingDragMoveContext,
+  type ShoppingDragPresentation,
 } from "../../features/shopping-list/drag/shoppingDrag";
-import { projectItemsToExecutionVisits } from "../../utils/visitProjection";
+import { projectItemsToExecutionVisits as projectVisits } from "../../utils/visitProjection";
+import {
+  buildExecutionPlacementVisitKey,
+  isSameExecutionPlacementGroup,
+} from "../../utils/executionPlacement";
+const projectItemsToExecutionVisits = (items: readonly ShoppingItem[]) =>
+  projectVisits(items, buildExecutionPlacementVisitKey);
 // @vitest-environment jsdom
 
 import { emptyApplicationSnapshot as emptyApplicationSnapshotForImport } from "../state/useApplicationSnapshot";
+import { projectConsistencySnapshot } from "../../features/consistency/domain/projection";
 import { rememberItemUpdateBaseline } from "../../utils/itemUpdateBaseline";
 import {
   act,
@@ -15,9 +23,10 @@ import {
   renderHook,
   screen,
 } from "@testing-library/react";
-import { Suspense, startTransition, useState } from "react";
+import { Suspense, startTransition, useRef, useState } from "react";
 import ShoppingList from "../../components/ShoppingList";
 import { useListInteractionState } from "../../features/lists/hooks/useListInteractionState";
+import { buildRangePresentation } from "../../features/lists/domain/rangeSelection";
 import { describe, expect, it, vi } from "vitest";
 import type {
   DayModeState,
@@ -27,6 +36,7 @@ import type {
 } from "../../types/item";
 import { getItemKey } from "../../utils/itemComparison";
 import type { PendingDuplicateEventImport } from "../state/appOverlayTypes";
+import { createEventConsistency } from "../../types/consistency";
 import { createEventUpdateOperationRegistry } from "./eventUpdateOperation";
 import {
   useShoppingItemMutationCommands,
@@ -36,6 +46,16 @@ import {
   type ShoppingItemMutationStatePort,
 } from "./useShoppingItemMutationCommands";
 
+import type {
+  ApplicationShoppingMove,
+  PersistenceSnapshot,
+} from "../ports/PersistenceCommandPort";
+import {
+  planShoppingMove,
+  shoppingMoveInitialDayMergeSignature,
+  shoppingMovePlacementBaseline,
+  shoppingMoveVisitBaseline,
+} from "./shoppingMoveMutation";
 const EVENT = "event-a";
 const DAY = "day-1";
 const PADDED_DAY = ` \u3000${DAY}\u3000 `;
@@ -530,7 +550,7 @@ describe("useShoppingItemMutationCommands", () => {
       "b",
       "a",
     ]);
-    expect(harness.spies.setEventLists).toHaveBeenCalledOnce();
+    expect(harness.spies.queueShoppingMovePatch).toHaveBeenCalledOnce();
   });
 
   it.each(["event", "day"] as const)(
@@ -588,7 +608,10 @@ describe("useShoppingItemMutationCommands", () => {
           "b",
           "a",
         ]);
-        expect(harness.spies.setEventLists).toHaveBeenCalledOnce();
+        if (operation === "drag")
+          expect(harness.spies.setEventLists).toHaveBeenCalledOnce();
+        else
+          expect(harness.spies.queueShoppingMovePatch).toHaveBeenCalledOnce();
         unmount();
       }
     },
@@ -891,7 +914,7 @@ describe("useShoppingItemMutationCommands", () => {
   );
 
   it.each(["candidate", "execute"] as const)(
-    "retains checks and performs existing UI cleanup once for a same-order %s drop",
+    "ends a same-order %s drop range while retaining checks and sort",
     (column) => {
       const a = item("a", { number: "1" });
       const b = item("b", { number: "2" });
@@ -933,17 +956,13 @@ describe("useShoppingItemMutationCommands", () => {
       expect(harness.spies.removeSelectedItemIds).not.toHaveBeenCalled();
       expect(harness.spies.clearSelection).not.toHaveBeenCalled();
       expect(harness.spies.clearRangeSelection).toHaveBeenCalledTimes(1);
-      expect(harness.spies.setSortState).toHaveBeenCalledExactlyOnceWith(
-        "Manual",
-      );
-      expect(
-        harness.spies.setBlockSortDirection,
-      ).toHaveBeenCalledExactlyOnceWith(null);
+      expect(harness.spies.setSortState).not.toHaveBeenCalled();
+      expect(harness.spies.setBlockSortDirection).not.toHaveBeenCalled();
       expect(
         harness.spies.setCandidateNumberSortDirection,
       ).not.toHaveBeenCalled();
       expect(harness.stores.candidateNumberSortDirection).toBe("desc");
-      expect(harness.refs.spaceGroupDragItemIdsRef.current).toBeNull();
+      expect(harness.refs.spaceGroupDragItemIdsRef.current).toEqual(["b", "c"]);
       expect(harness.spies.notify).not.toHaveBeenCalled();
       expect(harness.spies.setEventLists).not.toHaveBeenCalled();
       expect(harness.spies.updateExecuteModeItems).not.toHaveBeenCalled();
@@ -987,7 +1006,7 @@ describe("useShoppingItemMutationCommands", () => {
       expect(
         harness.spies.setCandidateNumberSortDirection,
       ).not.toHaveBeenCalled();
-      expect(harness.spies.notify).not.toHaveBeenCalled();
+      expect(harness.spies.notify).toHaveBeenCalledWith("write-stop");
       expect(harness.refs.spaceGroupDragItemIdsRef.current).toEqual(["a"]);
       expect(harness.spies.setEventLists).not.toHaveBeenCalled();
       expect(harness.spies.updateExecuteModeItems).not.toHaveBeenCalled();
@@ -1013,7 +1032,7 @@ describe("useShoppingItemMutationCommands", () => {
       targetColumn: "candidate",
       requestedIds: ["x1", "y"],
       effectiveIds: ["x1", "y"],
-      sourceVisits: projectItemsToExecutionVisits([x1, x2, y]).map((visit) => ({
+      sourceVisits: projectItemsToExecutionVisits([x1, y]).map((visit) => ({
         key: visit.key,
         ids: visit.itemIds,
       })),
@@ -1115,6 +1134,13 @@ describe("useShoppingItemMutationCommands", () => {
     act(() =>
       result.current.moveItem("a", "target", "candidate", "execute", context),
     );
+    expect(harness.spies.notify).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "配置先を確定できなかったため、移動を中止しました",
+      ),
+    );
+    expect(harness.spies.queueShoppingMovePatch).not.toHaveBeenCalled();
+    expect(harness.spies.removeSelectedItemIds).not.toHaveBeenCalled();
     expect(harness.spies.clearRangeSelection).not.toHaveBeenCalled();
     expect(harness.spies.setSortState).not.toHaveBeenCalled();
     expect(harness.spies.updateExecuteModeItems).not.toHaveBeenCalled();
@@ -1588,7 +1614,7 @@ describe("useShoppingItemMutationCommands", () => {
     );
   });
 
-  it("moves an execute space-priority block across the adjacent block", () => {
+  it("moves an explicit execute space-priority block across the adjacent block", () => {
     const items = [
       item("a", { block: "A", number: "1" }),
       item("b-1", { block: "B", number: "1" }),
@@ -1606,6 +1632,7 @@ describe("useShoppingItemMutationCommands", () => {
       useShoppingItemMutationCommands(harness.ports),
     );
 
+    harness.refs.spaceGroupDragItemIdsRef.current = ["b-1", "b-2"];
     act(() => result.current.moveItemDown("b-1", "execute"));
 
     expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual([
@@ -1614,12 +1641,12 @@ describe("useShoppingItemMutationCommands", () => {
       "b-1",
       "b-2",
     ]);
-    expect(harness.spies.areItemsInSameHall).toHaveBeenCalledWith(
+    expect(harness.spies.areItemsInSameHallGroup).toHaveBeenCalledWith(
       "b-1",
       "c",
       DAY,
     );
-    expect(harness.spies.areItemsInSameHallGroup).not.toHaveBeenCalled();
+    expect(harness.spies.areItemsInSameHall).not.toHaveBeenCalled();
   });
 
   it("moves a noncontiguous execution visit without capturing intervening visits", () => {
@@ -1640,6 +1667,7 @@ describe("useShoppingItemMutationCommands", () => {
       useShoppingItemMutationCommands(harness.ports),
     );
 
+    harness.refs.spaceGroupDragItemIdsRef.current = ["a1", "a2"];
     act(() => result.current.moveItemDown("a2", "execute"));
 
     expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual([
@@ -1665,6 +1693,7 @@ describe("useShoppingItemMutationCommands", () => {
       useShoppingItemMutationCommands(harness.ports),
     );
 
+    harness.refs.spaceGroupDragItemIdsRef.current = ["b1", "b2"];
     act(() => result.current.moveItemDown("b1", "execute"));
 
     expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual([
@@ -1689,7 +1718,9 @@ describe("useShoppingItemMutationCommands", () => {
       useShoppingItemMutationCommands(harness.ports),
     );
 
+    harness.refs.spaceGroupDragItemIdsRef.current = ["a1", "a2"];
     act(() => result.current.moveItemUp("a2", "execute"));
+    harness.refs.spaceGroupDragItemIdsRef.current = ["b"];
     act(() => result.current.moveItemDown("b", "execute"));
 
     expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual([
@@ -1710,12 +1741,14 @@ describe("useShoppingItemMutationCommands", () => {
       eventLists: { [EVENT]: items },
       items,
       executeModeItems: { [EVENT]: { [DAY]: ["a1", "b", "a2"] } },
-      areItemsInSameHall: () => false,
+      areItemsInSameHallGroup: (first, second) =>
+        first.startsWith("a") && second.startsWith("a"),
     });
     const { result } = renderHook(() =>
       useShoppingItemMutationCommands(harness.ports),
     );
 
+    harness.refs.spaceGroupDragItemIdsRef.current = ["a1", "a2"];
     act(() => result.current.moveItemDown("a1", "execute"));
 
     expect(harness.stores.executeModeItems[EVENT][DAY]).toEqual([
@@ -1723,7 +1756,7 @@ describe("useShoppingItemMutationCommands", () => {
       "b",
       "a2",
     ]);
-    expect(harness.spies.areItemsInSameHall).toHaveBeenCalledWith(
+    expect(harness.spies.areItemsInSameHallGroup).toHaveBeenCalledWith(
       "a1",
       "b",
       DAY,
@@ -1757,7 +1790,7 @@ describe("useShoppingItemMutationCommands", () => {
     expect(harness.refs.executeModeItemsRef.current[EVENT][DAY]).toEqual([
       "execute",
     ]);
-    expect(harness.spies.clearSelection).toHaveBeenCalledTimes(2);
+    expect(harness.spies.removeSelectedItemIds).toHaveBeenCalledTimes(2);
   });
 
   it("notifies once when move-to-execute joins an existing visit", () => {
@@ -2285,4 +2318,996 @@ it("[ID 9] a stale incoming import cannot invalidate a later selection owner", a
   expect(complete).not.toHaveBeenCalled();
   expect(h.refs.eventUpdatePreviewEpochRef.current).toBe(0);
   expect(h.spies.openDuplicateEvent).not.toHaveBeenCalled();
+});
+
+it("keeps selection and reports an asynchronous placement abort", async () => {
+  const x = item("x", { number: "1" });
+  const target = item("target", { number: "2" });
+  const h = createHarness({
+    eventLists: { [EVENT]: [x, target] },
+    selectedItemIds: new Set(["x"]),
+    executeModeItems: { [EVENT]: { [DAY]: ["target"] } },
+  });
+  let finish!: (result: { status: "aborted"; reason: string }) => void;
+  const completion = new Promise<{ status: "aborted"; reason: string }>(
+    (resolve) => {
+      finish = resolve;
+    },
+  );
+  const rejected = vi.fn();
+  h.ports.alerts.placementRejected = rejected;
+  h.spies.queueShoppingMovePatch.mockReturnValue({
+    status: "accepted",
+    operationId: "save",
+    moveId: "save:move:1",
+    completion,
+  });
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  act(() =>
+    result.current.moveItem(
+      "x",
+      "__END_OF_LIST__",
+      "execute",
+      "candidate",
+      frozenDrag("candidate", "execute", ["x"], ["x"], [x]),
+    ),
+  );
+  expect(h.spies.removeSelectedItemIds).not.toHaveBeenCalled();
+  expect(h.spies.clearRangeSelection).not.toHaveBeenCalled();
+  await act(async () => {
+    finish({ status: "aborted", reason: "所属が変わったため中止しました" });
+    await completion;
+  });
+  expect(rejected).toHaveBeenCalledWith("所属が変わったため中止しました");
+  expect(h.spies.removeSelectedItemIds).not.toHaveBeenCalled();
+  expect(h.spies.clearRangeSelection).not.toHaveBeenCalled();
+  expect(h.spies.setSortState).not.toHaveBeenCalled();
+});
+
+it("does not clear a later selection when an accepted move commits", async () => {
+  const x = item("x", { number: "1" });
+  const target = item("target", { number: "2" });
+  const h = createHarness({
+    eventLists: { [EVENT]: [x, target] },
+    selectedItemIds: new Set(["x"]),
+    executeModeItems: { [EVENT]: { [DAY]: ["target"] } },
+  });
+  let finish!: (result: { status: "committed" }) => void;
+  const completion = new Promise<{ status: "committed" }>((resolve) => {
+    finish = resolve;
+  });
+  let revision = 0;
+  const ports = {
+    ...h.ports,
+    state: { ...h.ports.state, getSelectionRevision: () => revision },
+  };
+  h.spies.queueShoppingMovePatch.mockReturnValue({
+    status: "accepted",
+    operationId: "save",
+    moveId: "save:move:1",
+    completion,
+  });
+  const { result } = renderHook(() => useShoppingItemMutationCommands(ports));
+  act(() =>
+    result.current.moveItem(
+      "x",
+      "__END_OF_LIST__",
+      "execute",
+      "candidate",
+      frozenDrag("candidate", "execute", ["x"], ["x"], [x]),
+    ),
+  );
+  revision++;
+  await act(async () => {
+    finish({ status: "committed" });
+    await completion;
+  });
+  expect(h.spies.removeSelectedItemIds).not.toHaveBeenCalled();
+  expect(h.spies.clearRangeSelection).not.toHaveBeenCalled();
+});
+
+it.each(["a", "b"])(
+  "moves the whole execution space from card %s while retaining its book order",
+  (clicked) => {
+    const a = item("a", { number: "1" });
+    const b = item("b", { number: "1" });
+    const c = item("c", { number: "2" });
+    const allItems = [a, b, c];
+    const h = createHarness({
+      eventLists: { [EVENT]: allItems },
+      executeModeItems: { [EVENT]: { [DAY]: ["a", "b", "c"] } },
+    });
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(h.ports),
+    );
+    act(() => result.current.moveItemDown(clicked, "execute"));
+    expect(h.stores.executeModeItems[EVENT][DAY]).toEqual(["c", "a", "b"]);
+    expect(h.stores.eventLists[EVENT]).toBe(allItems);
+    expect(h.spies.queueShoppingMovePatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requestedIds: [clicked],
+        effectiveIds: ["a", "b"],
+      }),
+    );
+    expect(h.spies.areItemsInSameHall).not.toHaveBeenCalled();
+  },
+);
+
+it("does not reorder books or consume selection when a card has no adjacent execution space", () => {
+  const allItems = [item("a"), item("b")];
+  const selected = new Set(["a"]);
+  const h = createHarness({
+    eventLists: { [EVENT]: allItems },
+    executeModeItems: { [EVENT]: { [DAY]: ["a", "b"] } },
+    selectedItemIds: selected,
+    blockSortDirection: "desc",
+  });
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  act(() => {
+    result.current.moveItemDown("a", "execute");
+    result.current.moveItemUp("b", "execute");
+  });
+  expect(h.spies.queueShoppingMovePatch).not.toHaveBeenCalled();
+  expect(h.spies.clearRangeSelection).not.toHaveBeenCalled();
+  expect(h.spies.setSortState).not.toHaveBeenCalled();
+  expect(h.spies.removeSelectedItemIds).not.toHaveBeenCalled();
+  expect(h.stores.executeModeItems[EVENT][DAY]).toEqual(["a", "b"]);
+  expect(h.ports.state.selectedItemIds).toBe(selected);
+  expect(h.stores.blockSortDirection).toBe("desc");
+});
+
+it("routes card movement through the frozen space-order save without clearing a rejected selection or sort", () => {
+  const a = item("a", { number: "1" }),
+    b = item("b", { number: "1" }),
+    c = item("c", { number: "2" });
+  const h = createHarness({
+    eventLists: { [EVENT]: [a, b, c] },
+    executeModeItems: { [EVENT]: { [DAY]: ["a", "b", "c"] } },
+    selectedItemIds: new Set(["a"]),
+  });
+  h.spies.queueShoppingMovePatch.mockReturnValue({
+    status: "blocked",
+    reason: "配置が変わりました",
+  });
+  const rejected = vi.fn();
+  const { result } = renderHook(() =>
+    useShoppingItemMutationCommands({
+      ...h.ports,
+      alerts: { ...h.ports.alerts, placementRejected: rejected },
+    }),
+  );
+  act(() => result.current.moveItemDown("a", "execute"));
+  expect(h.spies.queueShoppingMovePatch).toHaveBeenCalledWith(
+    expect.objectContaining({
+      sourceColumn: "execute",
+      targetColumn: "execute",
+      requestedIds: ["a"],
+      effectiveIds: ["a", "b"],
+      reorderWithinVisit: undefined,
+    }),
+  );
+  expect(rejected).toHaveBeenCalledWith("配置が変わりました");
+  expect(h.spies.clearRangeSelection).not.toHaveBeenCalled();
+  expect(h.spies.removeSelectedItemIds).not.toHaveBeenCalled();
+  expect(h.spies.setSortState).not.toHaveBeenCalled();
+  expect(h.spies.updateExecuteModeItems).not.toHaveBeenCalled();
+});
+
+it("allows mixed-priority column buttons while preserving their priorities and purchase fields", () => {
+  const a = item("a", {
+    number: "1",
+    block: "A",
+    priorityLevel: "highest",
+    quantity: 2,
+  });
+  const b = item("b", {
+    number: "2",
+    block: "B",
+    priorityLevel: "none",
+    quantity: 3,
+  });
+  const h = createHarness({
+    eventLists: { [EVENT]: [a, b] },
+    selectedItemIds: new Set(["a", "b"]),
+    areItemsInSameHallGroup: () => false,
+  });
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  act(() => result.current.moveToExecuteColumn(["a", "b"]));
+  expect(h.spies.queueShoppingMovePatch).toHaveBeenCalledWith(
+    expect.objectContaining({
+      sourceColumn: "candidate",
+      targetColumn: "execute",
+      requestedIds: ["a", "b"],
+      effectiveIds: ["a", "b"],
+    }),
+  );
+  expect(h.stores.executeModeItems[EVENT][DAY]).toEqual(["a", "b"]);
+  expect(h.stores.eventLists[EVENT]).toEqual([a, b]);
+  expect(h.spies.removeSelectedItemIds).toHaveBeenCalledWith(["a", "b"]);
+});
+
+it.each(["add", "remove"] as const)(
+  "preserves column-button selection after asynchronous placement abort: %s",
+  async (operation) => {
+    const a = item("a", { number: "1" }),
+      b = item("b", { number: "2" });
+    const h = createHarness({
+      eventLists: { [EVENT]: [a, b] },
+      executeModeItems: {
+        [EVENT]: { [DAY]: operation === "remove" ? ["a"] : [] },
+      },
+      selectedItemIds: new Set(["a"]),
+    });
+    let finish!: (result: { status: "aborted"; reason: string }) => void;
+    const completion = new Promise<{ status: "aborted"; reason: string }>(
+      (resolve) => {
+        finish = resolve;
+      },
+    );
+    h.spies.queueShoppingMovePatch.mockReturnValue({
+      status: "accepted",
+      operationId: "button",
+      moveId: "button:move:1",
+      completion,
+    });
+    const rejected = vi.fn();
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands({
+        ...h.ports,
+        alerts: { ...h.ports.alerts, placementRejected: rejected },
+      }),
+    );
+    act(() =>
+      operation === "add"
+        ? result.current.moveToExecuteColumn(["a"])
+        : result.current.removeFromExecuteColumn(["a"]),
+    );
+    expect(h.spies.removeSelectedItemIds).not.toHaveBeenCalled();
+    await act(async () => {
+      finish({ status: "aborted", reason: "配置が変わったため中止" });
+      await completion;
+    });
+    expect(rejected).toHaveBeenCalledWith("配置が変わったため中止");
+    expect(h.spies.removeSelectedItemIds).not.toHaveBeenCalled();
+    expect(h.spies.clearRangeSelection).not.toHaveBeenCalled();
+    expect(h.spies.clearSelection).not.toHaveBeenCalled();
+  },
+);
+
+it("ends a same-order confirmed-group drop range without changing checks or sort", () => {
+  const key = `__mapless__:${DAY}`;
+  const projected = projectConsistencySnapshot(
+    {
+      ...emptyApplicationSnapshotForImport(),
+      eventLists: {
+        [EVENT]: [
+          item("a", { block: "A", number: "01a", quantity: 3, price: 1500 }),
+          item("b", { block: "B", number: "02a", quantity: 2, price: 800 }),
+        ],
+      },
+      hallDefinitions: {
+        [EVENT]: {
+          [key]: [
+            { id: "east", name: "東館", vertices: [], blockNames: ["A"] },
+            { id: "west", name: "西館", vertices: [], blockNames: ["B"] },
+          ],
+        },
+      },
+    },
+    EVENT,
+    DAY,
+  );
+  const allItems = projected.eventLists[EVENT] as ShoppingItem[];
+  const [a, b] = allItems;
+  const halls = projected.hallDefinitions[EVENT][
+    key
+  ] as ShoppingDragPresentation["halls"];
+  const presentation = {
+    spaceGroups: true,
+    hallGroups: false,
+    map: null,
+    halls,
+    hallOrder: halls.map((hall) => hall.id),
+    allItems,
+  };
+  const placement = resolveShoppingDragPlacement(
+    buildShoppingDragLayout([b], presentation),
+    [a],
+    "b",
+    "before",
+  );
+  expect(placement).not.toBeNull();
+  const selectedItemIds = new Set(["a"]);
+  const h = createHarness({
+    eventLists: { [EVENT]: allItems },
+    executeModeItems: { [EVENT]: { [DAY]: ["a", "b"] } },
+    selectedItemIds,
+    spaceGroupDragItemIds: ["a"],
+    blockSortDirection: "desc",
+    candidateNumberSortDirection: "asc",
+    areItemsInSameHallGroup: (first, second) => first === second,
+  });
+  h.spies.queueShoppingMovePatch.mockReturnValue({
+    status: "noop",
+    reason: "same-order",
+  });
+  const rejected = vi.fn();
+  h.ports.alerts.placementRejected = rejected;
+  const { result } = renderHook(() => useShoppingItemMutationCommands(h.ports));
+  act(() =>
+    result.current.moveItem("a", "b", "execute", "execute", {
+      ...frozenDrag("execute", "execute", ["a"], ["a"], [a]),
+      placement: placement!,
+    }),
+  );
+  expect(h.spies.queueShoppingMovePatch).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({ executeModeItems: { [DAY]: ["a", "b"] } }),
+  );
+  expect(rejected).not.toHaveBeenCalled();
+  expect(h.spies.notify).not.toHaveBeenCalled();
+  expect(h.spies.clearSelection).not.toHaveBeenCalled();
+  expect(h.spies.removeSelectedItemIds).not.toHaveBeenCalled();
+  expect(h.spies.clearRangeSelection).toHaveBeenCalledTimes(1);
+  expect(h.spies.setSortState).not.toHaveBeenCalled();
+  expect(h.spies.setBlockSortDirection).not.toHaveBeenCalled();
+  expect(h.spies.setCandidateNumberSortDirection).not.toHaveBeenCalled();
+  expect(h.spies.setEventLists).not.toHaveBeenCalled();
+  expect(h.spies.updateExecuteModeItems).not.toHaveBeenCalled();
+  expect(h.ports.state.selectedItemIds).toBe(selectedItemIds);
+  expect(h.stores.blockSortDirection).toBe("desc");
+  expect(h.stores.candidateNumberSortDirection).toBe("asc");
+  expect(h.stores.eventLists[EVENT]).toBe(allItems);
+  expect(h.stores.executeModeItems[EVENT][DAY]).toEqual(["a", "b"]);
+});
+
+it.each(["drag", "vertical button"] as const)(
+  "keeps selection, range and sort without a banner after user cancellation: %s",
+  async (operation) => {
+    const a = item("a", { number: "1", quantity: 3, remarks: "最新のメモ" });
+    const b = item("b", { number: "2" });
+    const allItems = [a, b];
+    const selected = new Set(["a"]);
+    const order = operation === "drag" ? ["b"] : ["a", "b"];
+    const h = createHarness({
+      eventLists: { [EVENT]: allItems },
+      executeModeItems: { [EVENT]: { [DAY]: order } },
+      selectedItemIds: selected,
+      blockSortDirection: "desc",
+      candidateNumberSortDirection: "asc",
+    });
+    let finish!: (result: { status: "cancelled" }) => void;
+    const completion = new Promise<{ status: "cancelled" }>((resolve) => {
+      finish = resolve;
+    });
+    h.spies.queueShoppingMovePatch.mockReturnValue({
+      status: "accepted",
+      operationId: "cancelled-save",
+      moveId: "cancelled-save:move:1",
+      completion,
+    });
+    const rejected = vi.fn();
+    h.ports.alerts.placementRejected = rejected;
+    const { result } = renderHook(() =>
+      useShoppingItemMutationCommands(h.ports),
+    );
+    act(() => {
+      if (operation === "drag")
+        result.current.moveItem(
+          "a",
+          "__END_OF_LIST__",
+          "execute",
+          "candidate",
+          frozenDrag("candidate", "execute", ["a"], ["a"], [a]),
+        );
+      else result.current.moveItemDown("a", "execute");
+    });
+    expect(h.spies.queueShoppingMovePatch).toHaveBeenCalledOnce();
+    await act(async () => {
+      finish({ status: "cancelled" });
+      await completion;
+    });
+    expect(rejected).not.toHaveBeenCalled();
+    expect(h.spies.notify).not.toHaveBeenCalled();
+    expect(h.spies.clearSelection).not.toHaveBeenCalled();
+    expect(h.spies.removeSelectedItemIds).not.toHaveBeenCalled();
+    expect(h.spies.clearRangeSelection).not.toHaveBeenCalled();
+    expect(h.spies.setSortState).not.toHaveBeenCalled();
+    expect(h.spies.setBlockSortDirection).not.toHaveBeenCalled();
+    expect(h.spies.setCandidateNumberSortDirection).not.toHaveBeenCalled();
+    expect(h.spies.setEventLists).not.toHaveBeenCalled();
+    expect(h.spies.updateExecuteModeItems).not.toHaveBeenCalled();
+    expect(h.ports.state.selectedItemIds).toBe(selected);
+    expect(h.stores.blockSortDirection).toBe("desc");
+    expect(h.stores.candidateNumberSortDirection).toBe("asc");
+    expect(h.stores.eventLists[EVENT]).toBe(allItems);
+    expect(h.stores.executeModeItems[EVENT][DAY]).toBe(order);
+  },
+);
+
+it.each(
+  (
+    [
+      "unrelated",
+      "reselected",
+      "aborted",
+      "cancelled",
+      "context-changed",
+      "unmounted",
+    ] as const
+  ).flatMap((scenario) =>
+    (["drag", "column-button"] as const).map((consumer) => ({
+      scenario,
+      consumer,
+    })),
+  ),
+)(
+  "selectively consumes committed moved IDs with real selection state: $consumer $scenario",
+  async ({ scenario, consumer }) => {
+    const c1 = item("c1", { number: "1" });
+    const c2 = item("c2", { number: "2" });
+    const e0 = item("e0", { number: "3" });
+    const h = createHarness({
+      eventLists: { [EVENT]: [c1, c2, e0] },
+      executeModeItems: { [EVENT]: { [DAY]: ["e0"] } },
+      blockSortDirection: "asc",
+    });
+    type Completion =
+      | { status: "committed" }
+      | { status: "aborted"; reason: string }
+      | { status: "cancelled" };
+    let finish!: (value: Completion) => void;
+    const completion = new Promise<Completion>((resolve) => {
+      finish = resolve;
+    });
+    h.spies.queueShoppingMovePatch.mockReturnValue({
+      status: "accepted",
+      operationId: "pending-selection",
+      moveId: "pending-selection:move:1",
+      completion,
+    });
+    const ownerSpies: Array<{
+      consume: ReturnType<typeof vi.spyOn>;
+      release: ReturnType<typeof vi.spyOn>;
+    }> = [];
+    let activeDay = DAY;
+    const { result, rerender, unmount } = renderHook(() => {
+      const selection = useListInteractionState();
+      const revision = useRef({
+        inputs: [
+          selection.selectedItemIds,
+          selection.rangeStart,
+          selection.rangeEnd,
+        ],
+        value: 0,
+      });
+      const inputs = [
+        selection.selectedItemIds,
+        selection.rangeStart,
+        selection.rangeEnd,
+      ];
+      if (
+        inputs.some((value, index) => value !== revision.current.inputs[index])
+      )
+        revision.current = { inputs, value: revision.current.value + 1 };
+      const capture = selection.captureSelectionConsumption;
+      const actions = {
+        ...h.ports.actions,
+        captureSelectionConsumption: (ids: readonly string[]) => {
+          const owner = capture(ids);
+          ownerSpies.push({
+            consume: vi.spyOn(owner, "consume"),
+            release: vi.spyOn(owner, "release"),
+          });
+          return owner;
+        },
+        removeSelectedItemIds: selection.removeSelectedItemIds,
+        clearRangeSelection: selection.clearRangeSelection,
+      };
+      const commands = useShoppingItemMutationCommands({
+        ...h.ports,
+        state: {
+          ...h.ports.state,
+          activeEventDate: activeDay,
+          selectedItemIds: selection.selectedItemIds,
+          getSelectionRevision: () => revision.current.value,
+        },
+        actions,
+      });
+      return { selection, commands };
+    });
+    const presentation = buildRangePresentation({
+      scopeKey: "event/day/execute/flat",
+      grouping: "flat",
+      itemIds: ["c1", "c2", "e0"],
+    });
+    act(() => result.current.selection.selectItemForRange("c1", presentation));
+    act(() => result.current.selection.selectItemForRange("c2", presentation));
+    act(() =>
+      consumer === "column-button"
+        ? result.current.commands.moveToExecuteColumn(["c1", "c2"])
+        : result.current.commands.moveItem(
+            "c1",
+            "__END_OF_LIST__",
+            "execute",
+            "candidate",
+            frozenDrag(
+              "candidate",
+              "execute",
+              ["c1", "c2"],
+              ["c1", "c2"],
+              [c1, c2],
+            ),
+          ),
+    );
+    expect(h.spies.queueShoppingMovePatch).toHaveBeenCalledTimes(1);
+    expect(ownerSpies).toHaveLength(1);
+    if (scenario === "reselected") {
+      // Distinct updates form ABA: membership returns to checked, ownership does not.
+      act(() =>
+        result.current.selection.selectItemForRange("c1", presentation),
+      );
+      act(() =>
+        result.current.selection.selectItemForRange("c1", presentation),
+      );
+    }
+    act(() => result.current.selection.selectItemForRange("e0", presentation));
+    const { rangeStart, rangeEnd } = result.current.selection;
+    if (scenario === "context-changed") {
+      activeDay = "another-day";
+      rerender();
+    } else if (scenario === "unmounted") unmount();
+    await act(async () => {
+      finish(
+        scenario === "aborted"
+          ? { status: "aborted", reason: "placement changed" }
+          : scenario === "cancelled"
+            ? { status: "cancelled" }
+            : { status: "committed" },
+      );
+      await completion;
+    });
+    expect([...result.current.selection.selectedItemIds]).toEqual(
+      scenario === "unrelated"
+        ? ["e0"]
+        : scenario === "reselected"
+          ? ["c1", "e0"]
+          : ["c1", "c2", "e0"],
+    );
+    expect(result.current.selection.rangeStart).toBe(rangeStart);
+    expect(result.current.selection.rangeEnd).toBe(rangeEnd);
+    expect(ownerSpies[0].release).toHaveBeenCalledTimes(1);
+    if (["aborted", "cancelled", "context-changed"].includes(scenario))
+      expect(ownerSpies[0].consume).not.toHaveBeenCalled();
+    const selected = result.current.selection.selectedItemIds;
+    act(() => ownerSpies[0].consume());
+    expect(result.current.selection.selectedItemIds).toBe(selected);
+    expect(h.spies.setSortState).not.toHaveBeenCalled();
+    expect(h.stores.blockSortDirection).toBe("asc");
+  },
+);
+
+it("ends a valid same-order D&D range without consuming checks, sort or data", () => {
+  const entries = [0, 1, 2, 3].map((index) =>
+    item(`e${index}`, { number: `${index + 1}` }),
+  );
+  const h = createHarness({
+    eventLists: { [EVENT]: entries },
+    executeModeItems: { [EVENT]: { [DAY]: entries.map((value) => value.id) } },
+    blockSortDirection: "desc",
+  });
+  h.spies.queueShoppingMovePatch.mockReturnValue({
+    status: "noop",
+    reason: "same-order",
+  });
+  const capture = vi.fn();
+  const clearRange = vi.fn();
+  const { result } = renderHook(() => {
+    const selection = useListInteractionState();
+    const commands = useShoppingItemMutationCommands({
+      ...h.ports,
+      state: { ...h.ports.state, selectedItemIds: selection.selectedItemIds },
+      actions: {
+        ...h.ports.actions,
+        captureSelectionConsumption: (ids) => {
+          capture();
+          return selection.captureSelectionConsumption(ids);
+        },
+        removeSelectedItemIds: selection.removeSelectedItemIds,
+        clearRangeSelection: () => {
+          clearRange();
+          selection.clearRangeSelection();
+        },
+      },
+    });
+    return { selection, commands };
+  });
+  const presentation = buildRangePresentation({
+    scopeKey: "event/day/execute/flat",
+    grouping: "flat",
+    itemIds: entries.map((value) => value.id),
+  });
+  act(() => result.current.selection.selectItemForRange("e0", presentation));
+  act(() => result.current.selection.selectItemForRange("e2", presentation));
+  act(() =>
+    result.current.selection.toggleRangeItemIdsSelection(["e0", "e1", "e2"]),
+  );
+  expect(result.current.selection.rangeStart).not.toBeNull();
+  expect(result.current.selection.rangeEnd).not.toBeNull();
+  const selected = result.current.selection.selectedItemIds;
+  act(() =>
+    result.current.commands.moveItem(
+      "e0",
+      "e3",
+      "execute",
+      "execute",
+      frozenDrag(
+        "execute",
+        "execute",
+        ["e0", "e1", "e2"],
+        ["e0", "e1", "e2"],
+        entries.slice(0, 3),
+      ),
+    ),
+  );
+  expect(h.spies.queueShoppingMovePatch).toHaveBeenCalledTimes(1);
+  expect(result.current.selection.rangeStart).toBeNull();
+  expect(result.current.selection.rangeEnd).toBeNull();
+  expect(result.current.selection.selectedItemIds).toBe(selected);
+  expect([...selected].sort()).toEqual(["e0", "e1", "e2"]);
+  expect(clearRange).toHaveBeenCalledTimes(1);
+  expect(capture).not.toHaveBeenCalled();
+  expect(h.spies.setSortState).not.toHaveBeenCalled();
+  expect(h.stores.blockSortDirection).toBe("desc");
+  expect(h.spies.setEventLists).not.toHaveBeenCalled();
+  expect(h.spies.updateExecuteModeItems).not.toHaveBeenCalled();
+  expect(h.spies.notify).not.toHaveBeenCalled();
+});
+
+describe.each(["header", "card"])("execute %s adjacency", (control) => {
+  const foreignKinds = ["hall", "priority"] as const;
+  type ForeignKind = (typeof foreignKinds)[number];
+  const entries = (kind: ForeignKind, fragmented = false) => [
+    item("a1", { number: "01a", quantity: 3, price: 1200 }),
+    item("foreign-1", {
+      block: kind === "hall" ? "B" : "A",
+      number: "91a",
+      priorityLevel: kind === "priority" ? "priority" : "none",
+    }),
+    item("b", { number: "02a" }),
+    item("a2", { number: fragmented ? "01a2" : "03a" }),
+    item("foreign-2", {
+      block: kind === "hall" ? "B" : "A",
+      number: "92a",
+      priorityLevel: kind === "priority" ? "priority" : "none",
+    }),
+    item("c", { number: "04a" }),
+    item("d", { number: "05a" }),
+  ];
+  function headerHarness(
+    kind: ForeignKind,
+    rawIds: string[],
+    requestedIds: string[],
+    fragmented = false,
+  ) {
+    const source: PersistenceSnapshot = {
+      ...emptyApplicationSnapshotForImport(),
+      eventLists: {
+        [EVENT]: [
+          ...entries(kind, fragmented),
+          item("candidate", { number: "98a" }),
+          item("other-day", { eventDate: "day-2", number: "99a" }),
+        ],
+        history: [item("past", { eventDate: "previous-event" })],
+      },
+      eventConsistency: {
+        [EVENT]: createEventConsistency(),
+        history: createEventConsistency(),
+      },
+      executeModeItems: {
+        [EVENT]: { [DAY]: rawIds, "day-2": ["other-day"] },
+      },
+      dayModes: { [EVENT]: { [DAY]: "edit" } },
+      hallDefinitions: {
+        [EVENT]: {
+          [`__mapless__:${DAY}`]: [
+            { id: "east", name: "東館", vertices: [], blockNames: ["A"] },
+            { id: "west", name: "西館", vertices: [], blockNames: ["B"] },
+          ],
+        },
+      },
+    };
+    const displayed = projectConsistencySnapshot(source, EVENT, DAY);
+    const allItems = displayed.eventLists[EVENT] as ShoppingItem[];
+    const byId = new Map(allItems.map((entry) => [entry.id, entry]));
+    const selectedItemIds = new Set(requestedIds);
+    const h = createHarness({
+      eventLists: { [EVENT]: allItems },
+      items: allItems,
+      executeModeItems: { [EVENT]: source.executeModeItems[EVENT] },
+      selectedItemIds,
+      spaceGroupDragItemIds: control === "header" ? requestedIds : null,
+      blockSortDirection: "desc",
+      areItemsInSameHallGroup: (first, second) =>
+        isSameExecutionPlacementGroup(byId.get(first)!, byId.get(second)!),
+    });
+    let replayed: PersistenceSnapshot | undefined;
+    h.spies.queueShoppingMovePatch.mockImplementation((input) => {
+      const command: ApplicationShoppingMove = {
+        version: 1,
+        eventName: input.eventName,
+        day: input.day,
+        sourceColumn: input.sourceColumn,
+        targetColumn: input.targetColumn,
+        requestedIds: input.requestedIds,
+        effectiveIds: input.effectiveIds,
+        hoverId: input.hoverId,
+        baselineItemIds: input.baselineItemIds,
+        itemIds: (input.eventListItems ?? allItems).map((entry) => entry.id),
+        baselineExecuteIds: input.baselineExecuteIds,
+        executeIds: input.executeModeItems![DAY],
+        baselineVisits: shoppingMoveVisitBaseline(source, EVENT, DAY),
+        initialDayMergeSignature: shoppingMoveInitialDayMergeSignature(
+          source,
+          EVENT,
+          DAY,
+        ),
+      };
+      command.placementBaseline = shoppingMovePlacementBaseline(
+        source,
+        command,
+      );
+      const latest = structuredClone(source);
+      (latest.eventLists[EVENT] as ShoppingItem[]).find(
+        (entry) => entry.id === "a1",
+      )!.quantity = 7;
+      (latest.eventLists[EVENT] as ShoppingItem[]).find(
+        (entry) => entry.id === "foreign-1",
+      )!.remarks = "保存待ちのメモ";
+      const planned = planShoppingMove(latest, command);
+      expect(planned.confirmation).toBeUndefined();
+      replayed = planned.snapshot;
+      h.stores.executeModeItems = replayed.executeModeItems;
+      h.refs.executeModeItemsRef.current = replayed.executeModeItems;
+      return {
+        status: "accepted",
+        operationId: "header",
+        moveId: "header:1",
+      };
+    });
+    return { ...h, source, selectedItemIds, replayed: () => replayed };
+  }
+  function expectSavedHeaderMove(
+    h: ReturnType<typeof headerHarness>,
+    expected: string[],
+    effectiveIds: string[],
+  ) {
+    expect(h.spies.queueShoppingMovePatch).toHaveBeenCalledOnce();
+    expect(h.spies.queueShoppingMovePatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceColumn: "execute",
+        targetColumn: "execute",
+        effectiveIds,
+        executeModeItems: {
+          ...h.source.executeModeItems[EVENT],
+          [DAY]: expected,
+        },
+      }),
+    );
+    const saved = h.replayed()!;
+    expect(saved.executeModeItems[EVENT][DAY]).toEqual(expected);
+    const moving = new Set(effectiveIds);
+    expect(
+      saved.executeModeItems[EVENT][DAY].filter((id) => !moving.has(id)),
+    ).toEqual(
+      h.source.executeModeItems[EVENT][DAY].filter((id) => !moving.has(id)),
+    );
+    expect(expected.filter((id) => id.startsWith("foreign-"))).toEqual([
+      "foreign-1",
+      "foreign-2",
+    ]);
+    expect(saved.executeModeItems[EVENT]["day-2"]).toEqual(["other-day"]);
+    expect(saved.eventLists.history).toBeDefined();
+    expect(saved.eventLists.history).toEqual(h.source.eventLists.history);
+    expect(saved.eventLists[EVENT]).toEqual(
+      (h.source.eventLists[EVENT] as ShoppingItem[]).map((entry) =>
+        entry.id === "a1"
+          ? { ...entry, quantity: 7 }
+          : entry.id === "foreign-1"
+            ? { ...entry, remarks: "保存待ちのメモ" }
+            : entry,
+      ),
+    );
+    expect(h.source.executeModeItems[EVENT][DAY]).toEqual(
+      h.spies.queueShoppingMovePatch.mock.calls[0][0].baselineExecuteIds,
+    );
+    expect(h.spies.removeSelectedItemIds).not.toHaveBeenCalled();
+  }
+
+  it.each(
+    foreignKinds.flatMap((kind) => [
+      {
+        kind,
+        direction: "up" as const,
+        moving: "a2",
+        expected: ["a2", "a1", "foreign-1", "foreign-2", "c"],
+      },
+      {
+        kind,
+        direction: "down" as const,
+        moving: "a1",
+        expected: ["foreign-1", "a2", "foreign-2", "a1", "c"],
+      },
+    ]),
+  )(
+    "moves $direction past the displayed neighbor despite interleaved $kind visits and replays only moved IDs",
+    ({ kind, direction, moving, expected }) => {
+      const h = headerHarness(
+        kind,
+        ["a1", "foreign-1", "a2", "foreign-2", "c"],
+        [moving],
+      );
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(h.ports),
+      );
+      act(() =>
+        direction === "up"
+          ? result.current.moveItemUp(moving, "execute")
+          : result.current.moveItemDown(moving, "execute"),
+      );
+      expectSavedHeaderMove(h, expected, [moving]);
+    },
+  );
+
+  it.each(
+    foreignKinds.flatMap((kind) =>
+      ["a1", "a2"].map((clicked) => ({ kind, clicked })),
+    ),
+  )(
+    "moves every member of a split visit from $clicked past its logical neighbor with interleaved $kind visits",
+    ({ kind, clicked }) => {
+      const h = headerHarness(
+        kind,
+        ["a1", "foreign-1", "b", "a2", "foreign-2", "c"],
+        [clicked],
+        true,
+      );
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(h.ports),
+      );
+      act(() => result.current.moveItemDown(clicked, "execute"));
+      expectSavedHeaderMove(
+        h,
+        ["foreign-1", "b", "foreign-2", "a1", "a2", "c"],
+        ["a1", "a2"],
+      );
+    },
+  );
+
+  it.each(foreignKinds)(
+    "moves a visit up before the first raw member of a split neighbor with interleaved %s visits",
+    (kind) => {
+      const h = headerHarness(
+        kind,
+        ["a1", "foreign-1", "b", "a2", "foreign-2", "c"],
+        ["b"],
+        true,
+      );
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(h.ports),
+      );
+      act(() => result.current.moveItemUp("b", "execute"));
+      expectSavedHeaderMove(
+        h,
+        ["b", "a1", "foreign-1", "a2", "foreign-2", "c"],
+        ["b"],
+      );
+    },
+  );
+
+  it.each(foreignKinds)(
+    "moves down after a split neighbor's logical visit without passing the following visit with foreign %s visits",
+    (kind) => {
+      const h = headerHarness(
+        kind,
+        ["b", "a1", "c", "a2", "foreign-1", "foreign-2"],
+        ["b"],
+        true,
+      );
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(h.ports),
+      );
+      act(() => result.current.moveItemDown("b", "execute"));
+      expectSavedHeaderMove(
+        h,
+        ["a1", "b", "c", "a2", "foreign-1", "foreign-2"],
+        ["b"],
+      );
+    },
+  );
+  it.each(foreignKinds)(
+    "moves multiple same-group visits up without normalizing interleaved %s visits",
+    (kind) => {
+      const h = headerHarness(
+        kind,
+        ["a1", "foreign-1", "b", "a2", "foreign-2", "c", "d"],
+        ["b", "c"],
+        true,
+      );
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(h.ports),
+      );
+      act(() => result.current.moveItemUp("b", "execute"));
+      expectSavedHeaderMove(
+        h,
+        ["b", "c", "a1", "foreign-1", "a2", "foreign-2", "d"],
+        ["b", "c"],
+      );
+    },
+  );
+
+  it.each(foreignKinds)(
+    "moves noncontiguous selected visits down while retaining a split visit's book order and foreign %s order",
+    (kind) => {
+      const h = headerHarness(
+        kind,
+        ["a1", "foreign-1", "b", "a2", "foreign-2", "c", "d"],
+        ["a1", "c"],
+        true,
+      );
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(h.ports),
+      );
+      act(() => result.current.moveItemDown("a1", "execute"));
+      expectSavedHeaderMove(
+        h,
+        ["foreign-1", "b", "foreign-2", "d", "a1", "a2", "c"],
+        ["a1", "a2", "c"],
+      );
+    },
+  );
+
+  it.each(foreignKinds)(
+    "rejects mixed %s header targets without queueing, consuming selection, or clearing sort",
+    (kind) => {
+      const h = headerHarness(
+        kind,
+        ["a1", "foreign-1", "a2", "foreign-2", "c"],
+        ["a1", "foreign-1"],
+      );
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(h.ports),
+      );
+      act(() => result.current.moveItemDown("a1", "execute"));
+      expect(h.spies.queueShoppingMovePatch).not.toHaveBeenCalled();
+      expect(h.spies.clearRangeSelection).not.toHaveBeenCalled();
+      expect(h.spies.setSortState).not.toHaveBeenCalled();
+      expect(h.spies.removeSelectedItemIds).not.toHaveBeenCalled();
+      expect([...h.selectedItemIds]).toEqual(["a1", "foreign-1"]);
+      expect(h.stores.blockSortDirection).toBe("desc");
+    },
+  );
+
+  it.each(["up", "down"] as const)(
+    "keeps the logical %s edge as a no-op despite foreign raw visits",
+    (direction) => {
+      const moving = direction === "up" ? "a1" : "c";
+      const h = headerHarness(
+        "hall",
+        ["a1", "foreign-1", "a2", "foreign-2", "c"],
+        [moving],
+      );
+      const { result } = renderHook(() =>
+        useShoppingItemMutationCommands(h.ports),
+      );
+      act(() =>
+        direction === "up"
+          ? result.current.moveItemUp(moving, "execute")
+          : result.current.moveItemDown(moving, "execute"),
+      );
+      expect(h.spies.queueShoppingMovePatch).not.toHaveBeenCalled();
+      expect(h.spies.clearRangeSelection).not.toHaveBeenCalled();
+      expect(h.spies.setSortState).not.toHaveBeenCalled();
+      expect([...h.selectedItemIds]).toEqual([moving]);
+    },
+  );
 });

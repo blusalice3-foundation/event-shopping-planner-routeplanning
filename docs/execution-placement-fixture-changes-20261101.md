@@ -1,0 +1,79 @@
+# 実行列配置ルール変更に伴う性能fixtureの変更一覧
+
+- 日付: 2026-11-01 (日本時間)
+- 許可範囲: `D:/esp-placement-plan-20261101/docs/execution-placement-rules-remediation-plan-20261101.md` のD12・9.2節。
+- 元の製品source: `19c7541175b2a60076807dd17469127d67f8407d`。
+- 新fixture識別: `execution-placement-same-hall-2026-11-01`。
+- 旧記録・raw・当初合否は変更しない。ここでいう変更前測定は、新fixtureに旧製品を適用した独立runであり、旧異所属成功runの再解釈ではない。
+
+| 対象                        | 元の操作・期待                                                                          | 新しい操作・期待                                                                             | 検証器への対応                                                                                                         |
+| --------------------------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| drag / offscreen-merge      | Aのmerge-aとBのmerge-offscreenを同時に移し、2訪問へ合流                                 | 両方を同じA所属・通常優先度とし、画面内と画面外の2訪問へ合流                                 | 既存2本のmerge guide、ガイドの位置・反応終了点、描画局所性、保存0件のhover検証を維持。画面外guide ownerだけA所属へ更新 |
+| drag / auto-scroll          | Aのmerge-a / merge-bとBのmerge-offscreenを選択し、実際の端スクロールで3合流ガイドを表示 | 全員同じA所属・通常優先度とし、実際の端スクロールと3合流ガイドを検証                         | ジェスチャー、端スクロール量、実フレーム、3ガイドの位置、保存0件のhover検証を維持。画面外guide ownerだけA所属へ更新    |
+| 旧offscreen異所属の機能試験 | fixture()のA/B同時移動を成功として保存・再読込                                          | fixture()を保持し、新製品では全体拒否・ガイド0本・選択/品目/保存配列不変・再読込後不変を確認 | before phaseだけ元の成功期待を元のコードで観測。after/defaultは新しい拒否を確認。成功時間の比較へ拒否時間を流用しない  |
+
+`mixed`は同じ所属内の新規挿入と既存合流であるため、引き続き成功を要求する。`same-boundary`、`boundary-switch`、`multiple-merges`、既存の単一優先度境界拒否、shopping / range / transfer のfixtureは、この例外を根拠に変更しない。
+
+## 負荷を保つ住所の交換
+
+performanceFixture()だけで、既存の画面外訪問`offscreen`と最後のA所属の通常fillerの住所を交換する。150品目は`execute-69`のA-79、500品目は`execute-244`のA-254を使う。`offscreen`はそれぞれA-79a / A-254a、`merge-offscreen`は同スペースの追加本A-79a2 / A-254a2とし、交換したfillerが元のB-999aを引き継ぐ。
+
+これにより、従来の`performanceFixture(count)`が生成する品目ID、全品目数150/500、実行/候補の件数、品目配列・実行列ID順、A/Bの両ホール、各ブロックの地図番号セルの集合・件数・寸法、優先度・価格・数量・購入状態を保持する。地図の番号解決は既存の整数部照合を使う。元のfixture()のB所属offscreenは変更しない。独立したfixture負荷確認を150/500に各1件置き、元の番号集合と地図セル、実行ID順、混在拒否用の元B所属を照合する。
+
+比較元は調査時HEAD `19c7541175b2a60076807dd17469127d67f8407d` の`performanceFixture(count)`変換後であり、`fixture(count)`の生配列ではない。`execute-*` fillerの優先度を通常にする処理と、`priority` IDを実行配列の先頭へ置く処理は19c時点から存在し、そのまま維持する。独立guardはこの既存変換と許可された3品目の住所変更を明示した期待配列を作り、優先度・購入状態を含む全フィールドの一致も検証する。元の地図番号集合・件数・寸法と実行ID順の照合は引き続き行う。
+
+## 表示IDと機能試験の互換調整
+
+既存スペースへの合流（D04）では、同じ確定所属＋優先度の配置グループと、その有効な境界をdrop可能な範囲とする。同じグループ内の別スペースを指していても、ガイドは実際の既存訪問末尾に表示し、実際のdropでその末尾へ原子的に追加する。既存訪問の位置・本順は変えず、移動先・所属・対象・保存前再検証を省略しない。次グループ先頭の直前にある有効なグループ末尾も、計画6.1節・T08に従い受理する。
+
+異なる所属・優先度の場所からの補正案内（D05）は仮の状態であり、受付とは区別する。案内やスクロールだけで保存せず、静止したポインターの下へ有効位置が移動しても確定可能には変えない。ユーザーが有効範囲へ実際に移動してdropする必要がある。この区別により、既に同じ配置グループ内にいる操作へ、計画にない「同じ訪問そのものをhoverしなければならない」という追加制限を設けない。
+
+| 対象                                                                | 従来の操作・期待                                              | 現行ルールに合わせた確認                                                                                                                                                                                                                                                  |
+| ------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| drag fixtureのpriority表示確認                                      | 訪問アンカーIDの末尾が`:priority`                             | 所属別の表示用`@placement:`接尾辞があれば、その手前の優先度部分を確認。実際のホール表示・グループ表示・優先度表示のpositive controlは維持する                                                                                                                             |
+| scrolled offscreen notice（native/touch × grouping ON/OFF、4件）    | Aの`merge-a`から表示中の任意行をhoverして合流                 | after/defaultはBの`merge-offscreen`からAの`a1`を明示的にhoverし、補正案内・保存不変・案内の可読性を確認。公開スクロール後、実際にBの`offscreen`へhover/dropし、既存B訪問末尾への追加・全raw ID順・再読込後の候補除外を確認する。before phaseは元のAの操作・期待を保持する |
+| actual-map membership endpoint（native/touch × existing pair、4件） | 同じ確定所属・優先度にある別スペース`c`から既存訪問末尾へ合流 | 元の受付・末尾ガイド・raw/表示順・再読込の期待を保持する。実際の合流先はresolverで確定した`a2`または`a1`のままであり、`c`を不必要に拒否しない                                                                                                                             |
+| held touch same-order cleanup（flat / space / hall、3件）           | 有効な同順drop後はチェックを保持し範囲コントロール0個         | 両phaseで元の範囲コントロール0個を確認する。4423f18で追加した操作前後の全5品目のID・チェック状態の一致、CDP入力、クローン消失時のopacity・操作可能性、選択3件、保存順の検証は維持する                                                                                     |
+
+4423f18では、計画6.4.2の保存前中止と6.4.7のボタン経路での選択保護を、合法な同順D&Dの完了にも広げて解釈し、after/defaultだけ範囲保持へ変更した。実際の操作は選択3冊を隣接する非移動品目の直前へ置く有効な同順dropであるため、元の「チェック保持・範囲コントロール0個」へ訂正する。無効位置・中止・自己hover・ボタンNoOpの保護は維持する。過去の変更とrawは保全し、この3件のジェスチャー・保持時間・クローン消失時の採取点は変更しない。性能試験の終了条件は元から範囲コントロール0個であり、測定ループ・回数・基準・fixture・時計・終了点を変更しない。
+
+上記offscreen機能試験4件の対応に加え、後述の2026-11-01ユーザー承認に基づきdrop-save測定の対象ID・挿入辺だけを対応させる。性能測定ループ・ジェスチャー・反応/DOM/実フレーム/次操作の終了点は変更しない。新規追加の機能用スクロールhelperは性能シナリオから呼び出さない。候補フィルター2件も、選択対象・保存・再読込の期待を含め変更しない。表示ID互換guardは保存済み訪問IDの変更や基準の緩和を意味しない。
+
+計測用hover helperは実カードが未mountの場合に限り、同じ品目IDの公開`data-row-key` / `data-viewport-row-key`（`item:<JSON文字列>`）から保持中の同じ論理行の位置を取得する。訪問末尾の`a2`も同じ方法で照合し、別品目への置換・強制mount・ジェスチャー変更は行わない。カードがmount済みの経路、座標計算式、スクロール量、入力・実フレーム等の終了点、計測ループ・ウォームアップ・回数・fixtureは維持する。計測器の差分としてhashを記録し、このhelper修正前の失敗・途中runは保持する。
+
+計測前提として、要求した同じ品目ID・同じ挿入辺の入力点が実viewportの外にあるか、要求対象を実hitできない場合に限り、計測時計を開始する前に同じ公開論理行を`scrollIntoView`で表示する。公開行の位置を最大60 animation framesの範囲で再取得し、同フレームのwindow scrollを加えた文書座標の入力点が2フレーム安定し、最新viewport点が同じ要求owner/card/公開slotを実際にhitしてから、従来と同じ座標式・入力を実行する。`a1`の従来式が含む`a2`の同一訪問spanも許容し、sticky header・別group・広いcolumn rootだけのhitは許容しない。入力点が既にviewport内かつ遮蔽されていなければスクロールや待機を追加しない。別品目への置換・強制mount・受付状態の擬装を行わず、準備前後の点・scroll位置・待機frame数を応答へ記録する。これは画面外への合成入力を防ぐ計測器の前提整備であり、変更前後の双方へ同じhelperを適用し、対象ID・挿入辺・測定ループ・ウォームアップ・回数・終了点・期待結果を保持する。修正前の失敗runとその数値観測（695756dのpriority-afterはy=19059.84375、viewport高1000、elementFromPoint=null）も保持する。
+
+readinessが既存の60 animation frames・2フレーム安定条件を満たせず失敗した場合だけ、直近2回の既存`readTarget`結果の点・rectを再利用し、元ID/辺/入力種別・viewport・scroll位置/最大値・card/slotの種別とrect・`elementFromPoint`を失敗throwへ数値として添付する。追加のDOM/geometry読み取りは失敗確定後だけとし、成功時のread回数・入力・時計・スクロール動作・60フレーム上限を変更しない。da7b2e9の数値診断段階ではreadiness動作や製品を修正せず、8900675の旧操作OFF4件の準備失敗rawとON4件の完全な拒否proofを保持した。
+
+da7b2e9の150/native/OFF実測は、直近2点がともにy=1136.84375（viewport高1000）、現在の実cardがconnected・初回slotがdetached、scrollY16856/max17096で余地240pxという安定した画面外残留を示した。この実測に基づき、既存60フレーム内で同じ元ID・辺の点が画面外または遮蔽される場合だけ、現在の同ID公開slot/targetを再取得し、connectedな対象へcenter scrollして次frameで再評価する。画面内かつ要求対象をhitできれば追加scrollせず、元の点計算・2フレーム安定・60フレーム上限・dispatch・時計・終了点を保持する。古いdetached slotの再利用、別IDへの置換、強制mount、時間上限延長は行わない。変更前後には最終helperを同一適用し、元失敗rawとfailure-only診断を保持する。
+
+42a1809のOFF失敗を切り分ける追加診断では、hover responseへ既に計算・dispatch済みの`inputPoint {x,y}`だけを追加し、新しいgeometry読み取りを行わない。rejectedの準備失敗catchまたは既存scroll期待の失敗確定時だけ、既存の直前positive-control/initial-hover/response・cached viewport設定・使用fixtureを添付し、追加入力・scrollなしの3RAFで同じpriority公開行・guide/owner rect・status・windowYを観測する。元の入力から1RAF+taskまでのclock/終了点・成功経路のDOM read・全検証条件は保持する。遅延revealと同先dedup、前touchmove実Yと端scrollの関係を数値化する段階であり、readiness・verifier・製品動作は変更しない。元4pass/28指標・OFF4fail/欠測32・公式verifierfailedと原rawは保持する。
+
+bb7d993の失敗限定数値診断では、touchの直前positive control入力がy=944.84375（viewport高1000）で、次の準備中もwindow scrollが540→560→580→600と約16msごと20px増加した。対象の文書上の位置が不変でもviewport座標だけでは2フレーム安定せず、元のtouchmoveをdispatchする前に60フレーム上限へ達していた。この実測に基づき安定比較だけを同フレームwindow scroll込みの文書座標へ対応させ、最新viewport点・実hitの確認後に元入力を1回だけ実行する。追加touchmove、intervalの手動停止、point式変更、60フレーム上限延長は行わない。外部DOM回帰で旧bb7のactive20px移動の失敗と、対応後の元入力1回・遮蔽排除・他ID入力0を区別して確認する。
+
+nativeの同診断では、生responseはrejected・priority/after suggestion・offset0だったが、scroll0のままownerがy=17827.84375..18047.84375に残り、失敗後3RAF（44.3ms）でも変化しなかった。最終verifierは元の1RAF+following task時点のresponse・ms・scroll・guideを改変せず保存し、その時計後に入力・scrollを加えない最大60RAFの副次観測で、同じ正当guide1本・offset1px以下・rejected継続・viewport内到達を確認する。元endpointで既にguideが可視なら不要なscroll増加を要求せず、画面外なら元endpointから適切方向のscrollと最終可視性を要求する。副次観測は`correctiveVisibility`として既存guide sampleへ分離し、新metric・閾値・時計・回数・locality・保存0検証を変更しない。元bb7診断と42a1809の4成功/4失敗・欠測・verifier失敗のrawは保持する。
+
+ec6b362の正式attempt2では、500/native/OFFのrejectedで既存update0・before-mountedとの重複mount0を通過した後、`execute-220/225/230`の新規logical key各2が厳密なnomount期待に違反した。元243ファイルと当初の失敗・途中runは保持し、期待を緩めずに切り分ける。nomount違反が既存probe値から確定した場合だけ、`beforeRender`/`render`/初回hover/scenario/rendererBeforeと既存guideSamples・postvisibility、および10回のpositive-control response参照を添付する。新しいDOM読取は失敗確定後のcurrent renderer mode・public card/slot・retained祖先の接続/active/BCR/scrollの1snapshotだけで、入力・scroll・observer本体・metric・時計・終了点・nomount期待を変えない。
+
+間欠症状の数値診断に限り`ESP_DRAG_LOCALITY_DIAGNOSTIC=1`を明示すると、rejected成功時にも同contextを添付する。明示flag時だけ、元ec6b362失敗の対象`execute-220/225/230`を実mountKeysとは別の`priorFailureMountKeys`として観測対象へ含め、成功時も3行のBCR/activeとcard/publicRowの有無（未mountはnull）を残す。これは観測する行IDの追加だけで、fixture・入力先・保存先・probe key集合やnomount期待を変更しない。このflag時のtiming artifactは`diagnosticOnly: true` / `acceptanceMeasurement: false`とし、正式group監査・完了判定へ流用しない。通常unsetの成功経路では既存positive-control responseの参照保存以外のDOM読取・入力・時計を追加しない。変更前後の最終比較には同じ最終spec/helper/fixtureを適用し、元ec6b362のpartial成功を新runへ補充しない。
+
+## 2026-11-01ユーザー承認によるdrop-save対象位置の対応
+
+- 明示回答source: `call_ffc847ef15264588957ed8343692485d`（「有効な同グループ位置で測り直す」）。
+- policy識別: `execution-placement-valid-drop-save-target-2026-11-01`。計画9.2節の当初住所交換を超える対象ID・挿入辺の対応について、上記回答により追加承認された範囲だけを適用する。
+
+| 対象                                                           | 元の操作・期待                                                   | 承認後の対応・保護する検証                                                                                                                                                                                                                                                                                                                                                    |
+| -------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| drop-save測定8条件（150/500 × native/touch × grouping ON/OFF） | 通常優先度の`new-i`を`priority`のafterへhover/dropして成功を測定 | sourceと入力を保ち、同じA所属・通常優先度の`a1`のbeforeだけへ変更。全ループで同じ物理ID・辺を使い、既存DOM/実フレーム/次task終了点と独立保存poll終了後に、初期raw ID配列へ各`new-i`を`a1`直前に挿入した全配列を独立照合する                                                                                                                                                   |
+| 旧priority-after操作の機能8条件                                | 異なる優先度への成功期待                                         | after/default専用で同じ`performanceFixture(count)`・`new-0`→`priority` afterを残し、D05 rejected・通常A末尾の正確なsuggestion1本/offset1px以下・静止ポインターrelease後の選択維持・全品目と全raw実行ID配列不変・worker mutation/readwrite transaction0・600ms settle・再読込不変を確認。before phaseは旧製品へ新拒否を要求せず8件skipし、旧成功を新仕様の成功時間へ流用しない |
+| OFF既存rejected指標4条件                                       | `bad-priority`→`a1` afterでrejected、guide0本、scroll不変        | 入力・source/target/辺・時計・回数・rejected・保存0を保ち、after/defaultだけ正しい`priority`末尾のsuggestion1本・offset1px以下・補正scrollとviewport内guideを検証。beforeは元のguide0本/scroll不変を保持。直前の`bad-priority`→`priority` afterのpositive controlと全locality条件を維持                                                                                       |
+
+品目・優先度・価格・数量・購入状態・品目/実行ID順のfixture生成処理、地図・過去10,000品目負荷、ウォームアップ、入力ジェスチャー、測定時計と終了点、独立保存poll、probe/CDP、回数・閾値・retry0は変更しない。表示上の通常Aグループ先頭と、元raw配列の`priority`先頭を混同せず、初期rawの無関係な全ID順を保存後期待に保持する。新しいmetricや性能ケースを追加せず、8条件のdrop-save成功操作だけを対応させる。
+
+artifactの既存fixture metadataにpolicy/承認source・旧target/edge・新target/edgeを記録し、保存後の全raw期待も別欄に残す。今回のspec/helper/検証器・機能8件・metadata追加によりinstrument/fixtureSourcesのファイルhashは変わるが、上記住所交換以外のfixtureデータ負荷は変わらない。変更前後には最終確定した同一spec/helper/fixture/docを適用して同じcompletion profileの独立full5-group runを採取する。旧操作の失敗・中断run・旧source/instrument hash・raw・当初合否は保持し、別sourceや部分診断の成功で全条件を補充しない。
+
+## 測定契約
+
+全144性能ケース・530主指標と46保存補助、completion各10回 / pr各2回、sampling policy `performance-samples-2026-10-26`、shopping 65/100ms、range/drag/transfer 160/160msを維持する。計測終了点、ウォームアップ、retry 0、地図・過去10,000品目負荷、保存の原子性・内容検証を省略しない。変更前後は同じ新fixture・同じcompletion profileを使用し、実際のsource、instrument hash、fixture hash、run IDを各runに残す。
+
+部分実行、欠測、閾値超過、機能失敗を全条件完了としない。最終の実装・検証結果は別の実装記録に記載する。

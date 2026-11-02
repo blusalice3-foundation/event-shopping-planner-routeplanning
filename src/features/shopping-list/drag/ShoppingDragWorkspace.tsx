@@ -1,22 +1,31 @@
+import { projectedMembership } from "../../consistency/domain/projection";
 import React, {
   createContext,
   useContext,
   useLayoutEffect,
   useMemo,
+  useState,
 } from "react";
 import type { ShoppingItem } from "../../../types/item";
-import { getSpaceKey } from "../../../utils/spaceGrouping";
+import ReactDOM from "react-dom";
 import { buildMovePlan } from "../../lists/domain/movePlan";
+import { retainActivatedViewportContent } from "../renderers/ViewportContent";
 import {
-  buildExecutionVisitProjectionKey,
-  projectItemsToExecutionVisits,
-} from "../../../utils/visitProjection";
+  buildExecutionPlacementVisitKey,
+  projectExecutionPlacementVisits,
+} from "../../../utils/executionPlacement";
 import {
   buildShoppingDragLayout,
+  resolveShoppingDragColumnPlacement,
   resolveShoppingDragPlacement,
+  resolveShoppingBookPlacement,
+  shoppingDragHasSingleGroup,
+  isShoppingDragGroupSlot,
+  shoppingPlacementContext,
   type ShoppingDragColumn,
   type ShoppingDragLayout,
   type ShoppingDragMoveContext,
+  type ShoppingDragPlacement,
   type ShoppingDragPresentation,
 } from "./shoppingDrag";
 
@@ -25,6 +34,11 @@ interface DragList {
   readonly sourceItems?: readonly ShoppingItem[];
   readonly executeOrder?: readonly string[];
   readonly displayOrder?: () => readonly string[];
+  readonly rowReferences?: () => readonly {
+    readonly rowKey: string;
+    readonly itemId: string;
+  }[];
+  readonly groupKeyForItem?: (item: ShoppingItem) => string;
   readonly presentation: ShoppingDragPresentation;
   readonly root: () => HTMLDivElement | null;
   readonly move: (
@@ -34,12 +48,15 @@ interface DragList {
     source: ShoppingDragColumn,
     context?: ShoppingDragMoveContext,
   ) => void;
+  readonly reveal?: (itemId: string, signal?: AbortSignal) => void;
+  readonly resolveMembership?: (itemId: string) => void;
   readonly candidateNumberSort: "asc" | "desc" | null;
 }
 interface ActiveDrag {
   readonly context: ShoppingDragMoveContext;
   readonly dragId: string;
   readonly moving: readonly ShoppingItem[];
+  readonly requested: readonly ShoppingItem[];
 }
 export interface ShoppingDragWorkspace {
   readonly active: () => ActiveDrag | null;
@@ -69,6 +86,53 @@ const Context = createContext<ShoppingDragWorkspace | null>(null);
 export const useShoppingDragWorkspace = (): ShoppingDragWorkspace | null =>
   useContext(Context);
 
+/** Extends cross-column hit testing across headers and unused column space. */
+export function ShoppingDragColumnSurface({
+  column,
+  className,
+  children,
+}: {
+  column: ShoppingDragColumn;
+  className?: string;
+  children: React.ReactNode;
+}): React.ReactElement {
+  const workspace = useShoppingDragWorkspace();
+  const acceptsDrag = () => {
+    const active = workspace?.active();
+    return (
+      active !== null &&
+      active !== undefined &&
+      active.context.sourceColumn !== column
+    );
+  };
+  return (
+    <div
+      className={className}
+      data-shopping-drag-surface={column}
+      onDragOver={(event) => {
+        if (!acceptsDrag()) return;
+        event.preventDefault();
+        event.stopPropagation();
+        workspace!.hover(column, undefined, event.clientY, event.clientX);
+      }}
+      onDrop={(event) => {
+        if (!acceptsDrag()) return;
+        event.preventDefault();
+        event.stopPropagation();
+        workspace!.hover(column, undefined, event.clientY, event.clientX);
+        workspace!.drop(column);
+      }}
+      onDragLeave={(event) => {
+        const next = event.relatedTarget;
+        if (next instanceof Node && event.currentTarget.contains(next)) return;
+        if (acceptsDrag()) workspace!.leave();
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 function rawExecuteItems(list: DragList): readonly ShoppingItem[] {
   if (!list.executeOrder) return list.items;
   const itemsById = new Map(list.items.map((item) => [item.id, item]));
@@ -82,11 +146,51 @@ function createWorkspace(
   eventName: string,
   day: string,
   generation: number,
+  reportRejection: (message: string) => void,
 ): ShoppingDragWorkspace {
   const lists = new Map<ShoppingDragColumn, DragList>();
   const listeners = new Set<(active: boolean) => void>();
   let active: ActiveDrag | null = null;
-  let layoutCache: { list: DragList; layout: ShoppingDragLayout } | null = null;
+  let layoutCache: {
+    list: DragList;
+    layout: ShoppingDragLayout;
+    columnPlacement?: ShoppingDragPlacement | null;
+    moving?: readonly ShoppingItem[];
+  } | null = null;
+  const retainedViewports = new Map<
+    ShoppingDragColumn,
+    { root: HTMLElement; release: () => void }
+  >();
+  const releaseViewport = (column: ShoppingDragColumn) => {
+    const retained = retainedViewports.get(column);
+    if (!retained) return;
+    retainedViewports.delete(column);
+    retained.release();
+  };
+  const retainViewport = (column: ShoppingDragColumn, list: DragList) => {
+    const root = list.root();
+    if (retainedViewports.get(column)?.root === root) return;
+    releaseViewport(column);
+    if (root)
+      retainedViewports.set(column, {
+        root,
+        release: retainActivatedViewportContent(root),
+      });
+  };
+  const rowReferenceCaches = new WeakMap<
+    DragList,
+    {
+      readonly references: readonly {
+        readonly rowKey: string;
+        readonly itemId: string;
+      }[];
+      readonly byKey: ReadonlyMap<string, string>;
+      elements?: readonly {
+        readonly itemId: string;
+        readonly element: HTMLElement;
+      }[];
+    }
+  >();
   let hoverPoint: {
     column: ShoppingDragColumn;
     id?: string;
@@ -97,8 +201,10 @@ function createWorkspace(
     column: ShoppingDragColumn;
     hoverId: string;
     context: ShoppingDragMoveContext;
+    noop?: boolean;
   } | null = null;
   const decorations: HTMLElement[] = [];
+  const decorationOwners = new Map<HTMLElement, string | null>();
   let decorationKey = "";
   let dragStatus: { root: HTMLElement; element: HTMLElement } | null = null;
   let layoutObserver: MutationObserver | null = null;
@@ -112,10 +218,94 @@ function createWorkspace(
     return { list, ids, index: new Map(ids.map((id, index) => [id, index])) };
   };
   let hitTestRejected = false;
+  let rejectionReason = "";
+  let guidedTarget = "";
+  let pendingReveal: { controller: AbortController; list: DragList } | null =
+    null;
+  const abortPendingReveal = (owner?: DragList) => {
+    if (!pendingReveal || (owner && pendingReveal.list !== owner)) return;
+    const reveal = pendingReveal;
+    pendingReveal = null;
+    guidedTarget = "";
+    reveal.controller.abort();
+  };
+  let suggestionGuide: { target: string; element: HTMLElement } | null = null;
+  let guidedPoint: { x?: number; y: number } | null = null;
+  let refreshing = false;
+  let highlightedIds: readonly ShoppingItem[] | null = null;
+  const highlights = new Map<HTMLElement, boolean>();
+  const clearHighlights = () => {
+    highlights.forEach((wasDimmed, element) => {
+      delete element.dataset.shoppingDragEffective;
+      if (!wasDimmed) element.classList.remove("opacity-40");
+    });
+    highlights.clear();
+    highlightedIds = null;
+    document.querySelector("[data-shopping-drag-count]")?.remove();
+  };
+  const highlightMoving = (moving: readonly ShoppingItem[]) => {
+    if (highlightedIds === moving) return;
+    clearHighlights();
+    highlightedIds = moving;
+    const root = active && lists.get(active.context.sourceColumn)?.root();
+    if (root)
+      moving.forEach((item) => {
+        const element = root.querySelector<HTMLElement>(
+          `[data-item-id=${JSON.stringify(item.id)}]`,
+        );
+        if (!element) return;
+        highlights.set(element, element.classList.contains("opacity-40"));
+        element.dataset.shoppingDragEffective = "true";
+        element.classList.add("opacity-40");
+      });
+    const clone = document.querySelector(".esp-shopping-touch-clone");
+    if (clone) {
+      const badge = document.createElement("span");
+      badge.dataset.shoppingDragCount = "true";
+      badge.className =
+        "absolute right-0 top-0 rounded bg-blue-700 px-2 py-1 text-white";
+      badge.textContent = `${moving.length}件`;
+      clone.append(badge);
+    }
+  };
+  const ownDecorationPosition = (element: HTMLElement) => {
+    if (!decorationOwners.has(element))
+      decorationOwners.set(
+        element,
+        element.getAttribute("data-shopping-drag-guide-owner"),
+      );
+    element.dataset.shoppingDragGuideOwner = "true";
+  };
   const clearDecorations = () => {
+    suggestionGuide = null;
     decorations.splice(0).forEach((element) => element.remove());
+    decorationOwners.forEach((previous, element) => {
+      if (element.dataset.shoppingDragGuideOwner !== "true") return;
+      if (previous === null) delete element.dataset.shoppingDragGuideOwner;
+      else element.setAttribute("data-shopping-drag-guide-owner", previous);
+    });
+    decorationOwners.clear();
     decorationKey = "";
     dragStatus = null;
+  };
+  const isGuidedTargetVisible = (target: string) => {
+    if (
+      suggestionGuide?.target !== target ||
+      !suggestionGuide.element.isConnected
+    )
+      return false;
+    const bounds = suggestionGuide.element.getBoundingClientRect();
+    const { appHeaderHeight, footerHeight } = document.documentElement.dataset;
+    const top = Math.max(0, Number.parseFloat(appHeaderHeight ?? "") || 0);
+    const bottom =
+      window.innerHeight -
+      Math.max(0, Number.parseFloat(footerHeight ?? "") || 0);
+    return (
+      bounds.bottom > top &&
+      bounds.top < bottom &&
+      bounds.right > 0 &&
+      bounds.left < window.innerWidth
+    );
   };
   const positionStatus = () => {
     if (!dragStatus) return;
@@ -161,6 +351,111 @@ function createWorkspace(
       root.querySelector(`[data-row-key=${JSON.stringify(rowKey)}]`)
     );
   };
+  const rowCache = (list: DragList) => {
+    let cache = rowReferenceCaches.get(list);
+    if (!cache) {
+      const references = list.rowReferences?.() ?? [];
+      cache = {
+        references,
+        byKey: new Map(references.map((row) => [row.rowKey, row.itemId])),
+      };
+      rowReferenceCaches.set(list, cache);
+    }
+    return cache;
+  };
+  const resolveRowReference = (
+    list: DragList,
+    clientY: number,
+    clientX?: number,
+  ):
+    | { readonly kind: "row"; readonly id: string }
+    | { readonly kind: "column" }
+    | { readonly kind: "unresolved" } => {
+    const root = list.root();
+    if (!root) return { kind: "unresolved" };
+    const liveHit =
+      clientX !== undefined && typeof document.elementFromPoint === "function";
+    const hit = liveHit ? document.elementFromPoint(clientX, clientY) : null;
+    if (liveHit && !hit) return { kind: "unresolved" };
+    if (hit && !root.contains(hit)) {
+      const surface = root.closest<HTMLElement>("[data-shopping-drag-surface]");
+      return surface?.contains(hit)
+        ? { kind: "column" }
+        : { kind: "unresolved" };
+    }
+    if (!list.rowReferences) return { kind: "unresolved" };
+    const cache = rowCache(list);
+    if (!cache.references.length) return { kind: "unresolved" };
+    let logicalGroupHit = false;
+    if (hit && root.contains(hit)) {
+      const row = hit.closest<HTMLElement>(
+        "[data-viewport-row-key], [data-row-key]",
+      );
+      const key = row?.dataset.viewportRowKey ?? row?.dataset.rowKey;
+      const itemId = key && cache.byKey.get(key);
+      if (itemId && key.startsWith("item:")) return { kind: "row", id: itemId };
+      logicalGroupHit = Boolean(itemId);
+    }
+    if (!cache.elements) {
+      // Retained rows keep these public wrappers while their controls are absent.
+      // Rebuild identities only after row mounts change; geometry stays live.
+      const elements = new Map<string, HTMLElement>();
+      root
+        .querySelectorAll<HTMLElement>(
+          "[data-viewport-row-key], [data-row-key]",
+        )
+        .forEach((element) => {
+          const key = element.dataset.viewportRowKey ?? element.dataset.rowKey;
+          if (key && !elements.has(key)) elements.set(key, element);
+        });
+      cache.elements = cache.references.flatMap((row) => {
+        const element = elements.get(row.rowKey);
+        return element ? [{ itemId: row.itemId, element }] : [];
+      });
+    }
+    const rows = cache.elements;
+    if (!rows.length) return { kind: "unresolved" };
+    if (!logicalGroupHit) {
+      const bounds = root.getBoundingClientRect();
+      if (
+        clientY < bounds.top ||
+        clientY > bounds.bottom ||
+        (clientX !== undefined &&
+          (clientX < bounds.left || clientX > bounds.right))
+      )
+        return { kind: "unresolved" };
+      const firstBounds = rows[0].element.getBoundingClientRect();
+      const lastBounds = rows.at(-1)!.element.getBoundingClientRect();
+      // Column headers and padding are neutral surfaces, not the nearest visit.
+      if (clientY < firstBounds.top || clientY > lastBounds.bottom)
+        return liveHit ? { kind: "column" } : { kind: "unresolved" };
+    }
+    // Canonical row tops follow display order, including nested group headers.
+    // Read only the search path and its adjacent boundaries on each hover.
+    let first = 0;
+    let end = rows.length;
+    while (first < end) {
+      const middle = (first + end) >>> 1;
+      if (rows[middle].element.getBoundingClientRect().top <= clientY)
+        first = middle + 1;
+      else end = middle;
+    }
+    const previous = rows[first - 1];
+    const next = rows[first];
+    const previousRect = previous?.element.getBoundingClientRect();
+    const nextRect = next?.element.getBoundingClientRect();
+    if (previousRect && previousRect.bottom > previousRect.top) {
+      if (
+        clientY <= previousRect.bottom ||
+        !nextRect ||
+        clientY - previousRect.bottom <= nextRect.top - clientY
+      )
+        return { kind: "row", id: previous.itemId };
+    }
+    return nextRect && nextRect.bottom > nextRect.top
+      ? { kind: "row", id: next.itemId }
+      : { kind: "unresolved" };
+  };
   const visitElements = (
     list: DragList,
     layout: ShoppingDragLayout,
@@ -169,26 +464,40 @@ function createWorkspace(
     const root = list.root();
     const item = layout.itemsById.get(id);
     if (!root || !item) return null;
-    const key = buildExecutionVisitProjectionKey(item);
+    const key = buildExecutionPlacementVisitKey(
+      item,
+      shoppingPlacementContext(list.presentation),
+    );
     const visit = layout.visitsByKey.get(key);
     if (!visit) return null;
     if (list.presentation.spaceGroups) {
-      const rowKey = `group:${JSON.stringify(getSpaceGroupKey(item))}`;
-      const layoutOwner =
-        root.querySelector<HTMLElement>(
-          `[data-viewport-row-key=${JSON.stringify(rowKey)}]`,
-        ) ??
-        root.querySelector<HTMLElement>(
-          `[data-row-key=${JSON.stringify(rowKey)}]`,
-        );
+      const headingById = root.querySelector<HTMLElement>(
+        `[data-shopping-drag-reference-id=${JSON.stringify(visit.itemIds[0])}]`,
+      );
+      const headingOwner = headingById?.closest<HTMLElement>(
+        "[data-viewport-row-key], [data-row-key]",
+      );
+      if (headingOwner) return { first: headingOwner, last: headingOwner };
+      const groupKey = list.groupKeyForItem?.(item);
+      const rowKey = groupKey && `group:${JSON.stringify(groupKey)}`;
+      const layoutOwner = rowKey
+        ? (root.querySelector<HTMLElement>(
+            `[data-viewport-row-key=${JSON.stringify(rowKey)}]`,
+          ) ??
+          root.querySelector<HTMLElement>(
+            `[data-row-key=${JSON.stringify(rowKey)}]`,
+          ))
+        : null;
       if (layoutOwner) return { first: layoutOwner, last: layoutOwner };
       const first = itemElement(root, visit.itemIds[0]);
       const group = first?.closest<HTMLElement>('[data-row-key^="group:"]');
       if (group) return { first: group, last: group };
       // Expanded headers do not expose an item ID; their stable visit ID identifies the owner.
-      const heading = root.querySelector<HTMLElement>(
-        `[data-space-group-key=${JSON.stringify(getSpaceGroupKey(item))}]`,
-      );
+      const heading = groupKey
+        ? root.querySelector<HTMLElement>(
+            `[data-space-group-key=${JSON.stringify(groupKey)}]`,
+          )
+        : null;
       const owner = heading?.closest<HTMLElement>("[data-row-key]");
       if (owner) return { first: owner, last: owner };
     }
@@ -204,6 +513,7 @@ function createWorkspace(
       element: HTMLElement;
       edge: "before" | "after";
       kind: string;
+      revealTarget?: string;
     }[],
   ) => {
     if (
@@ -215,7 +525,7 @@ function createWorkspace(
     decorationKey = key;
     const root = list.root();
     if (!root) return;
-    root.classList.add("relative");
+    ownDecorationPosition(root);
     const status = document.createElement("div");
     status.setAttribute("role", "status");
     status.dataset.shoppingDragStatus = accepted ? "accepted" : "rejected";
@@ -226,15 +536,28 @@ function createWorkspace(
     decorations.push(status);
     dragStatus = { root, element: status };
     positionStatus();
-    lines.forEach(({ element, edge, kind }) => {
+    lines.forEach(({ element, edge, kind, revealTarget }) => {
       const line = document.createElement("div");
       line.dataset.shoppingDragGuide = kind;
       line.dataset.shoppingDragBoundary = edge;
       line.className = `absolute left-0 right-0 h-1.5 bg-blue-500 rounded-full z-30 pointer-events-none ${edge === "before" ? "top-0" : "bottom-0"}`;
-      element.classList.add("relative");
+      ownDecorationPosition(element);
       element.append(line);
       decorations.push(line);
+      if (kind === "suggestion" && revealTarget === guidedTarget)
+        suggestionGuide = { target: revealTarget, element: line };
     });
+  };
+  const refreshHover = (
+    ...args: Parameters<ShoppingDragWorkspace["hover"]>
+  ) => {
+    const previous = refreshing;
+    refreshing = true;
+    try {
+      return workspace.hover(...args);
+    } finally {
+      refreshing = previous;
+    }
   };
   const workspace: ShoppingDragWorkspace = {
     active: () => active,
@@ -252,12 +575,15 @@ function createWorkspace(
     },
     register(column, list) {
       lists.set(column, list);
+      if (active) retainViewport(column, list);
       layoutCache = null;
       if (column === "candidate") candidateNavigation = null;
       if (hoverPoint?.column === column && active)
         workspace.hover(column, hoverPoint.id, hoverPoint.y, hoverPoint.x);
       return () => {
         if (lists.get(column) !== list) return;
+        abortPendingReveal(list);
+        releaseViewport(column);
         lists.delete(column);
         if (active?.context.sourceColumn === column)
           workspace.clear(active.context.token);
@@ -276,22 +602,53 @@ function createWorkspace(
     },
     start(column, dragId, requestedIds, operation) {
       workspace.clear();
+      reportRejection("");
       const list = lists.get(column);
       if (!list) return null;
       const visibleIds = new Set(list.items.map((item) => item.id));
-      const sourceItems = (list.sourceItems ?? list.items).filter((item) =>
-        visibleIds.has(item.id),
-      );
+      const sourceItems = (
+        column === "execute"
+          ? rawExecuteItems(list)
+          : (list.sourceItems ?? list.items)
+      ).filter((item) => visibleIds.has(item.id));
       const plan = buildMovePlan({
         requestedIds,
         sourceOrderedIds: sourceItems.map((item) => item.id),
         allItems: sourceItems,
         dayName: day,
-        expansionPolicy: "same-visit",
+        expansionPolicy: "exact",
       });
       if (!plan.effective.includes(dragId)) return null;
       const ids = new Set(plan.effective);
-      const moving = sourceItems.filter((item) => ids.has(item.id));
+      const requested = sourceItems.filter((item) => ids.has(item.id));
+      const unresolved = requested.find((item) => {
+        const membership = projectedMembership(item);
+        return (
+          membership &&
+          (membership.status === "confirmation-required" ||
+            membership.status === "map-selection-required")
+        );
+      });
+      if (unresolved) {
+        reportRejection(
+          "所属の確認が必要です。品目の編集画面で所属を確認してから、もう一度ドラッグしてください。",
+        );
+        list.resolveMembership?.(unresolved.id);
+        return null;
+      }
+      const placementContext = shoppingPlacementContext(list.presentation);
+      const visitKeys = new Set(
+        requested.map((item) =>
+          buildExecutionPlacementVisitKey(item, placementContext),
+        ),
+      );
+      const moving = sourceItems.filter((item) =>
+        visitKeys.has(buildExecutionPlacementVisitKey(item, placementContext)),
+      );
+      rejectionReason = shoppingDragHasSingleGroup(requested, list.presentation)
+        ? ""
+        : "異なるホール・優先度の品目をまとめてドラッグできません。同じ所属・優先度で選び直してください。";
+      if (rejectionReason) reportRejection(rejectionReason);
       const token = Symbol("shopping-drag");
       const context: ShoppingDragMoveContext = {
         token,
@@ -300,15 +657,19 @@ function createWorkspace(
         generation,
         sourceColumn: column,
         requestedIds: plan.requested,
-        effectiveIds: plan.effective,
-        sourceVisits: projectItemsToExecutionVisits(moving).map((visit) => ({
+        effectiveIds: moving.map((item) => item.id),
+        sourceVisits: projectExecutionPlacementVisits(
+          moving,
+          placementContext,
+        ).map((visit) => ({
           key: visit.key,
           ids: visit.itemIds,
         })),
         operation,
         isCurrent: () => active?.context.token === token,
       };
-      active = { context, dragId, moving };
+      active = { context, dragId, moving, requested };
+      lists.forEach((list, column) => retainViewport(column, list));
       const candidates = lists.get("candidate");
       if (candidates)
         candidateNavigation = prepareCandidateNavigation(candidates);
@@ -322,7 +683,31 @@ function createWorkspace(
           ),
         };
       if (typeof MutationObserver === "function") {
-        layoutObserver = new MutationObserver(() => workspace.refresh());
+        layoutObserver = new MutationObserver((records) => {
+          for (const record of records) {
+            const changedRows = [
+              ...record.addedNodes,
+              ...record.removedNodes,
+            ].some(
+              (node) =>
+                node instanceof Element &&
+                (node.matches("[data-viewport-row-key], [data-row-key]") ||
+                  node.querySelector(
+                    "[data-viewport-row-key], [data-row-key]",
+                  )),
+            );
+            if (!changedRows || !(record.target instanceof Element)) continue;
+            const root = record.target.closest<HTMLElement>(
+              "[data-shopping-drag-column]",
+            );
+            const column = root?.dataset.shoppingDragColumn as
+              | ShoppingDragColumn
+              | undefined;
+            const list = column && lists.get(column);
+            if (list) rowCache(list).elements = undefined;
+          }
+          workspace.refresh();
+        });
         lists.forEach((entry) => {
           const root = entry.root();
           if (root)
@@ -334,22 +719,43 @@ function createWorkspace(
     },
     hover(column, targetId, clientY, clientX) {
       if (!active) return false;
-      hitTestRejected = false;
-      if (active.context.sourceColumn === column) {
-        hitTestRejected = true;
-        accepted = null;
-        hoverPoint = null;
-        clearDecorations();
-        return false;
+      let movedAfterGuide = false;
+      if (
+        guidedPoint &&
+        !refreshing &&
+        (Math.abs(clientY - guidedPoint.y) > 1 ||
+          (clientX !== undefined &&
+            guidedPoint.x !== undefined &&
+            Math.abs(clientX - guidedPoint.x) > 1))
+      ) {
+        guidedPoint = null;
+        movedAfterGuide = true;
       }
-      hoverPoint = { column, id: targetId, y: clientY, x: clientX };
+      hitTestRejected = false;
+
       const list = lists.get(column);
+      const rowHit =
+        column === "execute" && !targetId && list
+          ? resolveRowReference(list, clientY, clientX)
+          : undefined;
+      const neutralColumnBlank = rowHit?.kind === "column";
+      if (rowHit?.kind === "row") targetId = rowHit.id;
+      hoverPoint = { column, id: targetId, y: clientY, x: clientX };
       accepted = null;
       if (!list?.root()) {
         clearDecorations();
         return true;
       }
+      if (rejectionReason) {
+        decorate(list, "mixed-group", rejectionReason, []);
+        return true;
+      }
       if (column === "candidate") {
+        highlightMoving(
+          active.context.sourceColumn === column
+            ? active.requested
+            : active.moving,
+        );
         if (candidateNavigation?.list !== list)
           candidateNavigation = prepareCandidateNavigation(list);
         let hoverId = targetId ?? "__END_OF_LIST__";
@@ -372,10 +778,24 @@ function createWorkspace(
           )
             hoverId = candidateNavigation.ids[index + 1] ?? "__END_OF_LIST__";
         }
+        abortPendingReveal();
         accepted = {
           column,
           hoverId,
-          context: { ...active.context, targetColumn: column },
+          context: {
+            ...active.context,
+            targetColumn: column,
+            sourceVisits: projectExecutionPlacementVisits(
+              active.context.sourceColumn === column
+                ? active.requested
+                : active.moving,
+              shoppingPlacementContext(list.presentation),
+            ).map((visit) => ({ key: visit.key, ids: visit.itemIds })),
+            effectiveIds:
+              active.context.sourceColumn === column
+                ? active.requested.map((item) => item.id)
+                : active.moving.map((item) => item.id),
+          },
         };
         decorate(
           list,
@@ -387,16 +807,67 @@ function createWorkspace(
         );
         return true;
       }
-      if (layoutCache?.list !== list)
+      const placementContext = shoppingPlacementContext(list.presentation);
+      const sourceIsExecute =
+        active.context.sourceColumn === "execute" && column === "execute";
+      const reference =
+        targetId && list.items.find((item) => item.id === targetId);
+      const isBookReorder = Boolean(
+        sourceIsExecute &&
+        active.context.operation !== "space-group" &&
+        reference &&
+        active.requested.every(
+          (item) =>
+            buildExecutionPlacementVisitKey(item, placementContext) ===
+            buildExecutionPlacementVisitKey(reference, placementContext),
+        ),
+      );
+      const moving = isBookReorder ? active.requested : active.moving;
+      highlightMoving(moving);
+      if (
+        sourceIsExecute &&
+        targetId &&
+        moving.some((item) => item.id === targetId)
+      ) {
+        // Moving rows are removed from placement layouts; hovering one is a
+        // no-op, rather than an invalid boundary that needs a remote reveal.
+        abortPendingReveal();
+        guidedTarget = "";
+        guidedPoint = null;
+        clearDecorations();
+        accepted = {
+          column,
+          hoverId: targetId,
+          context: active.context,
+          noop: true,
+        };
+        return true;
+      }
+      if (layoutCache?.list !== list || layoutCache.moving !== moving) {
+        const ids = new Set(
+          sourceIsExecute ? moving.map((item) => item.id) : [],
+        );
         layoutCache = {
           list,
+          moving,
           layout: buildShoppingDragLayout(
-            rawExecuteItems(list),
+            rawExecuteItems(list).filter((item) => !ids.has(item.id)),
             list.presentation,
+            isBookReorder
+              ? list.items.filter((item) => !ids.has(item.id))
+              : undefined,
           ),
         };
+      }
       const layout = layoutCache.layout;
-      const elements = targetId ? visitElements(list, layout, targetId) : null;
+      const elements = targetId
+        ? isBookReorder
+          ? (() => {
+              const element = itemElement(list.root()!, targetId);
+              return element ? { first: element, last: element } : null;
+            })()
+          : visitElements(list, layout, targetId)
+        : null;
       const firstRect = elements?.first.getBoundingClientRect();
       const lastRect = elements?.last.getBoundingClientRect();
       const boundary = targetId
@@ -406,31 +877,126 @@ function createWorkspace(
           ? "before"
           : "after"
         : "end";
-      const placement = resolveShoppingDragPlacement(
-        layout,
-        active.moving,
-        targetId,
-        boundary,
+      const placement = targetId
+        ? isBookReorder
+          ? resolveShoppingBookPlacement(
+              layout,
+              moving,
+              targetId,
+              boundary === "end" ? "after" : boundary,
+            )
+          : resolveShoppingDragPlacement(layout, moving, targetId, boundary)
+        : layoutCache.columnPlacement === undefined
+          ? (layoutCache.columnPlacement = resolveShoppingDragColumnPlacement(
+              layout,
+              moving,
+            ))
+          : layoutCache.columnPlacement;
+      const mergeOnly =
+        placement &&
+        placement.positionedIds.length === 0 &&
+        placement.mergeTargetIds.length > 0;
+      const referenceKey =
+        reference &&
+        buildExecutionPlacementVisitKey(reference, placementContext);
+      const referenceRange = referenceKey
+        ? layout.ranges.get(referenceKey)
+        : undefined;
+      const pointerSlot = referenceRange
+        ? boundary === "before"
+          ? referenceRange.first
+          : referenceRange.last + 1
+        : layout.items.length;
+      // Existing joins have fixed tails. Any valid position in the same placement
+      // group accepts that real merge; a corrective guide remains provisional.
+      const validMergeHover =
+        !mergeOnly ||
+        neutralColumnBlank ||
+        isShoppingDragGroupSlot(layout, moving[0], pointerSlot);
+      const tail = layout.items.at(-1);
+      const tailElements = tail ? visitElements(list, layout, tail.id) : null;
+      const validBlank = Boolean(
+        neutralColumnBlank ||
+        targetId ||
+        layout.items.length === 0 ||
+        (placement &&
+          placement.insertVisitIndex === layout.visits.length &&
+          tailElements &&
+          clientY >= tailElements.last.getBoundingClientRect().bottom),
       );
-      if (!placement) {
+      if (!placement || !validMergeHover || !validBlank || guidedPoint) {
+        guidedPoint ??= { x: clientX, y: clientY };
+        const suggestion =
+          layoutCache.columnPlacement === undefined
+            ? (layoutCache.columnPlacement = resolveShoppingDragColumnPlacement(
+                layout,
+                moving,
+              ))
+            : layoutCache.columnPlacement;
+        const target =
+          suggestion?.mergeTargetIds[0] ??
+          (suggestion &&
+            layout.visits[suggestion.insertVisitIndex - 1]?.itemIds.at(-1)) ??
+          (suggestion &&
+            layout.visits[suggestion.insertVisitIndex]?.itemIds[0]);
+        if (
+          target &&
+          (guidedTarget !== target ||
+            (movedAfterGuide && !isGuidedTargetVisible(target)))
+        ) {
+          abortPendingReveal();
+          guidedTarget = target;
+          const controller = new AbortController();
+          pendingReveal = { controller, list };
+          list.reveal?.(target, controller.signal);
+        }
+        const guideBefore = Boolean(
+          suggestion &&
+          !suggestion.mergeTargetIds.length &&
+          suggestion.insertVisitIndex === 0,
+        );
+        const destination = target ? visitElements(list, layout, target) : null;
         decorate(
           list,
-          "rejected",
-          "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
-          [],
+          `guide:${target ?? "none"}`,
+          suggestion
+            ? `${suggestion.mergeVisits.length ? `既存の${suggestion.mergeVisits.length}訪問の末尾へ合流します。${!destination || destination.last.getBoundingClientRect().top > window.innerHeight || destination.last.getBoundingClientRect().bottom < 0 ? "画面外の合流先を含みます。" : ""}` : ""}正しい所属・優先度の挿入先へ案内しています。表示された位置へドラッグしてから離してください。`
+            : "この境界には移動できません。ホール・優先度のまとまりを維持できる位置を選んでください。",
+          destination
+            ? [
+                {
+                  element: guideBefore ? destination.first : destination.last,
+                  edge: guideBefore ? "before" : "after",
+                  kind: "suggestion",
+                  revealTarget: target ?? undefined,
+                },
+              ]
+            : [],
         );
         return true;
       }
+      abortPendingReveal();
+      guidedTarget = "";
       accepted = {
         column,
         hoverId: placement.anchorId,
-        context: { ...active.context, targetColumn: column, placement },
+        context: {
+          ...active.context,
+          targetColumn: column,
+          effectiveIds: moving.map((item) => item.id),
+          sourceVisits: projectExecutionPlacementVisits(
+            moving,
+            placementContext,
+          ).map((visit) => ({ key: visit.key, ids: visit.itemIds })),
+          placement,
+        },
       };
       const lines: {
         element: HTMLElement;
         edge: "before" | "after";
         kind: string;
       }[] = [];
+      let offscreen = false;
       if (placement.positionedIds.length > 0) {
         if (elements)
           lines.push({
@@ -438,10 +1004,34 @@ function createWorkspace(
             edge: boundary === "before" ? "before" : "after",
             kind: "insert",
           });
+        else if (placement.hallTailInsertions)
+          placement.hallTailInsertions.forEach((insertion) => {
+            const previousKey =
+              layout.displayVisitKeys[insertion.insertVisitIndex - 1];
+            const previousId =
+              previousKey &&
+              layout.visitsByKey.get(previousKey)?.itemIds.at(-1);
+            const destination = previousId
+              ? visitElements(list, layout, previousId)
+              : null;
+            if (previousId && !destination) {
+              offscreen = true;
+              return;
+            }
+            if (destination) {
+              const rect = destination.last.getBoundingClientRect();
+              if (rect.bottom < 0 || rect.top > window.innerHeight)
+                offscreen = true;
+            }
+            lines.push({
+              element: destination?.last ?? list.root()!,
+              edge: "after",
+              kind: "insert",
+            });
+          });
         else
           lines.push({ element: list.root()!, edge: "after", kind: "insert" });
       }
-      let offscreen = false;
       placement.mergeTargetIds.forEach((id) => {
         const row = list.presentation.spaceGroups
           ? null
@@ -459,8 +1049,10 @@ function createWorkspace(
       });
       const text =
         placement.mergeTargetIds.length > 0
-          ? `${placement.positionedIds.length > 0 ? "新しい訪問を境界へ挿入し、" : ""}既存の${placement.mergeVisits.length}訪問の末尾へ合流します。${offscreen ? "画面外の合流先を含みます。" : ""}`
-          : "表示した訪問境界へ移動します。";
+          ? `${placement.positionedIds.length > 0 ? (placement.hallTailInsertions ? "新しい訪問を所属ホール・優先度の末尾へ挿入し、" : "新しい訪問を境界へ挿入し、") : ""}既存の${placement.mergeVisits.length}訪問の末尾へ合流します。${offscreen ? "画面外の合流先を含みます。" : ""}`
+          : placement.hallTailInsertions
+            ? `所属ホール・優先度の末尾へ移動します。${offscreen ? "画面外の挿入先を含みます。" : ""}`
+            : "表示した訪問境界へ移動します。";
       decorate(
         list,
         JSON.stringify([
@@ -470,7 +1062,7 @@ function createWorkspace(
           placement.mergeTargetIds,
           offscreen,
         ]),
-        text,
+        `${moving.length}件を移動します。${text}`,
         lines,
       );
       return true;
@@ -483,13 +1075,16 @@ function createWorkspace(
         point.x === undefined || typeof document.elementFromPoint !== "function"
           ? null
           : document.elementFromPoint(point.x, point.y);
-      const root = element?.closest<HTMLElement>("[data-shopping-drag-column]");
+      const root = element?.closest<HTMLElement>(
+        "[data-shopping-drag-column], [data-shopping-drag-surface]",
+      );
       if (root) {
-        const column = root.dataset.shoppingDragColumn as ShoppingDragColumn;
+        const column = (root.dataset.shoppingDragColumn ??
+          root.dataset.shoppingDragSurface) as ShoppingDragColumn;
         const reference = element?.closest<HTMLElement>(
           "[data-item-id], [data-shopping-drag-reference-id]",
         );
-        workspace.hover(
+        refreshHover(
           column,
           reference?.dataset.itemId ??
             reference?.dataset.shoppingDragReferenceId,
@@ -500,7 +1095,7 @@ function createWorkspace(
         point.x === undefined ||
         typeof document.elementFromPoint !== "function"
       )
-        workspace.hover(point.column, point.id, point.y);
+        refreshHover(point.column, point.id, point.y);
       else {
         hitTestRejected = true;
         accepted = null;
@@ -508,19 +1103,37 @@ function createWorkspace(
       }
     },
     drop(column) {
-      if (!active || active.context.sourceColumn === column) return;
+      if (!active) return;
+      if (rejectionReason) {
+        reportRejection(rejectionReason);
+        workspace.clear(active.context.token);
+        return;
+      }
+      if (hitTestRejected) {
+        workspace.clear(active.context.token);
+        return;
+      }
+      workspace.refresh();
       if (hitTestRejected) {
         workspace.clear(active.context.token);
         return;
       }
       const point = hoverPoint;
-      if (point && point.column !== column) return;
-      if (!point || point.column !== column)
-        workspace.hover(column, undefined, 0);
-      else workspace.hover(column, point.id, point.y, point.x);
+      if (!point || point.column !== column) {
+        reportRejection(
+          "配置先を確認できませんでした。品目は移動していません。有効な位置でもう一度ドラッグしてください。",
+        );
+        workspace.clear(active.context.token);
+        return;
+      }
+      workspace.hover(column, point.id, point.y, point.x);
       const target = accepted;
       const source = active;
-      if (target?.column === column)
+      if (!target)
+        reportRejection(
+          "配置先を確認できませんでした。品目は移動していません。有効な位置でもう一度ドラッグしてください。",
+        );
+      if (target?.column === column && !target.noop)
         lists
           .get(column)
           ?.move(
@@ -533,6 +1146,7 @@ function createWorkspace(
       workspace.clear(source.context.token);
     },
     leave() {
+      abortPendingReveal();
       hitTestRejected = true;
       accepted = null;
       hoverPoint = null;
@@ -540,6 +1154,7 @@ function createWorkspace(
     },
     clear(token) {
       if (token && active?.context.token !== token) return;
+      abortPendingReveal();
       const wasActive = active !== null;
       layoutObserver?.disconnect();
       layoutObserver = null;
@@ -549,33 +1164,42 @@ function createWorkspace(
       hoverPoint = null;
       layoutCache = null;
       candidateNavigation = null;
+      rejectionReason = "";
+      guidedTarget = "";
+      guidedPoint = null;
+      refreshing = false;
+      clearHighlights();
       clearDecorations();
+      retainedViewports.forEach((_, column) => releaseViewport(column));
       if (wasActive) listeners.forEach((listener) => listener(false));
     },
   };
   return workspace;
 }
-function getSpaceGroupKey(item: ShoppingItem): string {
-  const space = getSpaceKey(item.block, item.number);
-  // Match the existing space identity normalizer rather than display labels.
-  return item.priorityLevel && item.priorityLevel !== "none"
-    ? `${space}:${item.priorityLevel}`
-    : space;
-}
+
 export function ShoppingDragProvider({
   eventName,
   day,
   generation,
+  onPlacementRejected,
   children,
 }: {
   eventName: string;
   day: string;
   generation: number;
+  onPlacementRejected?: (message: string) => void;
   children: React.ReactNode;
 }): React.ReactElement {
+  const [rejection, setRejection] = useState<string | null>(null);
   const workspace = useMemo(
-    () => createWorkspace(eventName, day, generation),
-    [eventName, day, generation],
+    () =>
+      createWorkspace(
+        eventName,
+        day,
+        generation,
+        onPlacementRejected ?? setRejection,
+      ),
+    [eventName, day, generation, onPlacementRejected],
   );
   useLayoutEffect(() => {
     const refresh = () => workspace.refresh();
@@ -587,5 +1211,27 @@ export function ShoppingDragProvider({
       workspace.clear();
     };
   }, [workspace]);
-  return <Context.Provider value={workspace}>{children}</Context.Provider>;
+  return (
+    <Context.Provider value={workspace}>
+      {children}
+      {rejection &&
+        ReactDOM.createPortal(
+          <div
+            role="alert"
+            data-shopping-placement-rejection
+            className="fixed left-4 right-4 top-20 z-[100] rounded bg-red-700 p-3 text-white shadow-lg"
+          >
+            {rejection}
+            <button
+              type="button"
+              className="ml-4 underline"
+              onClick={() => setRejection(null)}
+            >
+              閉じる
+            </button>
+          </div>,
+          document.body,
+        )}
+    </Context.Provider>
+  );
 }

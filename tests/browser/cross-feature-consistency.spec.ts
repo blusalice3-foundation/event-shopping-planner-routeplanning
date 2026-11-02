@@ -2164,7 +2164,11 @@ test("a standalone execute reorder writes only its changed payload and survives 
   page,
 }) => {
   const source = migrateLegacyConsistency(
-    backup([item("1"), item("2")]).data,
+    // A card button moves a whole space; these adjacent visits each contain one book.
+    backup([
+      { ...item("1"), number: "01a" },
+      { ...item("2"), number: "02a" },
+    ]).data,
   ).data;
   // A standalone fixture has no saved visit lists or routes to reorder.
   // Legacy migration normally creates a visit context for these execution IDs.
@@ -2183,6 +2187,7 @@ test("a standalone execute reorder writes only its changed payload and survives 
     };
   });
   const row = page.locator('[data-item-id="2"]');
+  await expect(row.getByTitle("上に移動", { exact: true })).toBeEnabled();
   await row.getByTitle("上に移動", { exact: true }).click();
   await expect
     .poll(() => stored(page, "executeModeItems"))
@@ -3272,8 +3277,13 @@ for (const operation of ["ordinary reorder", "ordinary item edit"] as const) {
     }) => {
       const errors: string[] = [];
       page.on("pageerror", (error) => errors.push(error.message));
+      const reorderSpaces = operation === "ordinary reorder";
       const source = migrateLegacyConsistency(
-        backup([item("1"), item("2"), item("3", "2日目")]).data,
+        backup([
+          { ...item("1"), ...(reorderSpaces ? { number: "01a" } : {}) },
+          { ...item("2"), ...(reorderSpaces ? { number: "02a" } : {}) },
+          item("3", "2日目"),
+        ]).data,
       ).data;
       source.dayModes[eventName]["1日目"] = "edit";
       source.dayModes[eventName][" 1日目　"] = "execute";
@@ -3296,6 +3306,12 @@ for (const operation of ["ordinary reorder", "ordinary item edit"] as const) {
               .getByRole("dialog", { name: "アイテム編集" })
               .getByRole("button", { name: "保存", exact: true })
               .click();
+      if (reorderSpaces)
+        await expect(
+          page
+            .locator('[data-item-id="2"]')
+            .getByTitle("上に移動", { exact: true }),
+        ).toBeEnabled();
       await operate();
       const review = page.getByRole("dialog", { name: /1日目 の保存先を統合/ });
       await expect(review).toBeVisible();
