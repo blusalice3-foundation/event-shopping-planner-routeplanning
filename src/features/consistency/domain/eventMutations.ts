@@ -82,7 +82,6 @@ export function planEventDelete(
   snapshot: PersistenceSnapshot,
   name: string,
 ): MutationPlan {
-  const before = eventSnapshot(snapshot, name);
   const next = Object.fromEntries(
     Object.entries(snapshot).map(([key, values]) => [
       key,
@@ -94,14 +93,6 @@ export function planEventDelete(
   return {
     snapshot: next,
     invalidatedEvents: [name],
-    confirmation: {
-      title: `「${name}」を削除`,
-      details: [
-        "削除後、このイベントの並び替え履歴と保留中の画面操作を終了します。",
-        JSON.stringify(before, null, 2),
-      ],
-      comparison: before,
-    },
   };
 }
 export function planEventRename(
