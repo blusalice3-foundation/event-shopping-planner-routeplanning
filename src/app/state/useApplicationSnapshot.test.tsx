@@ -684,7 +684,7 @@ it.each(
     ),
   ),
 )(
-  "preserves a failed $origin purchase after $failure when $operation is confirmed",
+  "preserves a failed $origin purchase after $failure when $operation is requested",
   async ({ origin, failure, operation }) => {
     const h = harness();
     h.durable().eventLists.event = [purchase];
@@ -729,23 +729,36 @@ it.each(
         })
         .catch((error: unknown) => error);
     });
-    await waitFor(() => expect(h.result.current.confirmations).toHaveLength(1));
-    const preview = h.result.current.confirmations[0];
-    if (operation !== "rename") {
-      expect(JSON.stringify(preview.confirmation.comparison)).toContain(
-        '"price":900',
+    if (operation === "delete") {
+      await act(async () => {
+        expect(await outcome).toMatchObject({
+          name: "PendingAcceptedMutation",
+        });
+      });
+      expect(h.result.current.confirmations).toHaveLength(0);
+    } else {
+      await waitFor(() =>
+        expect(h.result.current.confirmations).toHaveLength(1),
       );
-      expect(preview.confirmation.details.join("\n")).toContain(
-        '"purchaseStatus": "Purchased"',
-      );
-      expect(preview.confirmation.details.join("\n")).toContain(
-        '"quantity": 2',
-      );
+      const preview = h.result.current.confirmations[0];
+      if (operation === "restore") {
+        expect(JSON.stringify(preview.confirmation.comparison)).toContain(
+          '"price":900',
+        );
+        expect(preview.confirmation.details.join("\n")).toContain(
+          '"purchaseStatus": "Purchased"',
+        );
+        expect(preview.confirmation.details.join("\n")).toContain(
+          '"quantity": 2',
+        );
+      }
+      await act(async () => {
+        h.result.current.confirm(preview.token);
+        expect(await outcome).toMatchObject({
+          name: "PendingAcceptedMutation",
+        });
+      });
     }
-    await act(async () => {
-      h.result.current.confirm(preview.token);
-      expect(await outcome).toMatchObject({ name: "PendingAcceptedMutation" });
-    });
     expect(h.commit).toHaveBeenCalledTimes(attempts);
     expect(h.result.current.retryableFailures).toEqual([purchaseId]);
     expect(h.result.current.pendingCount).toBe(1);
@@ -783,11 +796,20 @@ it.each(
         plan: lifecyclePlans[operation],
       });
     });
-    await waitFor(() => expect(h.result.current.confirmations).toHaveLength(1));
-    await act(async () => {
-      h.result.current.confirm(h.result.current.confirmations[0].token);
-      await completed;
-    });
+    if (operation === "delete") {
+      await act(async () => {
+        await completed;
+      });
+      expect(h.result.current.confirmations).toHaveLength(0);
+    } else {
+      await waitFor(() =>
+        expect(h.result.current.confirmations).toHaveLength(1),
+      );
+      await act(async () => {
+        h.result.current.confirm(h.result.current.confirmations[0].token);
+        await completed;
+      });
+    }
     expect(h.result.current.pendingCount).toBe(0);
     expect(h.result.current.coordinator.generation("event")).toBe(1);
     expect(h.durable().eventMetadata.other).toEqual({
