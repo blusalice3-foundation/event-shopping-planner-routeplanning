@@ -34,6 +34,7 @@ interface UseCanvasViewportOptions {
   mapMaxRow: number;
   zoomLevel: number;
   rotationAngle?: number;
+  coordinateScale?: number;
   baseCellSize: number;
   minZoom: number;
   maxZoom: number;
@@ -48,6 +49,7 @@ export const useCanvasViewport = ({
   mapMaxRow,
   zoomLevel,
   rotationAngle = 0,
+  coordinateScale = 1,
   baseCellSize,
   minZoom,
   maxZoom,
@@ -75,6 +77,8 @@ export const useCanvasViewport = ({
   const pinchStartZoomRef = useRef(zoomLevel);
   const pinchStartOffsetRef = useRef<Point>({ x: 0, y: 0 });
   const isPinchGestureRef = useRef(false);
+  // Keep the gesture history through the final pointerup, regardless of touchend order.
+  const hadPinchGestureRef = useRef(false);
   const suppressClickUntilRef = useRef(0);
   const prevCellSizeRef = useRef(baseCellSize * (zoomLevel / 100));
   const [isRotationInteracting, setIsRotationInteracting] = useState(false);
@@ -279,8 +283,8 @@ export const useCanvasViewport = ({
       if (!container) return;
 
       const rect = container.getBoundingClientRect();
-      const viewX = e.clientX - rect.left;
-      const viewY = e.clientY - rect.top;
+      const viewX = (e.clientX - rect.left) / coordinateScale;
+      const viewY = (e.clientY - rect.top) / coordinateScale;
       const currentZoom = zoomLevelRef.current;
       const zoomDelta = -e.deltaY * 0.1;
       const newZoom = Math.round(
@@ -298,6 +302,7 @@ export const useCanvasViewport = ({
     },
     [
       calculateOffsetForZoomPoint,
+      coordinateScale,
       maxZoom,
       minZoom,
       offsetRef,
@@ -310,12 +315,19 @@ export const useCanvasViewport = ({
 
   const handleTouchStart = useCallback(
     (e: TouchEvent) => {
+      if (activeTouchesRef.current.size === 0) {
+        hadPinchGestureRef.current = false;
+      }
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
         activeTouchesRef.current.set(touch.identifier, {
           x: touch.clientX,
           y: touch.clientY,
         });
+      }
+
+      if (activeTouchesRef.current.size >= 2) {
+        hadPinchGestureRef.current = true;
       }
 
       if (activeTouchesRef.current.size === 2) {
@@ -345,6 +357,7 @@ export const useCanvasViewport = ({
       }
 
       if (activeTouchesRef.current.size === 2 && onZoomChange) {
+        hadPinchGestureRef.current = true;
         isPinchGestureRef.current = true;
         e.preventDefault();
         const touches = Array.from(activeTouchesRef.current.values());
@@ -357,8 +370,10 @@ export const useCanvasViewport = ({
         const container = containerRef.current;
         if (!container) return;
         const rect = container.getBoundingClientRect();
-        const midX = (touches[0].x + touches[1].x) / 2 - rect.left;
-        const midY = (touches[0].y + touches[1].y) / 2 - rect.top;
+        const midX =
+          ((touches[0].x + touches[1].x) / 2 - rect.left) / coordinateScale;
+        const midY =
+          ((touches[0].y + touches[1].y) / 2 - rect.top) / coordinateScale;
         const scaleRatio = currentDist / pinchStartDistRef.current;
         const newZoom = Math.round(
           Math.max(
@@ -377,11 +392,23 @@ export const useCanvasViewport = ({
         scheduleZoom(newZoom, newOffset);
       }
     },
-    [calculateOffsetForZoomPoint, maxZoom, minZoom, onZoomChange, scheduleZoom],
+    [
+      calculateOffsetForZoomPoint,
+      coordinateScale,
+      maxZoom,
+      minZoom,
+      onZoomChange,
+      scheduleZoom,
+    ],
   );
 
   const handleTouchEnd = useCallback(
     (e: TouchEvent) => {
+      if (hadPinchGestureRef.current) {
+        const now =
+          typeof performance !== "undefined" ? performance.now() : Date.now();
+        suppressClickUntilRef.current = now + 450;
+      }
       for (let i = 0; i < e.changedTouches.length; i++) {
         activeTouchesRef.current.delete(e.changedTouches[i].identifier);
       }
@@ -443,6 +470,7 @@ export const useCanvasViewport = ({
     dragStartRef,
     drawCanvasRef,
     getPointerViewMetrics,
+    hadPinchGestureRef,
     isDragging,
     isDraggingRef,
     isPinchGestureRef,
