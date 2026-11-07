@@ -1,0 +1,158 @@
+{
+  "kind": "performance-completion-overview",
+  "status": "passed",
+  "source": "d34a703e2acf629b3ef2f954c90046d801553be6",
+  "originalWorkspace": "D:\\event-shopping-planner-routeplanning-1.9.6.7",
+  "sourceMatchesOriginalWorkspace": true,
+  "runId": "2026-11-07T12-12-31-232Z-8f72af25-a23e-4a9d-8395-73a35136e787",
+  "startedAtUtc": "2026-11-07T12:12:31.235Z",
+  "finishedAtUtc": "2026-11-07T14:01:53.802Z",
+  "samplingPolicyId": "performance-samples-2026-10-26",
+  "samplingProfile": {
+    "id": "completion",
+    "sampleCount": 10,
+    "policyDate": "2026-10-26",
+    "completionEligible": true
+  },
+  "environment": {
+    "platform": "win32",
+    "osRelease": "10.0.26200",
+    "osVersion": "Windows 11 Pro",
+    "arch": "x64",
+    "node": "v24.19.0",
+    "ci": "true",
+    "baseURL": "http://127.0.0.1:4173",
+    "previewSource": "playwright-webServer",
+    "browserVersion": "151.0.7922.34",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "devicePixelRatio": 1,
+    "browserChannel": "bundled-chromium",
+    "headed": false,
+    "build": "npm run build:release-a",
+    "workerCount": 1,
+    "githubRunId": null,
+    "githubRunAttempt": null
+  },
+  "performanceCaseCount": 144,
+  "primaryMetricCount": 530,
+  "saveAuxiliaryMetricCount": 46,
+  "rawSampleCount": 5760,
+  "performanceRetries": 0,
+  "performanceSkipped": 0,
+  "maximumColumnsAreIndependent": true,
+  "saveCompletionHasNoResponseThreshold": true,
+  "groups": [
+    {
+      "group": "shopping",
+      "caseCount": 16,
+      "primaryMetricCount": 192,
+      "saveAuxiliaryMetricCount": 0,
+      "status": "passed",
+      "thresholds": {
+        "minimumCount": 10,
+        "medianMs": 65,
+        "p95Ms": 100
+      },
+      "maximumMedianMs": 44.849999994039536,
+      "maximumP95Ms": 57.60000002384186,
+      "maximumMedianCase": {
+        "caseKey": "response:[[\"count\",500],[\"concentrated\",true],[\"mapVisible\",true],[\"layout\",\"pc\"]]",
+        "operation": "back",
+        "metric": "ui"
+      },
+      "maximumP95Case": {
+        "caseKey": "response:[[\"count\",500],[\"concentrated\",true],[\"mapVisible\",true],[\"layout\",\"pc\"]]",
+        "operation": "next",
+        "metric": "ui"
+      }
+    },
+    {
+      "group": "range",
+      "caseCount": 20,
+      "primaryMetricCount": 80,
+      "saveAuxiliaryMetricCount": 0,
+      "status": "passed",
+      "thresholds": {
+        "minimumCount": 10,
+        "medianMs": 160,
+        "p95Ms": 160
+      },
+      "maximumMedianMs": 52.70000001788139,
+      "maximumP95Ms": 82.30000001192093,
+      "maximumMedianCase": {
+        "caseKey": "response:[[\"count\",500],[\"layout\",\"pc\"],[\"renderer\",\"full\"],[\"rangeLength\",\"long\"]]",
+        "operation": "selectRange",
+        "metric": "response"
+      },
+      "maximumP95Case": {
+        "caseKey": "response:[[\"count\",500],[\"layout\",\"pc\"],[\"renderer\",\"full\"],[\"rangeLength\",\"long\"]]",
+        "operation": "selectRange",
+        "metric": "response"
+      }
+    },
+    {
+      "group": "drag",
+      "caseCount": 8,
+      "primaryMetricCount": 60,
+      "saveAuxiliaryMetricCount": 0,
+      "status": "passed",
+      "thresholds": {
+        "minimumCount": 10,
+        "medianMs": 160,
+        "p95Ms": 160
+      },
+      "maximumMedianMs": 72.7000000178814,
+      "maximumP95Ms": 96.89999997615814,
+      "maximumMedianCase": {
+        "caseKey": "response:[[\"count\",500],[\"input\",\"native\"],[\"grouped\",true]]",
+        "operation": "drop",
+        "metric": "response"
+      },
+      "maximumP95Case": {
+        "caseKey": "response:[[\"count\",500],[\"input\",\"touch\"],[\"grouped\",false]]",
+        "operation": "drop",
+        "metric": "response"
+      }
+    },
+    {
+      "group": "transfer",
+      "caseCount": 100,
+      "primaryMetricCount": 198,
+      "saveAuxiliaryMetricCount": 46,
+      "status": "passed",
+      "thresholds": {
+        "minimumCount": 10,
+        "medianMs": 160,
+        "p95Ms": 160
+      },
+      "maximumMedianMs": 101.8900146484375,
+      "maximumP95Ms": 118.523193359375,
+      "maximumMedianCase": {
+        "caseKey": "frame:[[\"count\",500],[\"input\",\"touch\"],[\"grouped\",true],[\"load\",\"practical\"],[\"direction\",\"execute-to-candidate\"]]",
+        "operation": "frame",
+        "metric": "frame"
+      },
+      "maximumP95Case": {
+        "caseKey": "frame:[[\"count\",500],[\"input\",\"touch\"],[\"grouped\",true],[\"load\",\"light\"],[\"direction\",\"execute-to-candidate\"],[\"scenario\",\"range\"]]",
+        "operation": "frame",
+        "metric": "frame"
+      }
+    }
+  ],
+  "functional": {
+    "passed": 510,
+    "skipped": 54,
+    "failed": 0,
+    "flaky": 0
+  },
+  "canonicalRunResult": "run-result.json",
+  "detailedData": "performance-summary.json",
+  "independentAudit": "independent-final-audit.json",
+  "archiveChecksums": "archive-checksums.json",
+  "measurementScope": "current-source acceptance; no before/after performance comparison",
+  "supplementalMeasurementsRun": false
+}
