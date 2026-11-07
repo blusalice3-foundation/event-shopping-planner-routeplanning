@@ -300,6 +300,8 @@ export async function collectBrowserProvenance(cwd, env) {
       "tests/browser/performance-summary.ts",
       "tests/browser/shopping-performance-evidence.ts",
       "tests/browser/shopping-operation-sampling.ts",
+      "tests/browser/range-selection-dom-snapshot.ts",
+      "tests/browser/evidence-file-writes.ts",
       "tests/browser/shopping-transfer-measurement.ts",
       "scripts/verify-shopping-performance-evidence.mjs",
       "scripts/baseline-frame-performance-observations.mjs",

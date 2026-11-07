@@ -681,6 +681,8 @@ cleanなworktreeでpreviewを停止した後、`npm run test:release-a-rollback`
 
 GitHubで測定する場合は、Actionsの `Shopping and D&D performance (manual)` から `Run workflow` を選択してください。手動workflowは `completion` 固定で、失敗時も採取済みのcanonical証拠を保存します。
 
+ローカル測定の待ち時間を減らすため、rangeのDOM走査は確認済みの連続した描画範囲を使ってスクロールの重複を減らし、欠落時は従来の走査へ戻ります。各時点の全品目・表示順・選択状態の確認は維持します。transferは計測停止後に比較用画像をサンプル内で再利用し、証拠ファイルを最大4件ずつ保存します。保存失敗時も全保存の終了を待ち、次の測定へI/Oを持ち越しません。性能測定の並列数・条件・回数・終了点は変更しません。これらの補助ソースも計測器のhashへ記録するため、変更前の記録とは計測器が異なります。全144ケースの所要時間短縮と性能合格は別途確認が必要です。
+
 通常CIの結果は `browser-functional-<run ID>-<attempt>` として保存し、性能用canonical `run-result.json` は生成しません。未測定は性能未確認として扱い、通常CI通過を性能合格へ読み替えません。DOM走査停止の原因は未解消で、必要時の手動測定で引き続き確認できます。
 
 判定には[性能基準の共通定義](scripts/shopping-performance-evidence-contract.mjs)の `performanceAcceptanceCriteriaForGroup(group, profile)` を使います。`samplingPolicyId` と `samplingProfile` に用途・回数・完了判定へ利用可能かを記録し、前後比較も同じprofileで揃えてください。必須条件はshopping16・range20・drag8・transfer100、時間基準、入力・DOM反映・実フレーム・次操作の終了点、fixture、ウォームアップ、保存の原子性・整合性検証、retry 0を維持します。過去20回のraw・当初合否・中断runは保持し、新しい回数のrunは別記録にします。部分実行・診断・PR2回の通過を、実装完了の全条件合格へ流用しません。

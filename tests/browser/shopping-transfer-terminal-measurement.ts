@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { writeFile } from "node:fs/promises";
+import { writeEvidenceFiles } from "./evidence-file-writes";
 import {
   expect,
   type CDPSession,
@@ -968,13 +969,19 @@ export async function measureTerminal(
       baseline: beforeFrame!,
       frameMetadata: metadata,
     };
-    const paths: Record<string, string> = {};
-    for (const [name, data] of Object.entries(files)) {
+    const artifacts = Object.entries(files).map(([name, data]) => {
       const json = name === "trace" || name === "frameMetadata";
       const filename = testInfo.outputPath(
         `${measurementId}-${name}.${json ? "json" : "png"}`,
       );
-      await writeFile(filename, data);
+      return { name, data, json, filename };
+    });
+    // Save only after capture stops, and drain every bounded write before a new sample.
+    await writeEvidenceFiles(
+      artifacts.map(({ filename, data }) => ({ path: filename, data })),
+    );
+    const paths: Record<string, string> = {};
+    for (const { name, data, json, filename } of artifacts) {
       await testInfo.attach(`${measurementId}-${name}`, {
         path: filename,
         contentType: json ? "application/json" : "image/png",
