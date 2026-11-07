@@ -2082,6 +2082,36 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     return () => cancelAnimationFrame(frame);
   }, [drawCanvas]);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    let frame: number | null = null;
+    const redrawAfterResize = () => {
+      const canvas = canvasRef.current;
+      if (
+        !canvas ||
+        (canvas.width === Math.trunc(container.clientWidth * dpr) &&
+          canvas.height === Math.trunc(container.clientHeight * dpr))
+      )
+        return;
+      frame ??= requestAnimationFrame(() => {
+        frame = null;
+        drawCanvasRef.current?.();
+      });
+    };
+    const observer =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(redrawAfterResize)
+        : null;
+    observer?.observe(container);
+    if (!observer) window.addEventListener("resize", redrawAfterResize);
+    return () => {
+      observer?.disconnect();
+      if (!observer) window.removeEventListener("resize", redrawAfterResize);
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
+  }, [canvasRef, containerRef, dpr, drawCanvasRef]);
+
   const activeScrollBounds = useMemo(() => {
     const isExplicitHallSelection = selectedHallMode !== "follow";
     if (

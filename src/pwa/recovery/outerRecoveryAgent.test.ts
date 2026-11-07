@@ -192,6 +192,7 @@ const getUpdateNotice = (
   ) ?? null;
 
 afterEach(() => {
+  vi.useRealTimers();
   resetUpdateBlockerRegistryForTests();
   document
     .querySelectorAll("[data-pwa-outer-agent-host]")
@@ -891,12 +892,15 @@ describe("outer recovery runtime identity gate", () => {
     expect(bound.root).not.toHaveAttribute("data-pwa-recovery");
   });
 
-  it("keeps the current role when a discovered worker identity query fails", async () => {
-    const currentRegistration = registration();
+  it("retries a transient waiting identity failure without another lifecycle event", async () => {
+    vi.useFakeTimers();
+    const installed = serviceWorker("installed");
+    const currentRegistration = registration(installed, installed);
     const queryIdentity = vi
       .fn()
       .mockResolvedValueOnce(verifiedWorkerIdentity())
-      .mockRejectedValueOnce(new Error("waiting identity unavailable"));
+      .mockRejectedValueOnce(new Error("waiting identity unavailable"))
+      .mockResolvedValueOnce(verifiedWorkerIdentity("waiting"));
     const requestBlockerSnapshots = vi.fn(async () => []);
     const bound = dependencies({
       serviceWorker: serviceWorkerContainer({ currentRegistration }),
@@ -904,17 +908,103 @@ describe("outer recovery runtime identity gate", () => {
       requestBlockerSnapshots,
     });
     await startOuterRecoveryAgent(bound);
+    await vi.advanceTimersByTimeAsync(0);
 
-    const installed = serviceWorker("installed");
-    currentRegistration.installing = installed;
-    currentRegistration.waiting = installed;
-    currentRegistration.dispatchEvent(new Event("updatefound"));
-
-    await vi.waitFor(() => expect(queryIdentity).toHaveBeenCalledTimes(2));
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(queryIdentity).toHaveBeenCalledTimes(2);
     expect(requestBlockerSnapshots).not.toHaveBeenCalled();
     expect(getUpdateNotice(bound)).toBeNull();
     expect(bound.root).not.toHaveAttribute("data-pwa-recovery");
+
+    currentRegistration.dispatchEvent(new Event("updatefound"));
+    installed.dispatchEvent(new Event("statechange"));
+    await vi.advanceTimersByTimeAsync(999);
+    expect(queryIdentity).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(queryIdentity).toHaveBeenNthCalledWith(3, installed, "waiting");
+    expect(requestBlockerSnapshots).toHaveBeenCalledExactlyOnceWith(
+      installed,
+      false,
+    );
+    expect(getUpdateNotice(bound)).not.toBeNull();
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(queryIdentity).toHaveBeenCalledTimes(3);
+  });
+
+  it("backs off repeated waiting identity failures and recovers after the delay cap", async () => {
+    vi.useFakeTimers();
+    const installed = serviceWorker("installed");
+    const currentRegistration = registration(installed);
+    let waitingAttempts = 0;
+    const queryIdentity = vi.fn<
+      OuterRecoveryAgentDependencies["queryIdentity"]
+    >(async (_worker, state) => {
+      if (state === "active") return verifiedWorkerIdentity();
+      waitingAttempts += 1;
+      if (waitingAttempts <= 7) throw new Error("temporary channel failure");
+      return verifiedWorkerIdentity("waiting");
+    });
+    const bound = dependencies({
+      serviceWorker: serviceWorkerContainer({ currentRegistration }),
+      queryIdentity,
+    });
+    await startOuterRecoveryAgent(bound);
+    await vi.advanceTimersByTimeAsync(0);
+    for (const delay of [1000, 2000, 4000, 8000, 16_000, 30_000, 30_000]) {
+      const previousAttempts = waitingAttempts;
+      await vi.advanceTimersByTimeAsync(delay - 1);
+      expect(waitingAttempts).toBe(previousAttempts);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(waitingAttempts).toBe(previousAttempts + 1);
+    }
+    expect(getUpdateNotice(bound)).not.toBeNull();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("abandons a failed worker retry when a replacement waiting worker is discovered", async () => {
+    vi.useFakeTimers();
+    const oldWorker = serviceWorker("installed");
+    const replacement = serviceWorker("installed");
+    const currentRegistration = registration(oldWorker);
+    const queryIdentity = vi
+      .fn()
+      .mockResolvedValueOnce(verifiedWorkerIdentity())
+      .mockRejectedValueOnce(new Error("temporary channel failure"))
+      .mockResolvedValueOnce(verifiedWorkerIdentity("waiting"));
+    const bound = dependencies({
+      serviceWorker: serviceWorkerContainer({ currentRegistration }),
+      queryIdentity,
+    });
+    await startOuterRecoveryAgent(bound);
+    await vi.advanceTimersByTimeAsync(0);
+    currentRegistration.installing = replacement;
+    currentRegistration.waiting = replacement;
+    currentRegistration.dispatchEvent(new Event("updatefound"));
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(queryIdentity).toHaveBeenCalledTimes(3);
+    expect(queryIdentity).toHaveBeenLastCalledWith(replacement, "waiting");
+    expect(getUpdateNotice(bound)).not.toBeNull();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("does not retry a worker that no longer waits", async () => {
+    vi.useFakeTimers();
+    const installed = serviceWorker("installed");
+    const currentRegistration = registration(installed);
+    const queryIdentity = vi
+      .fn()
+      .mockResolvedValueOnce(verifiedWorkerIdentity())
+      .mockRejectedValueOnce(new Error("temporary channel failure"));
+    const bound = dependencies({
+      serviceWorker: serviceWorkerContainer({ currentRegistration }),
+      queryIdentity,
+    });
+    await startOuterRecoveryAgent(bound);
+    await vi.advanceTimersByTimeAsync(0);
+    currentRegistration.waiting = null;
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(queryIdentity).toHaveBeenCalledTimes(2);
+    expect(getUpdateNotice(bound)).toBeNull();
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("renders a fail-closed retry action when blocker aggregation fails", async () => {

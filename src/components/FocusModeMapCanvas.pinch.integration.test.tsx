@@ -30,6 +30,7 @@ const renderMap = (
   appZoomLevel: number,
   initialZoom = 100,
   rotationAngle = 0,
+  data = mapData,
 ) => {
   const snapshots = vi.fn<(snapshot: FocusMapViewportSnapshot) => void>();
   const onCellClick = vi.fn();
@@ -37,7 +38,7 @@ const renderMap = (
     const [zoomLevel, setZoomLevel] = useState(initialZoom);
     return (
       <FocusModeMapCanvas
-        mapData={mapData}
+        mapData={data}
         mapName="Day1"
         items={[]}
         executeModeItemIds={[]}
@@ -97,7 +98,7 @@ const renderMap = (
     });
   };
   const latestSnapshot = () => snapshots.mock.calls.at(-1)![0];
-  return { canvas, center, touch, pinch, latestSnapshot, onCellClick };
+  return { canvas, center, touch, pinch, latestSnapshot, onCellClick, ...view };
 };
 
 const frames = new Map<number, FrameRequestCallback>();
@@ -201,5 +202,164 @@ describe("FocusModeMapCanvas zoom center", () => {
     pointer(canvas, "pointerup", touch(3, 0));
     fireEvent.touchEnd(canvas, { changedTouches: [touch(3, 0)] });
     expect(onCellClick).toHaveBeenCalledExactlyOnceWith("A", 11, []);
+  });
+});
+
+describe("FocusModeMapCanvas container resize", () => {
+  const flushFrames = () => {
+    act(() => {
+      const pending = Array.from(frames.values());
+      frames.clear();
+      pending.forEach((callback) => callback(16));
+    });
+  };
+
+  const useDrawingContexts = () => {
+    const contexts = new Map<HTMLCanvasElement, CanvasRenderingContext2D>();
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
+      function (this: HTMLCanvasElement) {
+        let context = contexts.get(this);
+        if (!context) {
+          context = new Proxy(
+            {
+              canvas: this,
+              measureText: vi.fn((text: string) => ({
+                width: text.length * 8,
+              })),
+            } as unknown as CanvasRenderingContext2D,
+            {
+              get(target, property, receiver) {
+                if (!Reflect.has(target, property)) {
+                  Reflect.set(target, property, vi.fn());
+                }
+                return Reflect.get(target, property, receiver);
+              },
+            },
+          );
+          contexts.set(this, context);
+        }
+        return context;
+      },
+    );
+    return contexts;
+  };
+
+  it.each([
+    { appZoomLevel: 100, dpr: 1 },
+    { appZoomLevel: 150, dpr: 2 },
+  ])(
+    "redraws resized backing pixels and selects the displayed cell at $appZoomLevel percent scale and DPR $dpr",
+    ({ appZoomLevel, dpr }) => {
+      let resize: ResizeObserverCallback = () => {};
+      const observe = vi.fn();
+      const disconnect = vi.fn();
+      vi.stubGlobal(
+        "ResizeObserver",
+        class {
+          constructor(callback: ResizeObserverCallback) {
+            resize = callback;
+          }
+          observe = observe;
+          disconnect = disconnect;
+        },
+      );
+      vi.stubGlobal("devicePixelRatio", dpr);
+      const contexts = useDrawingContexts();
+      const { canvas, onCellClick, unmount } = renderMap(appZoomLevel, 100, 0, {
+        ...mapData,
+        cells: mapData.blocks[0].numberCells.map((cell) => ({
+          ...cell,
+          backgroundColor: null,
+          borders: { top: null, bottom: null, left: null, right: null },
+        })),
+      });
+      const container = canvas.parentElement!;
+      let width = 600;
+      let height = 400;
+      Object.defineProperties(container, {
+        clientWidth: { configurable: true, get: () => width },
+        clientHeight: { configurable: true, get: () => height },
+      });
+      flushFrames();
+      expect(canvas.width).toBe(600 * dpr);
+      expect(canvas.height).toBe(400 * dpr);
+      const mainContext = contexts.get(canvas)!;
+      vi.mocked(mainContext.clearRect).mockClear();
+      for (const context of contexts.values()) {
+        vi.mocked(context.fillText).mockClear();
+      }
+
+      width = 360;
+      height = 280;
+      const scale = appZoomLevel / 100;
+      vi.mocked(canvas.getBoundingClientRect).mockReturnValue({
+        x: 60,
+        y: 80,
+        left: 60,
+        top: 80,
+        right: 60 + width * scale,
+        bottom: 80 + height * scale,
+        width: width * scale,
+        height: height * scale,
+        toJSON: () => ({}),
+      });
+      const notifyResize = () => resize([], {} as ResizeObserver);
+      notifyResize();
+      notifyResize();
+      expect(frames.size).toBe(1);
+      flushFrames();
+      expect(canvas.width).toBe(width * dpr);
+      expect(canvas.height).toBe(height * dpr);
+      expect(observe).toHaveBeenCalledExactlyOnceWith(container);
+      expect(mainContext.clearRect).toHaveBeenCalledExactlyOnceWith(
+        0,
+        0,
+        width,
+        height,
+      );
+      expect(
+        Array.from(contexts.values()).some((context) =>
+          vi
+            .mocked(context.fillText)
+            .mock.calls.some(
+              ([text, x, y]) => text === "8" && x === 210 && y === 210,
+            ),
+        ),
+      ).toBe(true);
+      fireEvent.click(canvas, {
+        clientX: 60 + 210 * scale,
+        clientY: 80 + 210 * scale,
+      });
+      expect(onCellClick).toHaveBeenCalledExactlyOnceWith("A", 8, []);
+
+      notifyResize();
+      expect(frames.size).toBe(0);
+      width = 400;
+      notifyResize();
+      expect(frames.size).toBe(1);
+      unmount();
+      expect(disconnect).toHaveBeenCalledOnce();
+      expect(frames.size).toBe(0);
+    },
+  );
+
+  it("redraws on window resize when ResizeObserver is unavailable", () => {
+    vi.stubGlobal("ResizeObserver", undefined);
+    useDrawingContexts();
+    const { canvas, unmount } = renderMap(100);
+    const container = canvas.parentElement!;
+    let width = 600;
+    Object.defineProperties(container, {
+      clientWidth: { configurable: true, get: () => width },
+      clientHeight: { configurable: true, value: 400 },
+    });
+    flushFrames();
+    width = 360;
+    fireEvent(window, new Event("resize"));
+    flushFrames();
+    expect(canvas.width).toBe(360);
+    unmount();
+    fireEvent(window, new Event("resize"));
+    expect(frames.size).toBe(0);
   });
 });

@@ -3394,3 +3394,71 @@ it("keeps current-version generic moves, cold export/restore and atomic abort us
   expect(shopping).not.toHaveBeenCalled();
   expect(dedicated).not.toHaveBeenCalled();
 });
+
+it("rejects the real worker save when IndexedDB and the browser fallback both fail", async () => {
+  await db.readApplicationSnapshot();
+  await db.saveDayModes({ event: { "1日目": "execute" } });
+  const browserStorage = localStorage;
+  const bridgeWorkers: BridgeWorker[] = [];
+  const context: {
+    onmessage?: (event: MessageEvent) => void;
+    postMessage(data: unknown): void;
+  } = {
+    postMessage(data) {
+      // The actual worker uses its own in-memory storage shim. Restore the browser
+      // storage at the message boundary, where the adapter must make it durable.
+      vi.stubGlobal("localStorage", browserStorage);
+      bridgeWorkers[0].onmessage?.({ data } as MessageEvent);
+    },
+  };
+  class BridgeWorker {
+    onmessage?: (event: MessageEvent) => void;
+    postMessage(data: unknown) {
+      context.onmessage!({ data } as MessageEvent);
+    }
+    constructor() {
+      bridgeWorkers.push(this);
+    }
+  }
+  vi.stubGlobal("self", context);
+  await import("./persistence.worker");
+  vi.stubGlobal("Worker", BridgeWorker);
+  const put = IDBObjectStore.prototype.put;
+  const idbFault = vi
+    .spyOn(IDBObjectStore.prototype, "put")
+    .mockImplementation(function (
+      this: IDBObjectStore,
+      value: unknown,
+      key?: IDBValidKey,
+    ) {
+      if (this.name === "dayModes")
+        throw new DOMException("IndexedDB quota fault", "QuotaExceededError");
+      return put.call(this, value, key);
+    });
+  const fallbackFault = vi
+    .spyOn(browserStorage, "setItem")
+    .mockImplementation(() => {
+      throw new DOMException(
+        "browser storage quota fault",
+        "QuotaExceededError",
+      );
+    });
+  const port = createWorkerPersistenceCommandAdapter();
+  await expect(
+    port.saveDayModes({ event: { "1日目": "edit" } }),
+  ).rejects.toMatchObject({ name: "PersistenceOutcomeUnknownError" });
+  expect(idbFault).toHaveBeenCalled();
+  expect(fallbackFault).toHaveBeenCalledOnce();
+  expect(port.getWriteStopReason!()).toMatchObject({
+    name: "PersistenceOutcomeUnknownError",
+  });
+  idbFault.mockRestore();
+  fallbackFault.mockRestore();
+  expect(localStorage).toBe(browserStorage);
+  expect(localStorage.length).toBe(0);
+  resetDatabaseConnection();
+  expect(await db.loadDayModes()).toMatchObject({
+    status: "ok",
+    data: { event: { "1日目": "execute" } },
+  });
+});
