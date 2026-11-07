@@ -517,6 +517,16 @@ const getExecutionVisitIdForItem = buildExecutionNavigationVisitId;
 // Keep the retained strategy fixed across every grouping and empty state.
 const SHOPPING_LIST_GROUP_SLOT_MODE = "current-model" as const;
 
+function findTouchByIdentifier<T extends { identifier: number }>(
+  touches: ArrayLike<T>,
+  identifier: number,
+): T | undefined {
+  for (let index = 0; index < touches.length; index += 1) {
+    if (touches[index].identifier === identifier) return touches[index];
+  }
+  return undefined;
+}
+
 const ShoppingList: React.FC<ShoppingListProps> = ({
   items: inputItems,
   dragSourceItems = inputItems,
@@ -740,6 +750,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
   // タッチドラッグ用state/ref
   const touchDragActive = useRef(false);
+  const touchContact = useRef<{ identifier: number } | null>(null);
   const touchLongPressTimer = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -2952,6 +2963,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     }
     touchDragSpaceGroupIds.current = null;
     touchDragActive.current = false;
+    touchContact.current = null;
     releaseTouchBodyScrollLock.current?.();
     releaseTouchBodyScrollLock.current = null;
     cleanUp();
@@ -3068,37 +3080,69 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     ],
   );
 
-  const handleItemTouchStart = useCallback(
-    (e: React.TouchEvent<HTMLDivElement>, item: ShoppingItem) => {
-      if (!allowReorderRef.current) return;
+  const scheduleTouchDragStart = useCallback(
+    (
+      e: React.TouchEvent<HTMLDivElement>,
+      itemId: string,
+      spaceGroupItemIds?: string[],
+    ) => {
+      if (!allowReorderRef.current || touchDragActive.current) return;
+      if (touchLongPressTimer.current !== null) {
+        clearTimeout(touchLongPressTimer.current);
+        touchLongPressTimer.current = null;
+      }
+      touchContact.current = null;
+      // A second finger cancels a pending long press, but not an active drag.
+      if (e.touches.length !== 1) return;
       const target = e.target as HTMLElement;
       if (target.closest("[data-no-long-press]")) return;
 
       const touch = e.touches[0];
+      const contact = { identifier: touch.identifier };
+      touchContact.current = contact;
       touchStartX.current = touch.clientX;
       touchStartY.current = touch.clientY;
 
       const el = e.currentTarget;
       touchLongPressTimer.current = setTimeout(() => {
+        if (touchContact.current !== contact) return;
+        touchLongPressTimer.current = null;
+        if (!el.isConnected) {
+          touchContact.current = null;
+          return;
+        }
         handleTouchDragStart(
-          item.id,
+          itemId,
           el,
           touch.clientX,
           touch.clientY,
-          touch.identifier,
+          contact.identifier,
+          spaceGroupItemIds,
         );
       }, TOUCH_LONG_PRESS_MS);
     },
     [handleTouchDragStart],
   );
 
+  const handleItemTouchStart = useCallback(
+    (e: React.TouchEvent<HTMLDivElement>, item: ShoppingItem) => {
+      scheduleTouchDragStart(e, item.id);
+    },
+    [scheduleTouchDragStart],
+  );
   const handleItemTouchMove = useCallback(
     (e: React.TouchEvent<HTMLDivElement>) => {
       if (!allowReorderRef.current) {
         touchCleanUp();
         return;
       }
-      const touch = e.touches[0];
+      const contact = touchContact.current;
+      if (!contact) return;
+      const touch = findTouchByIdentifier(e.touches, contact.identifier);
+      if (!touch) {
+        touchCleanUp();
+        return;
+      }
 
       if (!touchDragActive.current) {
         const dx = Math.abs(touch.clientX - touchStartX.current);
@@ -3108,6 +3152,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
             clearTimeout(touchLongPressTimer.current);
             touchLongPressTimer.current = null;
           }
+          touchContact.current = null;
         }
         return;
       }
@@ -3210,76 +3255,95 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     [dragWorkspace, setActiveDropTarget, touchCleanUp],
   );
 
-  const handleItemTouchEnd = useCallback(() => {
-    if (!allowReorderRef.current) {
-      touchCleanUp();
-      return;
-    }
-    // ロングプレスタイマーをクリア
-    if (touchLongPressTimer.current) {
-      clearTimeout(touchLongPressTimer.current);
-      touchLongPressTimer.current = null;
-    }
+  const handleItemTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      const contact = touchContact.current;
+      if (!contact || findTouchByIdentifier(e.touches, contact.identifier))
+        return;
+      if (!allowReorderRef.current) {
+        touchCleanUp();
+        return;
+      }
+      // ロングプレスタイマーをクリア
+      if (touchLongPressTimer.current) {
+        clearTimeout(touchLongPressTimer.current);
+        touchLongPressTimer.current = null;
+      }
 
-    if (!touchDragActive.current) return;
-    if (touchTargetColumn.current && dragWorkspace?.active()) {
-      dragWorkspace.drop(touchTargetColumn.current);
-      touchCleanUp();
-      return;
-    }
+      if (!touchDragActive.current) {
+        touchContact.current = null;
+        return;
+      }
+      if (touchTargetColumn.current && dragWorkspace?.active()) {
+        dragWorkspace.drop(touchTargetColumn.current);
+        touchCleanUp();
+        return;
+      }
 
-    const dragContext = columnType
-      ? dragWorkspace?.moveContext(columnType)
-      : undefined;
-    if (activeDropTarget.current && dragItem.current && columnType) {
-      const sourceColumn = dragSourceColumn.current;
-      const { id: targetId, position } = activeDropTarget.current;
+      const dragContext = columnType
+        ? dragWorkspace?.moveContext(columnType)
+        : undefined;
+      if (activeDropTarget.current && dragItem.current && columnType) {
+        const sourceColumn = dragSourceColumn.current;
+        const { id: targetId, position } = activeDropTarget.current;
 
-      if (dragItem.current !== targetId || sourceColumn !== columnType) {
-        if (position === "top") {
-          onMoveItem(
-            dragItem.current,
-            targetId,
-            columnType,
-            sourceColumn || undefined,
-            dragContext,
-          );
-        } else {
-          const targetIndex = items.findIndex((i) => i.id === targetId);
-          if (targetIndex !== -1) {
-            if (targetIndex === items.length - 1) {
-              onMoveItem(
-                dragItem.current,
-                "__END_OF_LIST__",
-                columnType,
-                sourceColumn || undefined,
-                dragContext,
-              );
-            } else {
-              const nextItem = items[targetIndex + 1];
-              onMoveItem(
-                dragItem.current,
-                nextItem.id,
-                columnType,
-                sourceColumn || undefined,
-                dragContext,
-              );
+        if (dragItem.current !== targetId || sourceColumn !== columnType) {
+          if (position === "top") {
+            onMoveItem(
+              dragItem.current,
+              targetId,
+              columnType,
+              sourceColumn || undefined,
+              dragContext,
+            );
+          } else {
+            const targetIndex = items.findIndex((i) => i.id === targetId);
+            if (targetIndex !== -1) {
+              if (targetIndex === items.length - 1) {
+                onMoveItem(
+                  dragItem.current,
+                  "__END_OF_LIST__",
+                  columnType,
+                  sourceColumn || undefined,
+                  dragContext,
+                );
+              } else {
+                const nextItem = items[targetIndex + 1];
+                onMoveItem(
+                  dragItem.current,
+                  nextItem.id,
+                  columnType,
+                  sourceColumn || undefined,
+                  dragContext,
+                );
+              }
             }
           }
         }
       }
-    }
 
-    touchCleanUp();
-  }, [columnType, items, onMoveItem, touchCleanUp, dragWorkspace]);
+      touchCleanUp();
+    },
+    [columnType, items, onMoveItem, touchCleanUp, dragWorkspace],
+  );
 
-  const handleItemTouchCancel = useCallback(() => {
-    touchCleanUp();
-  }, [touchCleanUp]);
+  const handleItemTouchCancel = useCallback(
+    (e: React.TouchEvent<HTMLDivElement>) => {
+      const contact = touchContact.current;
+      if (contact && !findTouchByIdentifier(e.touches, contact.identifier)) {
+        touchCleanUp();
+      }
+    },
+    [touchCleanUp],
+  );
 
   useEffect(() => {
-    const handleGlobalTouchEnd = () => {
-      if (touchDragActive.current) {
+    const handleGlobalTouchEnd = (event: TouchEvent) => {
+      const contact = touchContact.current;
+      if (
+        contact &&
+        !findTouchByIdentifier(event.touches, contact.identifier)
+      ) {
         touchCleanUp();
       }
     };
@@ -3666,26 +3730,13 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
               onTouchStart={
                 allowReorder && group.isCollapsed
                   ? (e: React.TouchEvent<HTMLDivElement>) => {
-                      if (!allowReorderRef.current) return;
-                      const target = e.target as HTMLElement;
-                      if (target.closest("[data-no-long-press]")) return;
-                      const touch = e.touches[0];
-                      touchStartX.current = touch.clientX;
-                      touchStartY.current = touch.clientY;
-                      const el = e.currentTarget;
                       const firstItemId = group.items[0]?.id;
                       if (!firstItemId) return;
-                      const effectiveIds = getEffectiveDragIds(group);
-                      touchLongPressTimer.current = setTimeout(() => {
-                        handleTouchDragStart(
-                          firstItemId,
-                          el,
-                          touch.clientX,
-                          touch.clientY,
-                          touch.identifier,
-                          effectiveIds,
-                        );
-                      }, TOUCH_LONG_PRESS_MS);
+                      scheduleTouchDragStart(
+                        e,
+                        firstItemId,
+                        getEffectiveDragIds(group),
+                      );
                     }
                   : undefined
               }

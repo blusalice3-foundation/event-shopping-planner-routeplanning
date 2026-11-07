@@ -293,6 +293,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
   const resolvedFormalPhase = formalCurrentPhase ?? currentPhase;
   const resolvedFormalPhaseIndex = formalCurrentPhaseIndex ?? currentPhaseIndex;
   const resolvedFormalRouteIndex = formalCurrentRouteIndex ?? currentRouteIndex;
+  const appScale = Math.max(0.01, appZoomLevel / 100);
   const {
     activeTouchesRef,
     canvasRef,
@@ -302,6 +303,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     dragStartOffsetRef,
     dragStartRef,
     drawCanvasRef,
+    hadPinchGestureRef,
     isDragging,
     isDraggingRef,
     isPinchGestureRef,
@@ -324,6 +326,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     mapMaxRow: mapData.maxRow,
     zoomLevel,
     rotationAngle,
+    coordinateScale: appScale,
     baseCellSize: BASE_CELL_SIZE,
     minZoom: MIN_ZOOM,
     maxZoom: MAX_ZOOM,
@@ -338,7 +341,6 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       rotationAngle,
     });
   }, [offset.x, offset.y, onViewportSnapshotChange, rotationAngle, zoomLevel]);
-  const appScale = Math.max(0.01, appZoomLevel / 100);
   const isDarkMode =
     typeof document !== "undefined" &&
     document.documentElement.classList.contains("dark");
@@ -2080,6 +2082,36 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     return () => cancelAnimationFrame(frame);
   }, [drawCanvas]);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    let frame: number | null = null;
+    const redrawAfterResize = () => {
+      const canvas = canvasRef.current;
+      if (
+        !canvas ||
+        (canvas.width === Math.trunc(container.clientWidth * dpr) &&
+          canvas.height === Math.trunc(container.clientHeight * dpr))
+      )
+        return;
+      frame ??= requestAnimationFrame(() => {
+        frame = null;
+        drawCanvasRef.current?.();
+      });
+    };
+    const observer =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(redrawAfterResize)
+        : null;
+    observer?.observe(container);
+    if (!observer) window.addEventListener("resize", redrawAfterResize);
+    return () => {
+      observer?.disconnect();
+      if (!observer) window.removeEventListener("resize", redrawAfterResize);
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
+  }, [canvasRef, containerRef, dpr, drawCanvasRef]);
+
   const activeScrollBounds = useMemo(() => {
     const isExplicitHallSelection = selectedHallMode !== "follow";
     if (
@@ -2362,6 +2394,9 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       if (e.pointerType === "touch" || e.pointerType === "pen") {
         e.preventDefault();
       }
+      if (activeTouchesRef.current.size === 0) {
+        hadPinchGestureRef.current = false;
+      }
       if (activeTouchesRef.current.size >= 2) return;
       isDraggingRef.current = false;
       setIsDragging(false);
@@ -2372,6 +2407,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       activeTouchesRef,
       dragStartOffsetRef,
       dragStartRef,
+      hadPinchGestureRef,
       isDraggingRef,
       offsetRef,
       setIsDragging,
@@ -2445,13 +2481,14 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
   const handlePointerUp = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
       const wasDragging = isDraggingRef.current;
+      const hadPinchGesture = hadPinchGestureRef.current;
       const isTouchPointer =
         e.pointerType === "touch" || e.pointerType === "pen";
       if (isTouchPointer) {
         e.preventDefault();
       }
 
-      if (!wasDragging && isTouchPointer && !isPinchGestureRef.current) {
+      if (!wasDragging && isTouchPointer && !hadPinchGesture) {
         const metrics = getPointerViewMetrics(e.clientX, e.clientY);
         if (metrics) {
           handleTapAtViewPosition(metrics.viewX, metrics.viewY);
@@ -2459,7 +2496,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
             typeof performance !== "undefined" ? performance.now() : Date.now();
           suppressClickUntilRef.current = now + 400;
         }
-      } else if (wasDragging) {
+      } else if (wasDragging || (isTouchPointer && hadPinchGesture)) {
         const now =
           typeof performance !== "undefined" ? performance.now() : Date.now();
         suppressClickUntilRef.current = now + 400;
@@ -2471,8 +2508,8 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       finishPointerInteraction,
       getPointerViewMetrics,
       handleTapAtViewPosition,
+      hadPinchGestureRef,
       isDraggingRef,
-      isPinchGestureRef,
       suppressClickUntilRef,
     ],
   );

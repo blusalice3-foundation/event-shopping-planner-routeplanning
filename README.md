@@ -679,7 +679,13 @@ cleanなworktreeでpreviewを停止した後、`npm run test:release-a-rollback`
 - `npm run test:browser:completion`: 必要時の手動測定。一般機能と、性能4群・全144ケースの各10回測定を実行します。
 - `npm run test:browser`: 性能を含む手動実行用の互換コマンド。`ESP_PERFORMANCE_PROFILE` でprofileを選択し、未指定なら10回です。通常CIからは呼びません。
 
+開発中に短時間で傾向を確認する場合は、`npm run test:performance:quick` を使用してください。性能4群の代表5ケースを既存の `pr` profile（各2回）で実行し、一般機能テストは含めません。500品目の通常買い物（地図ありPC）・長い範囲選択（スマートフォンvirtual）・touchグループ移動・実用負荷でのtouch列間移動（response／frame）を選びます。`npm run test:performance:quick -- range` のように `shopping`／`range`／`drag`／`transfer` を指定すると、その群だけ実行できます。
+
+製品コードを変更せず、同じビルドを再利用する場合は `npm run test:performance:quick:run -- range` でビルドを省略できます。製品コード変更後はビルドを含むコマンドを使用してください。選択内容だけの表示は `node scripts/run-performance-quick-check.mjs --list` で確認できます。群別の所要時間と結果は `artifacts/performance-quick-check/<run ID>/quick-check-result.json` に保存し、各測定artifactも `diagnosticOnly: true`／`acceptanceMeasurement: false` とします。簡易確認の通過は全144ケースの正式測定・完了判定には使用できません。既存の正式測定・通常CI・閾値・ウォームアップ・各終了点・保存整合性検証は引き続き同じです。
+
 GitHubで測定する場合は、Actionsの `Shopping and D&D performance (manual)` から `Run workflow` を選択してください。手動workflowは `completion` 固定で、失敗時も採取済みのcanonical証拠を保存します。
+
+ローカル測定の待ち時間を減らすため、rangeのDOM走査は確認済みの連続した描画範囲を使ってスクロールの重複を減らし、欠落時は従来の走査へ戻ります。各時点の全品目・表示順・選択状態の確認は維持します。transferは計測停止後に比較用画像をサンプル内で再利用し、証拠ファイルを最大4件ずつ保存します。保存失敗時も全保存の終了を待ち、次の測定へI/Oを持ち越しません。性能測定の並列数・条件・回数・終了点は変更しません。これらの補助ソースも計測器のhashへ記録するため、変更前の記録とは計測器が異なります。全144ケースの所要時間短縮と性能合格は別途確認が必要です。
 
 通常CIの結果は `browser-functional-<run ID>-<attempt>` として保存し、性能用canonical `run-result.json` は生成しません。未測定は性能未確認として扱い、通常CI通過を性能合格へ読み替えません。DOM走査停止の原因は未解消で、必要時の手動測定で引き続き確認できます。
 

@@ -1,0 +1,305 @@
+{
+  "schemaVersion": 1,
+  "acceptanceCriteriaByGroup": {
+    "shopping": {
+      "acceptanceScope": "shopping-operations",
+      "acceptanceCriteriaId": "shopping-operations-150-500-65-100-2026-10-25",
+      "acceptanceCriteriaDate": "2026-10-25",
+      "acceptanceThresholds": {
+        "minimumCount": 10,
+        "medianMs": 65,
+        "p95Ms": 100
+      },
+      "samplingPolicyId": "performance-samples-2026-10-26",
+      "samplingProfile": {
+        "id": "completion",
+        "sampleCount": 10,
+        "policyDate": "2026-10-26",
+        "completionEligible": true
+      }
+    },
+    "range": {
+      "acceptanceScope": "dnd-selection-rendering",
+      "acceptanceCriteriaId": "dnd-selection-rendering-160-160-2026-10-28",
+      "acceptanceCriteriaDate": "2026-10-28",
+      "acceptanceThresholds": {
+        "minimumCount": 10,
+        "medianMs": 160,
+        "p95Ms": 160
+      },
+      "samplingPolicyId": "performance-samples-2026-10-26",
+      "samplingProfile": {
+        "id": "completion",
+        "sampleCount": 10,
+        "policyDate": "2026-10-26",
+        "completionEligible": true
+      }
+    },
+    "drag": {
+      "acceptanceScope": "dnd-selection-rendering",
+      "acceptanceCriteriaId": "dnd-selection-rendering-160-160-2026-10-28",
+      "acceptanceCriteriaDate": "2026-10-28",
+      "acceptanceThresholds": {
+        "minimumCount": 10,
+        "medianMs": 160,
+        "p95Ms": 160
+      },
+      "samplingPolicyId": "performance-samples-2026-10-26",
+      "samplingProfile": {
+        "id": "completion",
+        "sampleCount": 10,
+        "policyDate": "2026-10-26",
+        "completionEligible": true
+      }
+    },
+    "transfer": {
+      "acceptanceScope": "dnd-selection-rendering",
+      "acceptanceCriteriaId": "dnd-selection-rendering-160-160-2026-10-28",
+      "acceptanceCriteriaDate": "2026-10-28",
+      "acceptanceThresholds": {
+        "minimumCount": 10,
+        "medianMs": 160,
+        "p95Ms": 160
+      },
+      "samplingPolicyId": "performance-samples-2026-10-26",
+      "samplingProfile": {
+        "id": "completion",
+        "sampleCount": 10,
+        "policyDate": "2026-10-26",
+        "completionEligible": true
+      }
+    }
+  },
+  "samplingPolicyId": "performance-samples-2026-10-26",
+  "samplingProfile": {
+    "id": "completion",
+    "sampleCount": 10,
+    "policyDate": "2026-10-26",
+    "completionEligible": true
+  },
+  "phase": "after",
+  "runId": "2026-11-07T12-12-31-232Z-8f72af25-a23e-4a9d-8395-73a35136e787",
+  "runRoot": "D:\\esp-five-fixes-build2-20261107\\artifacts\\dnd-selection-rendering\\after\\2026-11-07T12-12-31-232Z-8f72af25-a23e-4a9d-8395-73a35136e787",
+  "startedAt": "2026-11-07T12:12:31.235Z",
+  "status": "passed",
+  "preflight": {
+    "status": "passed",
+    "rejected": [],
+    "samplingPolicyId": "performance-samples-2026-10-26",
+    "samplingProfile": {
+      "id": "completion",
+      "sampleCount": 10,
+      "policyDate": "2026-10-26",
+      "completionEligible": true
+    },
+    "exitCode": 0
+  },
+  "groups": [
+    {
+      "group": "functional",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceStatus": "not-applicable",
+      "evidenceExitCode": null,
+      "command": [
+        "C:\\nvm4w\\nodejs\\node.exe",
+        "D:\\esp-five-fixes-build2-20261107\\node_modules\\@playwright\\test\\cli.js",
+        "test",
+        "--grep-invert",
+        "@shopping-performance|@shopping-large-list-diagnostic",
+        "--output",
+        "D:\\esp-five-fixes-build2-20261107\\artifacts\\dnd-selection-rendering\\after\\2026-11-07T12-12-31-232Z-8f72af25-a23e-4a9d-8395-73a35136e787\\functional\\test-results",
+        "--reporter=line,html,json"
+      ],
+      "startedAt": "2026-11-07T12:12:32.206Z",
+      "signal": null,
+      "finishedAt": "2026-11-07T12:48:52.571Z"
+    },
+    {
+      "group": "shopping",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceStatus": "passed",
+      "evidenceExitCode": 0,
+      "command": [
+        "C:\\nvm4w\\nodejs\\node.exe",
+        "C:\\Users\\blu\\AppData\\Local\\nvm\\v24.19.0\\node_modules\\npm\\bin\\npm-cli.js",
+        "run",
+        "test:shopping-performance:run",
+        "--",
+        "--workers=1",
+        "--retries=0",
+        "--output",
+        "D:\\esp-five-fixes-build2-20261107\\artifacts\\dnd-selection-rendering\\after\\2026-11-07T12-12-31-232Z-8f72af25-a23e-4a9d-8395-73a35136e787\\shopping\\test-results",
+        "--reporter=line,html,json"
+      ],
+      "startedAt": "2026-11-07T12:48:52.572Z",
+      "signal": null,
+      "finishedAt": "2026-11-07T12:59:36.033Z"
+    },
+    {
+      "group": "range",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceStatus": "passed",
+      "evidenceExitCode": 0,
+      "command": [
+        "C:\\nvm4w\\nodejs\\node.exe",
+        "C:\\Users\\blu\\AppData\\Local\\nvm\\v24.19.0\\node_modules\\npm\\bin\\npm-cli.js",
+        "run",
+        "test:range-selection-performance:run",
+        "--",
+        "--workers=1",
+        "--retries=0",
+        "--output",
+        "D:\\esp-five-fixes-build2-20261107\\artifacts\\dnd-selection-rendering\\after\\2026-11-07T12-12-31-232Z-8f72af25-a23e-4a9d-8395-73a35136e787\\range\\test-results",
+        "--reporter=line,html,json"
+      ],
+      "startedAt": "2026-11-07T12:59:36.036Z",
+      "signal": null,
+      "finishedAt": "2026-11-07T13:25:58.400Z"
+    },
+    {
+      "group": "drag",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceStatus": "passed",
+      "evidenceExitCode": 0,
+      "command": [
+        "C:\\nvm4w\\nodejs\\node.exe",
+        "C:\\Users\\blu\\AppData\\Local\\nvm\\v24.19.0\\node_modules\\npm\\bin\\npm-cli.js",
+        "run",
+        "test:shopping-drag-performance:run",
+        "--",
+        "--workers=1",
+        "--retries=0",
+        "--output",
+        "D:\\esp-five-fixes-build2-20261107\\artifacts\\dnd-selection-rendering\\after\\2026-11-07T12-12-31-232Z-8f72af25-a23e-4a9d-8395-73a35136e787\\drag\\test-results",
+        "--reporter=line,html,json"
+      ],
+      "startedAt": "2026-11-07T13:25:58.402Z",
+      "signal": null,
+      "finishedAt": "2026-11-07T13:27:40.759Z"
+    },
+    {
+      "group": "transfer",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceStatus": "passed",
+      "evidenceExitCode": 0,
+      "command": [
+        "C:\\nvm4w\\nodejs\\node.exe",
+        "C:\\Users\\blu\\AppData\\Local\\nvm\\v24.19.0\\node_modules\\npm\\bin\\npm-cli.js",
+        "run",
+        "test:shopping-transfer-rendering-performance:run",
+        "--",
+        "--workers=1",
+        "--retries=0",
+        "--output",
+        "D:\\esp-five-fixes-build2-20261107\\artifacts\\dnd-selection-rendering\\after\\2026-11-07T12-12-31-232Z-8f72af25-a23e-4a9d-8395-73a35136e787\\transfer\\test-results",
+        "--reporter=line,html,json"
+      ],
+      "startedAt": "2026-11-07T13:27:40.761Z",
+      "signal": null,
+      "finishedAt": "2026-11-07T14:01:53.800Z"
+    }
+  ],
+  "productCommit": "d34a703e2acf629b3ef2f954c90046d801553be6",
+  "sourceState": "clean",
+  "sourceDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "instrumentVersion": "shopping-rendering-v4",
+  "instrumentPatch": {
+    "sha256": "409c86a05d4d56c0615ced8cfbfc41f5cdcf447b0ec48f6ca898e00f8297bec8",
+    "files": {
+      "tests/browser/responsive-performance.spec.ts": "e1a6dce96d9ef7db99e09b4eb015b4f38be3c0b07b138f19bff3f9833731162d",
+      "tests/browser/edit-execute-range-selection.spec.ts": "db5ca696988d32ffb687a1b92907f11ce07ac317c4226a29ff797f7512998cb7",
+      "tests/browser/shopping-cross-column-drag.spec.ts": "10c41c13bf7ac719a1bada44529d34943bddbf4e38474f99d0abcdb6a3373ace",
+      "tests/browser/shopping-transfer-rendering.performance.spec.ts": "e2e96625c330c6d67743ddffd2c55ec705623a4cbb068b06f6ac81cd24f6179b",
+      "tests/browser/shopping-transfer-accepted.performance.spec.ts": "7682ba4bc8645e892ca8988c76b379b684d9562f9b50337fe5ebeadeb6fe3051",
+      "tests/browser/shopping-transfer-terminal.performance.spec.ts": "a2a2c4d241be3ff9ad2dce1ba47207e84eee66ba2257f8809947a5aec960be5a",
+      "tests/browser/performance-summary.ts": "bd94cce5eb6a4c08febc909c21c99ca27878faaf03edfc7b6782557c55c3109d",
+      "tests/browser/shopping-performance-evidence.ts": "1b3a584b75a0b022cd03afee92ff6b14da7c6637fa43080c434071d8b2d10193",
+      "tests/browser/shopping-operation-sampling.ts": "ad8a4e3aa06b060dd0aabf403e9e82524e2efb98a8ef6b12e64d4de25b5e59de",
+      "tests/browser/range-selection-dom-snapshot.ts": "dc7d13b5a8579e25f65eb2033bf347c6ab553b75abf9b990ddf8d213c13c33a1",
+      "tests/browser/evidence-file-writes.ts": "6466e6eeb64967516191920f0c53cc0962af11825255b319139fb97acf504ad1",
+      "tests/browser/shopping-transfer-measurement.ts": "7c255518bd8f274f7cb5efb603a0b64885b56b5ac69b0e43a652f1646c982176",
+      "scripts/verify-shopping-performance-evidence.mjs": "e1d9e684899a3ec2650dff0ca559758a7d83321dfff5b67c5b83721273bfb8b2",
+      "scripts/baseline-frame-performance-observations.mjs": "3259828757cb24e8d6f4abded7ea14bf21a3b59e5ec696689f0b91285d7a367b",
+      "scripts/baseline-shopping-performance-observations.mjs": "5cc0d09573c73f8e77a13411a41b858fad0ea455d84aff756f17b0be38055226",
+      "scripts/run-shopping-browser-evidence.mjs": "e3a71124892bc6730f4c235598f4188421e46cab914f1b80604ea5ee3b02c546",
+      "scripts/shopping-performance-evidence-contract.mjs": "47f4f3c45cb24f5499202aed4fe051c282615e18cf52576d809dbe81b50ebce9",
+      "scripts/performance-quick-check-metadata.mjs": "7014439fd538126770884e48e73cc6b3d00e01d498d6a542a81eb8ee2be13810",
+      "tests/browser/shopping-transfer-diagnostics.spec.ts": "a931aa96be7f05f6569c67d1178c13320a6e4f9bbe0d610d8059d8d734a0dde8",
+      "tests/browser/shopping-transfer-diagnostics.ts": "61b79b0471d4eeb38067e3a41404b77ba381e88869fda020e1226491889a2f4e",
+      "tests/browser/shopping-transfer-frame-observation.ts": "03fd3b18ca7e6e2041afd013b38475fe6152d976036b57ad1724d87fc3a7c030",
+      "tests/browser/shopping-transfer-move-correlation.ts": "80dc44bea8d54fafd946fa1bd71e7265c712998028c2e2e994293fa6e1ebf0b0",
+      "tests/browser/shopping-transfer-oracle.spec.ts": "d59e3965af5588557b4cfe66beae694846c156295db8c40c0fbe8f5ec0306913",
+      "tests/browser/shopping-transfer-persisted-store.ts": "f8b632ade9d48878a009a26334460581bbc5842e4e262847aa105d078b2442eb",
+      "tests/browser/shopping-transfer-response-endpoint.spec.ts": "86122237b6e9efc69bf331ac9ed0c9d0e576bb26192bc486fb9fca61ff5983f7",
+      "tests/browser/shopping-transfer-scenarios.ts": "85c889151c0394fb9d2a7dad84a62ef36d65531b191b0dfe7ad99ff25d3fdac8",
+      "tests/browser/shopping-transfer-terminal-measurement.ts": "1015a753876d14fcf55f57d3fd8c76eb0eedcf3b713cadedd5af23982df55c2e",
+      "tests/browser/shopping-transfer-terminal-observation.ts": "44cbc1fa456b2698263b549dce10ed6a012b4286c4b7d4e570c281bfd9de9ed1"
+    }
+  },
+  "fixtureSources": {
+    "sha256": "7cb0404e54bc83a00b7c2ac4254eb32181e4ac1167ac039674d881886396e9d0",
+    "files": {
+      "tests/browser/responsive-performance.spec.ts": "e1a6dce96d9ef7db99e09b4eb015b4f38be3c0b07b138f19bff3f9833731162d",
+      "tests/browser/edit-execute-range-selection.spec.ts": "db5ca696988d32ffb687a1b92907f11ce07ac317c4226a29ff797f7512998cb7",
+      "tests/browser/shopping-cross-column-drag.spec.ts": "10c41c13bf7ac719a1bada44529d34943bddbf4e38474f99d0abcdb6a3373ace",
+      "tests/browser/shopping-transfer-rendering.performance.spec.ts": "e2e96625c330c6d67743ddffd2c55ec705623a4cbb068b06f6ac81cd24f6179b",
+      "tests/browser/shopping-transfer-accepted.performance.spec.ts": "7682ba4bc8645e892ca8988c76b379b684d9562f9b50337fe5ebeadeb6fe3051",
+      "tests/browser/shopping-transfer-terminal.performance.spec.ts": "a2a2c4d241be3ff9ad2dce1ba47207e84eee66ba2257f8809947a5aec960be5a",
+      "tests/browser/shopping-operation-sampling.ts": "ad8a4e3aa06b060dd0aabf403e9e82524e2efb98a8ef6b12e64d4de25b5e59de",
+      "tests/browser/shopping-transfer-diagnostics.spec.ts": "a931aa96be7f05f6569c67d1178c13320a6e4f9bbe0d610d8059d8d734a0dde8",
+      "tests/browser/shopping-transfer-diagnostics.ts": "61b79b0471d4eeb38067e3a41404b77ba381e88869fda020e1226491889a2f4e",
+      "tests/browser/shopping-transfer-frame-observation.ts": "03fd3b18ca7e6e2041afd013b38475fe6152d976036b57ad1724d87fc3a7c030",
+      "tests/browser/shopping-transfer-measurement.ts": "7c255518bd8f274f7cb5efb603a0b64885b56b5ac69b0e43a652f1646c982176",
+      "tests/browser/shopping-transfer-move-correlation.ts": "80dc44bea8d54fafd946fa1bd71e7265c712998028c2e2e994293fa6e1ebf0b0",
+      "tests/browser/shopping-transfer-oracle.spec.ts": "d59e3965af5588557b4cfe66beae694846c156295db8c40c0fbe8f5ec0306913",
+      "tests/browser/shopping-transfer-persisted-store.ts": "f8b632ade9d48878a009a26334460581bbc5842e4e262847aa105d078b2442eb",
+      "tests/browser/shopping-transfer-response-endpoint.spec.ts": "86122237b6e9efc69bf331ac9ed0c9d0e576bb26192bc486fb9fca61ff5983f7",
+      "tests/browser/shopping-transfer-scenarios.ts": "85c889151c0394fb9d2a7dad84a62ef36d65531b191b0dfe7ad99ff25d3fdac8",
+      "tests/browser/shopping-transfer-terminal-measurement.ts": "1015a753876d14fcf55f57d3fd8c76eb0eedcf3b713cadedd5af23982df55c2e",
+      "tests/browser/shopping-transfer-terminal-observation.ts": "44cbc1fa456b2698263b549dce10ed6a012b4286c4b7d4e570c281bfd9de9ed1"
+    }
+  },
+  "releaseCapability": {
+    "buildId": "d34a703e2acf629b3ef2f954c90046d801553be6",
+    "buildMode": "release-a",
+    "kind": "event-shopping-planner-release-capabilities",
+    "legacyLocalStorageCleanup": "forced-off",
+    "releaseChannel": "release-a",
+    "sourceSha": "d34a703e2acf629b3ef2f954c90046d801553be6",
+    "sourceState": "clean",
+    "version": 1
+  },
+  "releaseCapabilityRaw": "{\"buildId\":\"d34a703e2acf629b3ef2f954c90046d801553be6\",\"buildMode\":\"release-a\",\"kind\":\"event-shopping-planner-release-capabilities\",\"legacyLocalStorageCleanup\":\"forced-off\",\"releaseChannel\":\"release-a\",\"sourceSha\":\"d34a703e2acf629b3ef2f954c90046d801553be6\",\"sourceState\":\"clean\",\"version\":1}",
+  "servedReleaseCapabilityRaw": null,
+  "servedReleaseCapabilitySha256": null,
+  "releaseCapabilitySha256": "7ffb9a05400e138de8fe4ad47cc66218cd6b2a8e3568c2ab4736bf9afde58101",
+  "environment": {
+    "platform": "win32",
+    "osRelease": "10.0.26200",
+    "osVersion": "Windows 11 Pro",
+    "arch": "x64",
+    "node": "v24.19.0",
+    "ci": "true",
+    "baseURL": "http://127.0.0.1:4173",
+    "previewSource": "playwright-webServer",
+    "browserVersion": "151.0.7922.34",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "devicePixelRatio": 1,
+    "browserChannel": "bundled-chromium",
+    "headed": false,
+    "build": "npm run build:release-a",
+    "workerCount": 1,
+    "githubRunId": null,
+    "githubRunAttempt": null
+  },
+  "finishedAt": "2026-11-07T14:01:53.802Z"
+}

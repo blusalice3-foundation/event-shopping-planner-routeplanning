@@ -13,6 +13,8 @@ import {
 import { renderRecoveryRoot, renderWaitingUpdateNotice } from "./recoveryRoot";
 
 const OUTER_AGENT_HOST_ID = "pwa-outer-agent-host";
+const WAITING_IDENTITY_RETRY_INITIAL_MS = 1000;
+const WAITING_IDENTITY_RETRY_MAX_MS = 30_000;
 
 type WaitingWorkerOwnership = Readonly<{
   generation: number;
@@ -353,6 +355,8 @@ export const startOuterRecoveryAgent = async (
     const observedInstallingWorkers = new WeakSet<ServiceWorker>();
     let latestInstallingWorker: ServiceWorker | null = null;
     let waitingGeneration = 0;
+    let waitingIdentityRetryTimer: ReturnType<typeof setTimeout> | null = null;
+    let waitingIdentityRetryDelayMs = WAITING_IDENTITY_RETRY_INITIAL_MS;
     let activeWaitingOwnership: WaitingWorkerOwnership | null = null;
     let updateNoticeHost: HTMLElement | null = null;
     let renderedNotice: {
@@ -374,6 +378,13 @@ export const startOuterRecoveryAgent = async (
       worker: ServiceWorker,
     ): WaitingWorkerOwnership => {
       const previousOwnership = activeWaitingOwnership;
+      if (waitingIdentityRetryTimer !== null) {
+        clearTimeout(waitingIdentityRetryTimer);
+        waitingIdentityRetryTimer = null;
+      }
+      if (previousOwnership?.worker !== worker) {
+        waitingIdentityRetryDelayMs = WAITING_IDENTITY_RETRY_INITIAL_MS;
+      }
       const ownership = Object.freeze({
         generation: (waitingGeneration += 1),
         worker,
@@ -500,7 +511,18 @@ export const startOuterRecoveryAgent = async (
             });
           }
         } catch {
-          // Current verified role remains usable. Update discovery fails closed.
+          // Keep the verified role usable, but retry transient identity failures.
+          if (releaseStaleOwnership(ownership)) return;
+          waitingIdentityRetryTimer = setTimeout(() => {
+            waitingIdentityRetryTimer = null;
+            if (releaseStaleOwnership(ownership)) return;
+            attemptedWaitingWorkers.delete(worker);
+            discoverWaitingWorker(worker);
+          }, waitingIdentityRetryDelayMs);
+          waitingIdentityRetryDelayMs = Math.min(
+            waitingIdentityRetryDelayMs * 2,
+            WAITING_IDENTITY_RETRY_MAX_MS,
+          );
         }
       })();
     };

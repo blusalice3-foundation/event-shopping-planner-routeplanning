@@ -1,6 +1,7 @@
 import { readBrowserEventLists } from "./shopping-transfer-persisted-store";
 import { createHash } from "node:crypto";
 import { writeFile } from "node:fs/promises";
+import { writeEvidenceFiles } from "./evidence-file-writes";
 import {
   expect,
   type CDPSession,
@@ -1554,10 +1555,12 @@ export async function measureTransfer(
       JSON.stringify({ traceEvents: trace }),
       "utf8",
     );
-    await writeFile(tracePath, traceBytes);
+    await writeEvidenceFiles([
+      { path: tracePath, data: traceBytes },
+      { path: referencePath, data: reference },
+      { path: baselinePath, data: beforeFrame! },
+    ]);
     traceSaved = true;
-    await writeFile(referencePath, reference);
-    await writeFile(baselinePath, beforeFrame!);
     await testInfo.attach(`${measurementId}-trace`, {
       path: tracePath,
       contentType: "application/json",
@@ -1618,97 +1621,104 @@ export async function measureTransfer(
       ts: number;
       clip?: number[];
     }> = [];
-    for (const captured of capturedFrames) {
-      if (
-        !captured.acknowledged ||
-        !Number.isFinite(captured.metadata.timestamp)
-      )
-        continue;
-      const frameEpochMs = captured.metadata.timestamp! * 1000;
-      const frameTraceTs =
-        mark.ts +
-        (frameEpochMs - state.startEpoch - state.markerDelayMs) * 1000;
-      if (frameTraceTs < dom!.ts) continue;
-      const targetPaints = targetRects.map((rect) => ({
-        itemId: rect.itemId,
-        paint: paints.find(
-          (event) => event.ts <= frameTraceTs && covers(event, rect),
-        ),
-      }));
-      const targetPaint = targetPaints.find(
-        (entry) => entry.itemId === id,
-      )?.paint;
-      const sourcePaints = sourceRects.map((rect) => ({
-        itemId: rect.itemId,
-        paint: paints.find(
-          (event) => event.ts <= frameTraceTs && covers(event, rect),
-        ),
-      }));
-      const removedSourcePaint = sourcePaints.find(
-        (entry) => entry.itemId === id,
-      )?.paint;
-      if (
-        !targetPaint ||
-        !removedSourcePaint ||
-        targetPaints.some((entry) => !entry.paint) ||
-        sourcePaints.some((entry) => !entry.paint)
-      )
-        continue;
-      const drawFrame = trace.find(
-        (event) =>
-          event.name === "DrawFrame" &&
-          event.pid === dom!.pid &&
-          event.ts >=
-            Math.max(
-              ...sourcePaints.map((entry) => entry.paint!.ts),
-              ...targetPaints.map((entry) => entry.paint!.ts),
-            ) &&
-          event.ts <= frameTraceTs,
-      );
-      if (!drawFrame) continue;
-      const checked = await compareFrameContent(
-        page,
-        captured.data,
-        reference.toString("base64"),
-        beforeFrame!.toString("base64"),
-        [...sourceRects, ...targetRects],
-      );
-      const candidatePath = testInfo.outputPath(
-        `${measurementId}-candidate-${candidateComparisons.length}.png`,
-      );
-      const candidateBytes = Buffer.from(captured.data, "base64");
-      await writeFile(candidatePath, candidateBytes);
-      candidateComparisons.push({
-        frameSwapEpochMs: frameEpochMs,
-        framePath: candidatePath,
-        frameSha256: sha256(candidateBytes),
-        captureTs: frameTraceTs,
-        checked,
-        sourceRect,
-        sourceRects,
-        targetRect,
-        targetRects,
-      });
-      if (checked.matched) {
-        selected = { ...captured, traceTs: frameTraceTs };
-        comparison = checked;
-        paint = targetPaint;
-        sourcePaint = removedSourcePaint;
-        draw = drawFrame;
-        selectedSourcePaints = sourcePaints.map(({ itemId, paint }) => ({
-          itemId,
-          pid: paint!.pid,
-          ts: paint!.ts,
-          clip: paint!.args?.data?.clip,
+    let comparator:
+      | Awaited<ReturnType<typeof createFrameContentComparator>>
+      | undefined;
+    try {
+      for (const captured of capturedFrames) {
+        if (
+          !captured.acknowledged ||
+          !Number.isFinite(captured.metadata.timestamp)
+        )
+          continue;
+        const frameEpochMs = captured.metadata.timestamp! * 1000;
+        const frameTraceTs =
+          mark.ts +
+          (frameEpochMs - state.startEpoch - state.markerDelayMs) * 1000;
+        if (frameTraceTs < dom!.ts) continue;
+        const targetPaints = targetRects.map((rect) => ({
+          itemId: rect.itemId,
+          paint: paints.find(
+            (event) => event.ts <= frameTraceTs && covers(event, rect),
+          ),
         }));
-        selectedTargetPaints = targetPaints.map(({ itemId, paint }) => ({
-          itemId,
-          pid: paint!.pid,
-          ts: paint!.ts,
-          clip: paint!.args?.data?.clip,
+        const targetPaint = targetPaints.find(
+          (entry) => entry.itemId === id,
+        )?.paint;
+        const sourcePaints = sourceRects.map((rect) => ({
+          itemId: rect.itemId,
+          paint: paints.find(
+            (event) => event.ts <= frameTraceTs && covers(event, rect),
+          ),
         }));
-        break;
+        const removedSourcePaint = sourcePaints.find(
+          (entry) => entry.itemId === id,
+        )?.paint;
+        if (
+          !targetPaint ||
+          !removedSourcePaint ||
+          targetPaints.some((entry) => !entry.paint) ||
+          sourcePaints.some((entry) => !entry.paint)
+        )
+          continue;
+        const drawFrame = trace.find(
+          (event) =>
+            event.name === "DrawFrame" &&
+            event.pid === dom!.pid &&
+            event.ts >=
+              Math.max(
+                ...sourcePaints.map((entry) => entry.paint!.ts),
+                ...targetPaints.map((entry) => entry.paint!.ts),
+              ) &&
+            event.ts <= frameTraceTs,
+        );
+        if (!drawFrame) continue;
+        comparator ??= await createFrameContentComparator(
+          page,
+          reference.toString("base64"),
+          beforeFrame!.toString("base64"),
+          [...sourceRects, ...targetRects],
+        );
+        const checked = await comparator.compare(captured.data);
+        const candidatePath = testInfo.outputPath(
+          `${measurementId}-candidate-${candidateComparisons.length}.png`,
+        );
+        const candidateBytes = Buffer.from(captured.data, "base64");
+        await writeFile(candidatePath, candidateBytes);
+        candidateComparisons.push({
+          frameSwapEpochMs: frameEpochMs,
+          framePath: candidatePath,
+          frameSha256: sha256(candidateBytes),
+          captureTs: frameTraceTs,
+          checked,
+          sourceRect,
+          sourceRects,
+          targetRect,
+          targetRects,
+        });
+        if (checked.matched) {
+          selected = { ...captured, traceTs: frameTraceTs };
+          comparison = checked;
+          paint = targetPaint;
+          sourcePaint = removedSourcePaint;
+          draw = drawFrame;
+          selectedSourcePaints = sourcePaints.map(({ itemId, paint }) => ({
+            itemId,
+            pid: paint!.pid,
+            ts: paint!.ts,
+            clip: paint!.args?.data?.clip,
+          }));
+          selectedTargetPaints = targetPaints.map(({ itemId, paint }) => ({
+            itemId,
+            pid: paint!.pid,
+            ts: paint!.ts,
+            clip: paint!.args?.data?.clip,
+          }));
+          break;
+        }
       }
+    } finally {
+      await comparator?.close();
     }
     await testInfo.attach(`${measurementId}-frame-verification`, {
       body: JSON.stringify(candidateComparisons, null, 2),
@@ -1974,26 +1984,35 @@ export async function measureTransfer(
     }
   }
 }
-export async function compareFrameContent(
+// This helper is created only after capture/trace collection has stopped. Its
+// immutable reference crops live for one sample and never overlap the next input.
+export async function createFrameContentComparator(
   page: Page,
-  frame: string,
   reference: string,
   baseline: string,
   rects: FrameRect[],
 ) {
-  return page.evaluate(
-    async ({ frame, reference, baseline, rects }) => {
-      const image = async (data: string, mime: string) => {
+  const handle = await page.evaluateHandle(
+    async ({ reference, baseline, rects }) => {
+      const image = async (data: string) => {
         const bytes = Uint8Array.from(atob(data), (character) =>
           character.charCodeAt(0),
         );
-        return createImageBitmap(new Blob([bytes], { type: mime }));
+        return createImageBitmap(new Blob([bytes], { type: "image/png" }));
       };
-      const [actual, expected, before] = await Promise.all([
-        image(frame, "image/png"),
-        image(reference, "image/png"),
-        image(baseline, "image/png"),
+      const decoded = await Promise.allSettled([
+        image(reference),
+        image(baseline),
       ]);
+      const failed = decoded.find((result) => result.status === "rejected");
+      if (failed?.status === "rejected") {
+        for (const result of decoded)
+          if (result.status === "fulfilled") result.value.close();
+        throw failed.reason;
+      }
+      const [expected, before] = decoded.map(
+        (result) => (result as PromiseFulfilledResult<ImageBitmap>).value,
+      );
       const crop = (bitmap: ImageBitmap, rect: Rect) => {
         const canvas = new OffscreenCanvas(
             Math.ceil(rect.width),
@@ -2034,81 +2053,149 @@ export async function compareFrameContent(
         }
         return inkWeight > 0 ? disagreement / inkWeight : 1;
       };
-      try {
+      const prepare = (width: number, height: number) => {
         // Normalize complete images to the trace screenshot raster before comparing glyphs.
         const resize = (bitmap: ImageBitmap) => {
-          const canvas = new OffscreenCanvas(actual.width, actual.height);
-          canvas
-            .getContext("2d")!
-            .drawImage(bitmap, 0, 0, actual.width, actual.height);
+          const canvas = new OffscreenCanvas(width, height);
+          canvas.getContext("2d")!.drawImage(bitmap, 0, 0, width, height);
           return canvas.transferToImageBitmap();
         };
-        const normalizedExpected = resize(expected),
+        let normalizedExpected: ImageBitmap | undefined,
+          normalizedBefore: ImageBitmap | undefined;
+        try {
+          normalizedExpected = resize(expected);
           normalizedBefore = resize(before);
-        const scores = rects.map((rect) => {
-          const identityRect = {
-            x: rect.x + 70,
-            y: rect.y + 5,
-            width: Math.min(300, rect.width - 70),
-            height: Math.min(100, rect.height - 5),
-          };
-          const controls = [
-            {
-              x: rect.x + 7,
-              y: rect.y + 7,
-              width: 38,
-              height: Math.min(30, rect.height - 7),
-            },
-            {
-              x: rect.x + rect.width - 200,
+          return rects.map((rect) => {
+            const identityRect = {
+              x: rect.x + 70,
               y: rect.y + 5,
-              width: 190,
-              height: Math.min(75, rect.height - 5),
-            },
-          ];
-          const ref = crop(normalizedExpected, identityRect);
-          return {
-            itemId: rect.itemId,
-            role: rect.role,
-            rect,
-            identityRect,
-            controlRects: controls,
-            frameError: difference(crop(actual, identityRect), ref),
-            baselineError: difference(
-              crop(normalizedBefore, identityRect),
-              ref,
-            ),
-            controlErrors: controls.map((control) =>
-              difference(
-                crop(actual, control),
-                crop(normalizedExpected, control),
+              width: Math.min(300, rect.width - 70),
+              height: Math.min(100, rect.height - 5),
+            };
+            const controls = [
+              {
+                x: rect.x + 7,
+                y: rect.y + 7,
+                width: 38,
+                height: Math.min(30, rect.height - 7),
+              },
+              {
+                x: rect.x + rect.width - 200,
+                y: rect.y + 5,
+                width: 190,
+                height: Math.min(75, rect.height - 5),
+              },
+            ];
+            const ref = crop(normalizedExpected!, identityRect);
+            return {
+              rect,
+              identityRect,
+              controls,
+              referenceIdentity: ref,
+              baselineError: difference(
+                crop(normalizedBefore!, identityRect),
+                ref,
               ),
-            ),
-          };
-        });
-        normalizedExpected.close();
-        normalizedBefore.close();
-        return {
-          method: "dark-ink-shape-native-v2",
-          matched: scores.every(
-            (score) =>
-              score.baselineError > 0.001 &&
-              score.frameError <= 0.025 &&
-              score.frameError < score.baselineError * 0.55 &&
-              score.controlErrors.every((error) => error <= 0.025),
-          ),
-          scores,
-        };
+              referenceControls: controls.map((control) =>
+                crop(normalizedExpected!, control),
+              ),
+            };
+          });
+        } finally {
+          normalizedExpected?.close();
+          normalizedBefore?.close();
+        }
+      };
+      // Raster/viewport changes must not reuse crops scaled for a previous candidate.
+      const crops = new Map<string, ReturnType<typeof prepare>>();
+      let closed = false;
+      return {
+        async compare(frame: string) {
+          if (closed) throw new Error("Frame content comparator is closed");
+          const actual = await image(frame);
+          try {
+            const key = `${actual.width}:${actual.height}:${innerWidth}:${innerHeight}`;
+            let prepared = crops.get(key);
+            if (!prepared) {
+              prepared = prepare(actual.width, actual.height);
+              crops.set(key, prepared);
+            }
+            const scores = prepared.map((entry) => ({
+              itemId: entry.rect.itemId,
+              role: entry.rect.role,
+              rect: entry.rect,
+              identityRect: entry.identityRect,
+              controlRects: entry.controls,
+              frameError: difference(
+                crop(actual, entry.identityRect),
+                entry.referenceIdentity,
+              ),
+              baselineError: entry.baselineError,
+              controlErrors: entry.controls.map((control, index) =>
+                difference(
+                  crop(actual, control),
+                  entry.referenceControls[index],
+                ),
+              ),
+            }));
+            return {
+              method: "dark-ink-shape-native-v2",
+              matched: scores.every(
+                (score) =>
+                  score.baselineError > 0.001 &&
+                  score.frameError <= 0.025 &&
+                  score.frameError < score.baselineError * 0.55 &&
+                  score.controlErrors.every((error) => error <= 0.025),
+              ),
+              scores,
+            };
+          } finally {
+            actual.close();
+          }
+        },
+        close() {
+          if (closed) return;
+          closed = true;
+          expected.close();
+          before.close();
+          crops.clear();
+        },
+      };
+    },
+    { reference, baseline, rects },
+  );
+  return {
+    compare: (frame: string) =>
+      handle.evaluate((value, frame) => value.compare(frame), frame),
+    async close() {
+      try {
+        await handle.evaluate((value) => value.close());
       } finally {
-        actual.close();
-        expected.close();
-        before.close();
+        await handle.dispose();
       }
     },
-    { frame, reference, baseline, rects },
-  );
+  };
 }
 
+export async function compareFrameContent(
+  page: Page,
+  frame: string,
+  reference: string,
+  baseline: string,
+  rects: FrameRect[],
+) {
+  const comparator = await createFrameContentComparator(
+    page,
+    reference,
+    baseline,
+    rects,
+  );
+  try {
+    return await comparator.compare(frame);
+  } finally {
+    await comparator.close();
+  }
+}
 export async function readTransferDurable(page: Page) {
   const all = await readBrowserEventLists<{
     id: string;

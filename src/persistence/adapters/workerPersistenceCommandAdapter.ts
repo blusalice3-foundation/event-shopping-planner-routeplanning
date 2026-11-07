@@ -128,16 +128,35 @@ export function createWorkerPersistenceCommandAdapter(): PersistenceCommandPort 
             return;
           }
           for (const [key, value] of event.data.storageChanges ?? []) {
+            if (value === null) {
+              try {
+                if (
+                  localStorage.getItem(key) ===
+                  (operation.storage.get(key) ?? null)
+                )
+                  localStorage.removeItem(key);
+              } catch {
+                /* Retain recovery sources when browser storage cleanup fails. */
+              }
+              continue;
+            }
             try {
-              if (
-                localStorage.getItem(key) !==
-                (operation.storage.get(key) ?? null)
-              )
-                continue;
-              if (value === null) localStorage.removeItem(key);
-              else localStorage.setItem(key, value);
-            } catch {
-              /* Retain recovery sources when browser storage cleanup fails. */
+              const current = localStorage.getItem(key);
+              if (current === value) continue;
+              if (current !== (operation.storage.get(key) ?? null))
+                throw new Error("Recovery source changed before persistence.");
+              localStorage.setItem(key, value);
+              if (localStorage.getItem(key) !== value)
+                throw new Error(
+                  "Runtime fallback readback verification failed.",
+                );
+            } catch (error) {
+              // The worker has advanced its logical roots; never acknowledge or resend
+              // a write whose only fallback has not reached browser storage.
+              const failure = new PersistenceOutcomeUnknownError(error);
+              adapter.stopWrites?.(failure);
+              operation.reject(failure);
+              return;
             }
           }
           operation.resolve(event.data.result);

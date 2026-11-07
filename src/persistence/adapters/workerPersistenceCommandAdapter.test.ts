@@ -309,3 +309,129 @@ it.each(["unavailable", "invalid"])(
     expect(methods).toEqual(["shopping", "readFull"]);
   },
 );
+
+it.each(["quota", "readback", "conflict", "read-error"])(
+  "rejects a worker fallback acknowledgement when browser storage has a %s failure",
+  async (failure) => {
+    const key = "esp:idb-fallback:v1:eventLists:data:revision";
+    const candidate = '{"payload":"ユーザー登録"}';
+    const values = new Map<string, string>();
+    const setItem = vi.fn((entryKey: string, value: string) => {
+      if (failure === "quota")
+        throw new DOMException("storage is full", "QuotaExceededError");
+      if (failure !== "readback") values.set(entryKey, value);
+    });
+    const getItem = vi.fn((entryKey: string) => {
+      if (failure === "read-error")
+        throw new DOMException("storage unavailable", "SecurityError");
+      return values.get(entryKey) ?? null;
+    });
+    class FallbackWorker {
+      onmessage?: (event: MessageEvent) => void;
+      postMessage = vi.fn((request: { id: number }) => {
+        queueMicrotask(() => {
+          if (failure === "conflict")
+            values.set(key, "another recovery source");
+          this.onmessage?.({
+            data: {
+              id: request.id,
+              storageChanges: [[key, candidate]],
+            },
+          } as MessageEvent);
+        });
+      });
+    }
+    vi.stubGlobal("Worker", FallbackWorker);
+    vi.stubGlobal("localStorage", {
+      length: 0,
+      key: () => null,
+      getItem,
+      setItem,
+    });
+    const port = createWorkerPersistenceCommandAdapter();
+    const stopped = vi.fn();
+    port.onWritesStopped!(stopped);
+    const result = await port
+      .saveEventLists({})
+      .catch((error: unknown) => error);
+    expect(result).toMatchObject({ name: "PersistenceOutcomeUnknownError" });
+    expect(stopped).toHaveBeenCalledExactlyOnceWith(result);
+    expect(port.getWriteStopReason!()).toBe(result);
+    await expect(port.saveEventMetadata({})).rejects.toBe(result);
+    if (failure === "conflict") {
+      expect(setItem).not.toHaveBeenCalled();
+      expect(values.get(key)).toBe("another recovery source");
+    }
+  },
+);
+
+it.each([false, true])(
+  "acknowledges fallback only after it is durable, including an already retained value (%s)",
+  async (alreadyDurable) => {
+    const key = "esp:idb-fallback:v1:eventLists:data:revision";
+    const candidate = '{"payload":"ユーザー登録"}';
+    const values = new Map<string, string>();
+    const setItem = vi.fn((entryKey: string, value: string) => {
+      values.set(entryKey, value);
+    });
+    class FallbackWorker {
+      onmessage?: (event: MessageEvent) => void;
+      postMessage(request: { id: number }) {
+        queueMicrotask(() => {
+          if (alreadyDurable) values.set(key, candidate);
+          this.onmessage?.({
+            data: { id: request.id, storageChanges: [[key, candidate]] },
+          } as MessageEvent);
+        });
+      }
+    }
+    vi.stubGlobal("Worker", FallbackWorker);
+    vi.stubGlobal("localStorage", {
+      length: 0,
+      key: () => null,
+      getItem: (entryKey: string) => values.get(entryKey) ?? null,
+      setItem,
+    });
+    const port = createWorkerPersistenceCommandAdapter();
+    await expect(port.saveEventLists({})).resolves.toBeUndefined();
+    expect(values.get(key)).toBe(candidate);
+    expect(setItem).toHaveBeenCalledTimes(alreadyDurable ? 0 : 1);
+    expect(port.getWriteStopReason!()).toBeUndefined();
+  },
+);
+
+it.each(["remove-error", "changed"])(
+  "keeps committed writes successful when old recovery source cleanup has a %s condition",
+  async (condition) => {
+    const key = "esp:idb-fallback:v1:eventLists:data:old";
+    const values = new Map([[key, "old recovery source"]]);
+    const removeItem = vi.fn(() => {
+      throw new DOMException("storage unavailable", "SecurityError");
+    });
+    class CleanupWorker {
+      onmessage?: (event: MessageEvent) => void;
+      postMessage(request: { id: number }) {
+        queueMicrotask(() => {
+          if (condition === "changed") values.set(key, "new recovery source");
+          this.onmessage?.({
+            data: { id: request.id, storageChanges: [[key, null]] },
+          } as MessageEvent);
+        });
+      }
+    }
+    vi.stubGlobal("Worker", CleanupWorker);
+    vi.stubGlobal("localStorage", {
+      length: 1,
+      key: () => key,
+      getItem: (entryKey: string) => values.get(entryKey) ?? null,
+      removeItem,
+    });
+    const port = createWorkerPersistenceCommandAdapter();
+    await expect(port.saveEventLists({})).resolves.toBeUndefined();
+    expect(values.get(key)).toBe(
+      condition === "changed" ? "new recovery source" : "old recovery source",
+    );
+    expect(removeItem).toHaveBeenCalledTimes(condition === "changed" ? 0 : 1);
+    expect(port.getWriteStopReason!()).toBeUndefined();
+  },
+);

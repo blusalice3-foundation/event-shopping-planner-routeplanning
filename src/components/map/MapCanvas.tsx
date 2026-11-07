@@ -271,6 +271,7 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     dragStartOffsetRef,
     dragStartRef,
     drawCanvasRef,
+    hadPinchGestureRef,
     getPointerViewMetrics,
     isDragging,
     isDraggingRef,
@@ -2671,6 +2672,9 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
       if (e.pointerType === "touch" || e.pointerType === "pen") {
         e.preventDefault();
       }
+      if (activeTouchesRef.current.size === 0) {
+        hadPinchGestureRef.current = false;
+      }
       if (activeTouchesRef.current.size >= 2) return;
       isDraggingRef.current = false;
       setIsDragging(false);
@@ -2681,6 +2685,7 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
       activeTouchesRef,
       dragStartOffsetRef,
       dragStartRef,
+      hadPinchGestureRef,
       isDraggingRef,
       offsetRef,
       setIsDragging,
@@ -2773,13 +2778,14 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     (e: React.PointerEvent<HTMLCanvasElement>) => {
       lastPointerTypeRef.current = e.pointerType;
       const wasDragging = isDraggingRef.current;
+      const hadPinchGesture = hadPinchGestureRef.current;
       const isTouchPointer =
         e.pointerType === "touch" || e.pointerType === "pen";
       if (isTouchPointer) {
         e.preventDefault();
       }
 
-      if (!wasDragging && isTouchPointer && !isPinchGestureRef.current) {
+      if (!wasDragging && isTouchPointer && !hadPinchGesture) {
         const metrics = getPointerViewMetrics(e.clientX, e.clientY);
         if (metrics) {
           handleTapAtViewPosition(metrics.viewX, metrics.viewY, e.pointerType);
@@ -2787,7 +2793,7 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
             typeof performance !== "undefined" ? performance.now() : Date.now();
           suppressClickUntilRef.current = now + 450;
         }
-      } else if (wasDragging) {
+      } else if (wasDragging || (isTouchPointer && hadPinchGesture)) {
         const now =
           typeof performance !== "undefined" ? performance.now() : Date.now();
         suppressClickUntilRef.current = now + 450;
@@ -2799,8 +2805,8 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
       finishPointerInteraction,
       getPointerViewMetrics,
       handleTapAtViewPosition,
+      hadPinchGestureRef,
       isDraggingRef,
-      isPinchGestureRef,
       suppressClickUntilRef,
     ],
   );

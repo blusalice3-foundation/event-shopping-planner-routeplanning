@@ -18,12 +18,14 @@ import {
   shoppingLargeListDiagnosticTag,
   shoppingPerformanceTestTag,
 } from "../../scripts/shopping-performance-evidence-contract.mjs";
+import { performanceCollectionMetadata } from "../../scripts/performance-quick-check-metadata.mjs";
 
 import { shoppingOperationSamplingPlan } from "./shopping-operation-sampling";
 
 const shoppingOperationEvidenceIdentity = (count: number) => ({
   ...shoppingEvidenceIdentity("shopping"),
   ...shoppingCollectionMetadataForCount(count, performanceMeasurementProfile),
+  ...(count === 1500 ? {} : performanceCollectionMetadata(process.env)),
 });
 // Keep response timings free from video and trace capture on every attempt.
 test.use({ video: "off", trace: "off" });

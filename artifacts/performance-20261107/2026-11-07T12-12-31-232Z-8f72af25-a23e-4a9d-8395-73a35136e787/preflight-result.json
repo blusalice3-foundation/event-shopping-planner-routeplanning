@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "rejected": [],
+  "samplingPolicyId": "performance-samples-2026-10-26",
+  "samplingProfile": {
+    "id": "completion",
+    "sampleCount": 10,
+    "policyDate": "2026-10-26",
+    "completionEligible": true
+  }
+}

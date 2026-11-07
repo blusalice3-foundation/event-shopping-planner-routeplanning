@@ -4,6 +4,7 @@ import {
   performanceSamplingProfile,
   resolvePerformanceProfile,
 } from "../../scripts/shopping-performance-evidence-contract.mjs";
+import { performanceCollectionMetadata } from "../../scripts/performance-quick-check-metadata.mjs";
 
 export const performanceMeasurementProfile = resolvePerformanceProfile(
   undefined,
@@ -28,8 +29,7 @@ export function shoppingEvidenceIdentity(
     runId: process.env.ESP_EVIDENCE_RUN_ID ?? "standalone",
     group,
     measurementKind,
-    diagnosticOnly: false,
-    acceptanceMeasurement: true,
+    ...performanceCollectionMetadata(process.env),
     ...performanceAcceptanceCriteriaForGroup(group),
   };
 }

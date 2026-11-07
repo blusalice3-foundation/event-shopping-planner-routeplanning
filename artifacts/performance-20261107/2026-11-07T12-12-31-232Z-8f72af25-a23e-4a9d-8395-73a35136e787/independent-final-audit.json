@@ -1,0 +1,186 @@
+{
+  "kind": "independent-canonical-completion-audit",
+  "version": 1,
+  "auditedAtUtc": "2026-11-07T14:06:54.0018223Z",
+  "runRoot": "D:\\esp-five-fixes-build2-20261107\\artifacts\\dnd-selection-rendering\\after\\2026-11-07T12-12-31-232Z-8f72af25-a23e-4a9d-8395-73a35136e787",
+  "runId": "2026-11-07T12-12-31-232Z-8f72af25-a23e-4a9d-8395-73a35136e787",
+  "runResultSha256": "28d63ddf4cd15f2d469197338fde58396325df2626d01c732dfa9187e2eac53d",
+  "status": "passed",
+  "issues": [],
+  "productCommit": "d34a703e2acf629b3ef2f954c90046d801553be6",
+  "sourceCleanAfterRun": true,
+  "capabilityHashMatches": true,
+  "samplingPolicyId": "performance-samples-2026-10-26",
+  "samplingProfile": {
+    "id": "completion",
+    "sampleCount": 10,
+    "policyDate": "2026-10-26",
+    "completionEligible": true
+  },
+  "criteria": {
+    "shopping": {
+      "acceptanceScope": "shopping-operations",
+      "acceptanceCriteriaId": "shopping-operations-150-500-65-100-2026-10-25",
+      "acceptanceCriteriaDate": "2026-10-25",
+      "acceptanceThresholds": {
+        "minimumCount": 10,
+        "medianMs": 65,
+        "p95Ms": 100
+      },
+      "samplingPolicyId": "performance-samples-2026-10-26",
+      "samplingProfile": {
+        "id": "completion",
+        "sampleCount": 10,
+        "policyDate": "2026-10-26",
+        "completionEligible": true
+      }
+    },
+    "range": {
+      "acceptanceScope": "dnd-selection-rendering",
+      "acceptanceCriteriaId": "dnd-selection-rendering-160-160-2026-10-28",
+      "acceptanceCriteriaDate": "2026-10-28",
+      "acceptanceThresholds": {
+        "minimumCount": 10,
+        "medianMs": 160,
+        "p95Ms": 160
+      },
+      "samplingPolicyId": "performance-samples-2026-10-26",
+      "samplingProfile": {
+        "id": "completion",
+        "sampleCount": 10,
+        "policyDate": "2026-10-26",
+        "completionEligible": true
+      }
+    },
+    "drag": {
+      "acceptanceScope": "dnd-selection-rendering",
+      "acceptanceCriteriaId": "dnd-selection-rendering-160-160-2026-10-28",
+      "acceptanceCriteriaDate": "2026-10-28",
+      "acceptanceThresholds": {
+        "minimumCount": 10,
+        "medianMs": 160,
+        "p95Ms": 160
+      },
+      "samplingPolicyId": "performance-samples-2026-10-26",
+      "samplingProfile": {
+        "id": "completion",
+        "sampleCount": 10,
+        "policyDate": "2026-10-26",
+        "completionEligible": true
+      }
+    },
+    "transfer": {
+      "acceptanceScope": "dnd-selection-rendering",
+      "acceptanceCriteriaId": "dnd-selection-rendering-160-160-2026-10-28",
+      "acceptanceCriteriaDate": "2026-10-28",
+      "acceptanceThresholds": {
+        "minimumCount": 10,
+        "medianMs": 160,
+        "p95Ms": 160
+      },
+      "samplingPolicyId": "performance-samples-2026-10-26",
+      "samplingProfile": {
+        "id": "completion",
+        "sampleCount": 10,
+        "policyDate": "2026-10-26",
+        "completionEligible": true
+      }
+    }
+  },
+  "groups": [
+    {
+      "group": "functional",
+      "tests": 564,
+      "expected": 510,
+      "skipped": 54,
+      "flaky": 0,
+      "unexpected": 0
+    },
+    {
+      "group": "shopping",
+      "tests": 16,
+      "exactConditionInventoryMatches": true,
+      "primaryMetrics": 192,
+      "auxiliarySaveMetrics": 0,
+      "allRawCounts10": true,
+      "skipped": 0,
+      "flaky": 0,
+      "unexpected": 0,
+      "actualRetries": 0,
+      "evidenceStatus": "passed",
+      "hashEntries": 1,
+      "allPrimaryBudgetsPassed": true
+    },
+    {
+      "group": "range",
+      "tests": 20,
+      "exactConditionInventoryMatches": true,
+      "primaryMetrics": 80,
+      "auxiliarySaveMetrics": 0,
+      "allRawCounts10": true,
+      "skipped": 0,
+      "flaky": 0,
+      "unexpected": 0,
+      "actualRetries": 0,
+      "evidenceStatus": "passed",
+      "hashEntries": 1,
+      "allPrimaryBudgetsPassed": true
+    },
+    {
+      "group": "drag",
+      "tests": 8,
+      "exactConditionInventoryMatches": true,
+      "primaryMetrics": 60,
+      "auxiliarySaveMetrics": 0,
+      "allRawCounts10": true,
+      "skipped": 0,
+      "flaky": 0,
+      "unexpected": 0,
+      "actualRetries": 0,
+      "evidenceStatus": "passed",
+      "hashEntries": 1,
+      "allPrimaryBudgetsPassed": true
+    },
+    {
+      "group": "transfer",
+      "tests": 100,
+      "exactConditionInventoryMatches": true,
+      "primaryMetrics": 198,
+      "auxiliarySaveMetrics": 46,
+      "allRawCounts10": true,
+      "skipped": 0,
+      "flaky": 0,
+      "unexpected": 0,
+      "actualRetries": 0,
+      "evidenceStatus": "passed",
+      "hashEntries": 2501,
+      "allPrimaryBudgetsPassed": true
+    }
+  ],
+  "performanceCases": 144,
+  "primaryMetrics": 530,
+  "auxiliarySaveMetrics": 46,
+  "rawSampleCountPerMetric": 10,
+  "sourceHashesAfterRun": {
+    "instrumentPatch": {
+      "files": 28,
+      "mismatches": [],
+      "aggregateMatches": true,
+      "sha256": "409c86a05d4d56c0615ced8cfbfc41f5cdcf447b0ec48f6ca898e00f8297bec8"
+    },
+    "fixtureSources": {
+      "files": 18,
+      "mismatches": [],
+      "aggregateMatches": true,
+      "sha256": "7cb0404e54bc83a00b7c2ac4254eb32181e4ac1167ac039674d881886396e9d0"
+    }
+  },
+  "encodingCheckedFiles": 155,
+  "encodingIssues": 0,
+  "limitations": [
+    "This audit reread raw JSON and report hashes; full image/trace proof validation is the recorded official verification, not rerun here.",
+    "Original workspace comparison and evidence archive verification are owned by the root agent."
+  ],
+  "canonicalModified": false,
+  "additionalMeasurementsRun": false
+}

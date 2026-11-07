@@ -13,6 +13,7 @@ import {
   type TestInfo,
 } from "@playwright/test";
 import { summarizePerformanceSamples } from "./performance-summary";
+import { readRangeSelectionDomSnapshot } from "./range-selection-dom-snapshot";
 
 // Match responsive-performance.spec.ts: no trace/video overhead in response timings.
 const shoppingPerformanceThresholds =
@@ -381,105 +382,9 @@ async function activate(
 // Scan actual mounted checkboxes while scrolling the entire list. Neither
 // Retained nor TanStack is required to keep offscreen cards mounted.
 async function selectionSnapshot(page: Page, condition: Condition) {
-  const result = await page.evaluate(async ({ count }) => {
-    const seen = new Map<string, boolean>();
-    const positions = new Map<number, string>();
-    const idPositions = new Map<string, number>();
-    const paint = async () => {
-      await new Promise(requestAnimationFrame);
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      await new Promise(requestAnimationFrame);
-    };
-    const collect = () => {
-      document
-        .querySelectorAll<HTMLElement>("[data-item-id]")
-        .forEach((entry) => {
-          const input = entry.querySelector<HTMLInputElement>(
-            'input[type="checkbox"]',
-          );
-          if (!input) return;
-          const id = entry.dataset.itemId!;
-          const accessibleRow = entry.closest<HTMLElement>("[aria-posinset]");
-          const position = Number(accessibleRow?.getAttribute("aria-posinset"));
-          if (
-            !Number.isInteger(position) ||
-            position < 1 ||
-            position > count ||
-            accessibleRow?.getAttribute("aria-setsize") !== String(count)
-          )
-            throw new Error(
-              `Invalid displayed position: ${id}, position=${position}`,
-            );
-          if (positions.has(position) && positions.get(position) !== id)
-            throw new Error(`Two IDs at displayed position ${position}`);
-          if (idPositions.has(id) && idPositions.get(id) !== position)
-            throw new Error(`Displayed position changed during scan: ${id}`);
-          if (entry.dataset.isSelected !== String(input.checked))
-            throw new Error(`Selection attribute mismatch: ${id}`);
-          positions.set(position, id);
-          idPositions.set(id, position);
-          seen.set(id, input.checked);
-        });
-    };
-    // A real endpoint click may still have a pending Retained focus scroll.
-    // Keep focus/pins intact and prove the traversal actually starts at row1.
-    const initialScrollAttempts: Array<{
-      scrollY: number;
-      firstMounted: boolean;
-      focusedItemId: string | null;
-    }> = [];
-    let startedAtTop = false;
-    for (let attempt = 0; attempt < 20; attempt++) {
-      scrollTo({ top: 0, left: 0, behavior: "instant" });
-      await paint();
-      const firstMounted = Boolean(
-        document.querySelector('[data-item-id="r1"] input[type="checkbox"]'),
-      );
-      initialScrollAttempts.push({
-        scrollY,
-        firstMounted,
-        focusedItemId:
-          document.activeElement?.closest<HTMLElement>("[data-item-id]")
-            ?.dataset.itemId ?? null,
-      });
-      if (scrollY <= 1 && firstMounted) {
-        startedAtTop = true;
-        collect();
-        break;
-      }
-    }
-    if (!startedAtTop)
-      throw new Error(
-        `DOM scan could not reach the first row: ${JSON.stringify(initialScrollAttempts)}`,
-      );
-    let previous = -1;
-    // Read the current height as virtual row measurements become more precise.
-    for (let steps = 0; seen.size < count && steps < count * 4; steps++) {
-      const bottom = document.documentElement.scrollHeight - innerHeight;
-      const next = Math.min(
-        bottom,
-        scrollY + Math.max(100, innerHeight * 0.65),
-      );
-      scrollTo(0, next);
-      await paint();
-      collect();
-      if (
-        scrollY === previous ||
-        (scrollY >= bottom - 1 && seen.size === count)
-      )
-        break;
-      previous = scrollY;
-    }
-    // Sort only by actual accessible display position, never by an item's ID.
-    const rowPositions = [...positions].sort(([left], [right]) => left - right);
-    const observedOrder = rowPositions.map(([, id]) => id);
-    return {
-      initialScrollAttempts,
-      observedOrder,
-      rowPositions,
-      selectedIds: observedOrder.filter((id) => seen.get(id)),
-    };
-  }, condition);
+  const result = await page.evaluate(readRangeSelectionDomSnapshot, {
+    count: condition.count,
+  });
   expect(
     result.rowPositions.map(([position]) => position),
     "every display position was checked through the DOM",
