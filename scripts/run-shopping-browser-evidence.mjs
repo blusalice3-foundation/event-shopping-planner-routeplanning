@@ -308,6 +308,7 @@ export async function collectBrowserProvenance(cwd, env) {
       "scripts/baseline-shopping-performance-observations.mjs",
       "scripts/run-shopping-browser-evidence.mjs",
       "scripts/shopping-performance-evidence-contract.mjs",
+      "scripts/performance-quick-check-metadata.mjs",
       ...transferSources,
     ]),
   ];

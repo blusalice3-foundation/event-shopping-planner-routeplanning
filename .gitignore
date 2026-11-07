@@ -26,3 +26,6 @@ Thumbs.db
 
 # Isolated browser acceptance evidence, including failed runs.
 /artifacts/dnd-selection-rendering/
+
+# Development-only representative performance diagnostics.
+/artifacts/performance-quick-check/
