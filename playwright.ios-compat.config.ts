@@ -4,7 +4,7 @@ import base from "./playwright.config";
 // WebKit emulation checks compatibility paths; physical iOS validation is separate.
 export default defineConfig({
   ...base,
-  testMatch: "ios-compatibility.spec.ts",
+  testMatch: ["ios-compatibility.spec.ts", "map-import-layout.spec.ts"],
   outputDir: "./artifacts/ios-compatibility",
   retries: 0,
   workers: 1,
