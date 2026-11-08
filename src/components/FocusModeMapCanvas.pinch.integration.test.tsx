@@ -39,14 +39,18 @@ const renderMap = (
   const snapshots = vi.fn<(snapshot: FocusMapViewportSnapshot) => void>();
   const onCellClick = vi.fn();
   let replaceMap!: React.Dispatch<React.SetStateAction<DayMapData>>;
+  let changeViewportScope!: React.Dispatch<React.SetStateAction<string>>;
   const Harness = () => {
     const [zoomLevel, setZoomLevel] = useState(initialZoom);
     const [currentData, setCurrentData] = useState(data);
+    const [viewportScope, setViewportScope] = useState("Day1");
+    changeViewportScope = setViewportScope;
     replaceMap = setCurrentData;
     return (
       <FocusModeMapCanvas
         mapData={currentData}
         mapName="Day1"
+        viewportScope={viewportScope}
         items={[]}
         executeModeItemIds={[]}
         zoomLevel={zoomLevel}
@@ -113,6 +117,7 @@ const renderMap = (
     latestSnapshot,
     onCellClick,
     replaceMap,
+    changeViewportScope,
     ...view,
   };
 };
@@ -246,6 +251,33 @@ describe("FocusModeMapCanvas zoom center", () => {
     expect(latestSnapshot()).toEqual(replacementSnapshot);
   });
 
+  it("isolates pending input when days reuse the same drawing and map name", () => {
+    const { canvas, touch, latestSnapshot, changeViewportScope } =
+      renderMap(100);
+    fireEvent.touchStart(canvas, {
+      changedTouches: [touch(1, -50), touch(2, 50)],
+    });
+    fireEvent.touchMove(canvas, {
+      changedTouches: [touch(1, -52), touch(2, 52)],
+    });
+    expect(latestSnapshot().zoomLevel).toBe(104);
+    act(() => changeViewportScope("Day2"));
+    const replacementSnapshot = latestSnapshot();
+    expect(replacementSnapshot).toMatchObject({
+      zoomLevel: 100,
+      offsetX: 0,
+      offsetY: 0,
+    });
+    fireEvent.touchEnd(canvas, {
+      changedTouches: [touch(1, -52), touch(2, 52)],
+    });
+    act(() => {
+      const pending = Array.from(frames.values());
+      frames.clear();
+      pending.forEach((callback) => callback(16));
+    });
+    expect(latestSnapshot()).toEqual(replacementSnapshot);
+  });
   it("retains pending input when only the map data wrapper changes", () => {
     const { canvas, touch, latestSnapshot, replaceMap } = renderMap(100);
     fireEvent.touchStart(canvas, {

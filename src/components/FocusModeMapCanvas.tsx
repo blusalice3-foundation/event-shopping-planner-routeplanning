@@ -48,6 +48,7 @@ interface FocusModeMapCanvasProps {
   mapData: DayMapData;
   mapName: string;
   eventDate?: string;
+  viewportScope?: string;
   items: ShoppingItem[];
   executeModeItemIds: string[];
   zoomLevel: number;
@@ -254,6 +255,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
   mapData,
   mapName,
   eventDate,
+  viewportScope,
   items,
   executeModeItemIds,
   zoomLevel,
@@ -307,6 +309,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       maxCol: mapData.maxCol,
       mapName,
       eventDate,
+      viewportScope,
     }),
     [
       mapData.cells,
@@ -315,6 +318,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       mapData.maxCol,
       mapName,
       eventDate,
+      viewportScope,
     ],
   );
   const publishViewportSnapshot = useCallback(

@@ -3344,6 +3344,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
             <FocusModeMapCanvas
               mapData={currentMapData}
               mapName={currentMapName || ""}
+              viewportScope={mapDayName}
               items={items}
               executeModeItemIds={executeModeItemIds}
               zoomLevel={mapZoomLevel}
@@ -3512,6 +3513,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
             <FocusModeMapCanvas
               mapData={currentMapData}
               mapName={currentMapName || ""}
+              viewportScope={mapDayName}
               items={items}
               executeModeItemIds={executeModeItemIds}
               zoomLevel={mapZoomLevel}

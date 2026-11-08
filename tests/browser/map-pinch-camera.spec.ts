@@ -477,7 +477,12 @@ test("wheel keeps its cursor anchor and Shift+wheel rotates without changing sca
 }, testInfo) => {
   const canvas = await restore(page, "normal");
   const initial = await snapshot(canvas);
-  const anchor = { x: 140, y: 100 };
+  // MouseEvent client coordinates are integers. Use the actual delivered
+  // position when the layout container starts at a fractional CSS pixel.
+  const anchor = {
+    x: Math.round(initial.containerX + 140) - initial.containerX,
+    y: Math.round(initial.containerY + 100) - initial.containerY,
+  };
   const box = await canvas.boundingBox();
   if (!box) throw new Error("Map canvas is missing.");
   await resetRecords(page);
