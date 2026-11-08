@@ -850,6 +850,11 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
   if (!cellLayerCacheRef.current)
     cellLayerCacheRef.current = new CanvasCellLayerCache();
   const gestureRaster = useRef(new CanvasGestureRaster());
+  const lastDrawnViewportRef = useRef<{
+    width: number;
+    height: number;
+    scale: number;
+  } | null>(null);
   const gestureDependencies = useMemo(
     () => [
       mapData,
@@ -892,6 +897,21 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     const mainContext = canvas.getContext("2d");
     if (!mainContext) return;
     let ctx: CanvasRenderingContext2D = mainContext;
+    const lastViewport = lastDrawnViewportRef.current;
+    if (
+      !lastViewport ||
+      lastViewport.width !== containerWidth ||
+      lastViewport.height !== containerHeight ||
+      lastViewport.scale !== renderDpr
+    ) {
+      // A capped backing can keep its pixel size while its logical viewport changes.
+      gestureRaster.current = new CanvasGestureRaster();
+      lastDrawnViewportRef.current = {
+        width: containerWidth,
+        height: containerHeight,
+        scale: renderDpr,
+      };
+    }
 
     if (
       gestureRaster.current.paint(
@@ -2094,14 +2114,17 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     let frame: number | null = null;
     const redrawAfterResize = () => {
       const canvas = canvasRef.current;
-      const backing = getCanvasBackingSize(
-        container.clientWidth,
-        container.clientHeight,
-        dpr,
-      );
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      const backing = getCanvasBackingSize(width, height, dpr);
+      const lastViewport = lastDrawnViewportRef.current;
       if (
         !canvas ||
-        (canvas.width === backing.width && canvas.height === backing.height)
+        (canvas.width === backing.width &&
+          canvas.height === backing.height &&
+          lastViewport?.width === width &&
+          lastViewport.height === height &&
+          lastViewport.scale === backing.scale)
       )
         return;
       frame ??= requestAnimationFrame(() => {
