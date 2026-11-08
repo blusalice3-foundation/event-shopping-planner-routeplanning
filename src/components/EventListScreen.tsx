@@ -1,3 +1,4 @@
+import { isAppleTouchWebKit } from "../utils/appleTouchWebKit";
 import { useModalDialogBehavior } from "../hooks/useModalDialogBehavior";
 import React, { useState } from "react";
 import TrashIcon from "./icons/TrashIcon";
@@ -62,6 +63,13 @@ const exportBackupActionColorClassName =
 const restoreBackupActionColorClassName =
   "border border-blue-500 text-blue-700 transition-colors hover:bg-blue-50 focus-visible:bg-blue-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 dark:text-blue-300 dark:hover:bg-blue-950/40 dark:focus-visible:bg-blue-950/40 dark:focus-visible:ring-blue-300 dark:focus-visible:ring-offset-slate-900";
 
+const AppleStorageNotice = () =>
+  isAppleTouchWebKit() ? (
+    <p className="mb-4 text-sm text-slate-600 dark:text-slate-300">
+      Safariとホーム画面アプリの保存領域は別です。データを移す場合は、元の画面で「JSONバックアップ保存」を選び、ファイルを端末に保存した後、移行先の「JSONバックアップ復元」で読み込んでください。元の画面のデータはそのまま残ります。
+    </p>
+  ) : null;
+
 const EventListScreen: React.FC<EventListScreenProps> = ({
   eventNames,
   onSelect,
@@ -120,6 +128,7 @@ const EventListScreen: React.FC<EventListScreenProps> = ({
         <p className="text-slate-500 dark:text-slate-400 mb-6">
           「新規リスト作成」から新しいイベントの巡回表を作成してください。
         </p>
+        <AppleStorageNotice />
         <div className="flex flex-wrap justify-center gap-2">
           {onImportExportFile && (
             <button
@@ -189,6 +198,7 @@ const EventListScreen: React.FC<EventListScreenProps> = ({
           )}
         </div>
       </div>
+      <AppleStorageNotice />
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
         <ul className="divide-y divide-slate-200 dark:divide-slate-700">
           {eventNames.map((name) => (

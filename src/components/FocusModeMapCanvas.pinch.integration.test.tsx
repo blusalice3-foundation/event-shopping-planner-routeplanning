@@ -1,3 +1,7 @@
+import {
+  getCanvasBackingSize,
+  MAX_CANVAS_BACKING_PIXELS,
+} from "../features/map/canvas/canvasBackingSize";
 import React, { useState } from "react";
 import { act, fireEvent, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -244,6 +248,41 @@ describe("FocusModeMapCanvas container resize", () => {
     return contexts;
   };
 
+  it("caps the low-app-zoom backing while retaining visible cell hit coordinates", () => {
+    vi.stubGlobal("devicePixelRatio", 3);
+    const contexts = useDrawingContexts();
+    const { canvas, onCellClick } = renderMap(15);
+    const width = 2653;
+    const height = 4025;
+    Object.defineProperties(canvas.parentElement!, {
+      clientWidth: { configurable: true, value: width },
+      clientHeight: { configurable: true, value: height },
+    });
+    vi.mocked(canvas.getBoundingClientRect).mockReturnValue({
+      left: 60,
+      top: 80,
+      width: width * 0.15,
+      height: height * 0.15,
+    } as DOMRect);
+    flushFrames();
+    const backing = getCanvasBackingSize(width, height, 3);
+    expect(canvas.width * canvas.height).toBeLessThanOrEqual(
+      MAX_CANVAS_BACKING_PIXELS,
+    );
+    expect(contexts.get(canvas)!.setTransform).toHaveBeenCalledWith(
+      backing.scale,
+      0,
+      0,
+      backing.scale,
+      0,
+      0,
+    );
+    fireEvent.click(canvas, {
+      clientX: 60 + 210 * 0.15,
+      clientY: 80 + 210 * 0.15,
+    });
+    expect(onCellClick).toHaveBeenCalledExactlyOnceWith("A", 8, []);
+  });
   it.each([
     { appZoomLevel: 100, dpr: 1 },
     { appZoomLevel: 150, dpr: 2 },

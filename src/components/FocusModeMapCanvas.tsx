@@ -1,3 +1,4 @@
+import { getCanvasBackingSize } from "../features/map/canvas/canvasBackingSize";
 import { minimum, maximum } from "../utils/numericExtrema";
 import { recordShoppingRender } from "../utils/shoppingPerformance";
 import { CanvasGestureRaster } from "../features/map/canvas/CanvasGestureRaster";
@@ -875,17 +876,22 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     const container = containerRef.current;
     if (!canvas || !container) return;
 
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    const {
+      width: pixelWidth,
+      height: pixelHeight,
+      scale: renderDpr,
+    } = getCanvasBackingSize(containerWidth, containerHeight, dpr);
+    if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+      // Release the previous backing before changing either dimension.
+      canvas.width = 0;
+      canvas.height = pixelHeight;
+      canvas.width = pixelWidth;
+    }
     const mainContext = canvas.getContext("2d");
     if (!mainContext) return;
     let ctx: CanvasRenderingContext2D = mainContext;
-
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
-
-    const pixelWidth = Math.trunc(containerWidth * dpr);
-    const pixelHeight = Math.trunc(containerHeight * dpr);
-    if (canvas.width !== pixelWidth) canvas.width = pixelWidth;
-    if (canvas.height !== pixelHeight) canvas.height = pixelHeight;
 
     if (
       gestureRaster.current.paint(
@@ -895,11 +901,11 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
         rotationRadians,
         gestureDependencies,
         isViewportInteracting,
-        dpr,
+        renderDpr,
       )
     )
       return;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.setTransform(renderDpr, 0, 0, renderDpr, 0, 0);
     ctx.clearRect(0, 0, containerWidth, containerHeight);
 
     // ドラッグ中の最新オフセットを即時反映するため、ref から読み取る。
@@ -1658,7 +1664,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     const layerSignature = JSON.stringify([
       containerWidth,
       containerHeight,
-      dpr,
+      renderDpr,
       currentOffset.x,
       currentOffset.y,
       cellSize,
@@ -1682,7 +1688,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       const previousContext = ctx;
       ctx = layerContext;
       try {
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.setTransform(renderDpr, 0, 0, renderDpr, 0, 0);
         ctx.translate(currentOffset.x, currentOffset.y);
         if (rotationRadians !== 0) {
           ctx.translate(mapCenterX, mapCenterY);
@@ -1700,7 +1706,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       JSON.stringify([
         containerWidth,
         containerHeight,
-        dpr,
+        renderDpr,
         currentOffset.x,
         currentOffset.y,
         cellSize,
@@ -1733,11 +1739,11 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
               rotationRadians,
               gestureDependencies,
               isViewportInteracting,
-              dpr,
+              renderDpr,
             )
           )
             return;
-          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          ctx.setTransform(renderDpr, 0, 0, renderDpr, 0, 0);
           ctx.translate(currentOffset.x, currentOffset.y);
           if (rotationRadians !== 0) {
             ctx.translate(mapCenterX, mapCenterY);
@@ -1834,7 +1840,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       JSON.stringify([
         containerWidth,
         containerHeight,
-        dpr,
+        renderDpr,
         currentOffset.x,
         currentOffset.y,
         cellSize,
@@ -1850,7 +1856,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
         const previousContext = ctx;
         ctx = layerContext;
         try {
-          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          ctx.setTransform(renderDpr, 0, 0, renderDpr, 0, 0);
           ctx.translate(currentOffset.x, currentOffset.y);
           if (rotationRadians !== 0) {
             ctx.translate(mapCenterX, mapCenterY);
@@ -2088,10 +2094,14 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     let frame: number | null = null;
     const redrawAfterResize = () => {
       const canvas = canvasRef.current;
+      const backing = getCanvasBackingSize(
+        container.clientWidth,
+        container.clientHeight,
+        dpr,
+      );
       if (
         !canvas ||
-        (canvas.width === Math.trunc(container.clientWidth * dpr) &&
-          canvas.height === Math.trunc(container.clientHeight * dpr))
+        (canvas.width === backing.width && canvas.height === backing.height)
       )
         return;
       frame ??= requestAnimationFrame(() => {

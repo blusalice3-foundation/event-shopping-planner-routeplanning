@@ -1,3 +1,4 @@
+import { PriceQuickSelect } from "./PriceQuickSelect";
 import type { HallSelectionIntent } from "../types/consistency";
 import type { ItemMembershipPreview } from "../features/consistency/domain/itemEdit";
 import { decodeHallRef } from "../features/consistency/domain/projection";
@@ -480,7 +481,7 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
               <label htmlFor={fieldIds.priceQuickSelect} className={labelClass}>
                 クイック選択
               </label>
-              <select
+              <PriceQuickSelect
                 id={fieldIds.priceQuickSelect}
                 onChange={handlePriceSelectChange}
                 className={formInputClass}
@@ -496,7 +497,7 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
                     {p.toLocaleString()}円
                   </option>
                 ))}
-              </select>
+              </PriceQuickSelect>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

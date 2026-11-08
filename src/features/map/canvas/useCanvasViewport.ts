@@ -233,8 +233,18 @@ export const useCanvasViewport = ({
       const canvas = canvasRef.current;
       if (!canvas) return null;
       const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / dpr / rect.width;
-      const scaleY = canvas.height / dpr / rect.height;
+      if (rect.width <= 0 || rect.height <= 0) return null;
+      // Hit testing uses logical CSS size, independently of capped pixel buffers.
+      const width =
+        canvas.clientWidth ||
+        containerRef.current?.clientWidth ||
+        canvas.width / dpr;
+      const height =
+        canvas.clientHeight ||
+        containerRef.current?.clientHeight ||
+        canvas.height / dpr;
+      const scaleX = width / rect.width;
+      const scaleY = height / rect.height;
 
       return {
         viewX: (clientX - rect.left) * scaleX,

@@ -1,3 +1,4 @@
+import { isAppleTouchWebKit } from "../utils/appleTouchWebKit";
 import React from "react";
 import type {
   LegacyCleanupStatus,
@@ -109,7 +110,7 @@ const PersistenceStatusIndicator: React.FC<PersistenceStatusIndicatorProps> = ({
     legacyCleanupStatus === "deferred" ||
     legacyCleanupStatus === "in-progress";
 
-  if (!showRoutineStatus) {
+  if (!showRoutineStatus && (status === "saved" || !isAppleTouchWebKit())) {
     return null;
   }
 
@@ -144,6 +145,11 @@ const PersistenceStatusIndicator: React.FC<PersistenceStatusIndicatorProps> = ({
       }
     >
       {presentation.label}
+      {status !== "saved" && isAppleTouchWebKit() && (
+        <span className="ml-2">
+          保存・確認が完了するまで画面を離れないでください
+        </span>
+      )}
     </div>
   );
 };

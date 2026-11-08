@@ -1,4 +1,10 @@
 import {
+  createUnsavedChangesWriter,
+  canResumeUnsavedSnapshotChanges,
+  unsavedSnapshotChanges,
+  UNSAVED_JOURNAL_DELAY_MS,
+} from "../utils/unsavedChangesJournal";
+import {
   isPersistenceWriteStopReason,
   type PersistenceWriteStopReason,
 } from "../app/ports/PersistenceCommandPort";
@@ -19,6 +25,7 @@ import {
   Dispatch,
   SetStateAction,
   useCallback,
+  useMemo,
   useEffect,
   useRef,
   useState,
@@ -431,6 +438,11 @@ export function useIndexedDbPersistence({
   const [failureDetails, setFailureDetails] = useState<
     PersistenceFailureDetail[]
   >([]);
+  const [unsavedJournalFailed, setUnsavedJournalFailed] = useState(false);
+  const unsavedJournal = useMemo(
+    () => createUnsavedChangesWriter("autosave"),
+    [],
+  );
   const writeStopReasonRef = useRef<PersistenceWriteStopReason>();
   const isSavingRef = useRef(false);
   const saveRequestedRef = useRef(false);
@@ -1346,6 +1358,52 @@ export function useIndexedDbPersistence({
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isInitialized, persistenceStatus]);
 
+  useEffect(() => {
+    const checkpoint = () => {
+      if (!isInitializedRef.current) return;
+      const changes = unsavedSnapshotChanges(
+        previousSavedValuesRef.current,
+        latestValuesRef.current,
+      );
+      const written = unsavedJournal.write(
+        changes.length
+          ? [
+              {
+                id: "autosave",
+                context: { eventName: null, day: "" },
+                changes,
+                canResume: canResumeUnsavedSnapshotChanges(changes),
+              },
+            ]
+          : [],
+      );
+      setUnsavedJournalFailed(!written);
+    };
+    const hide = () => {
+      checkpoint();
+      if (
+        isInitializedRef.current &&
+        !writeStopReasonRef.current &&
+        saveRequestedRef.current
+      )
+        void drainSaveQueue().catch(() => {});
+    };
+    const visibilityChange = () => {
+      if (document.visibilityState === "hidden") hide();
+    };
+    window.addEventListener("pagehide", hide);
+    document.addEventListener("visibilitychange", visibilityChange);
+    const timer = setTimeout(
+      checkpoint,
+      persistenceStatus === "saved" ? 0 : UNSAVED_JOURNAL_DELAY_MS,
+    );
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("pagehide", hide);
+      document.removeEventListener("visibilitychange", visibilityChange);
+    };
+  }, [persistenceStatus, isInitialized, drainSaveQueue, unsavedJournal]);
+
   const acceptCommittedSnapshot = useCallback(
     (snapshot: PersistedStateValues) => {
       if (writeStopReasonRef.current) return;
@@ -1368,6 +1426,7 @@ export function useIndexedDbPersistence({
     isInitialized,
     startupState,
     persistenceStatus,
+    unsavedJournalFailed,
     legacyCleanupStatus,
     isAdoptingRecoveryCandidate,
     recoveryAdoptionError,

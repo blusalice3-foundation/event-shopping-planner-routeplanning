@@ -9,3 +9,10 @@ body.esp-body-overscroll-lock {
 body.esp-body-touch-lock {
   touch-action: none !important;
 }
+
+body.esp-body-position-lock {
+  position: fixed !important;
+  left: var(--esp-body-scroll-left, 0px) !important;
+  top: var(--esp-body-scroll-top, 0px) !important;
+  width: 100% !important;
+}

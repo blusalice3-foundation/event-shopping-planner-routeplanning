@@ -1,3 +1,4 @@
+import { PriceQuickSelect } from "../PriceQuickSelect";
 import React, {
   useState,
   useRef,
@@ -937,7 +938,7 @@ const CellItemsPopup: React.FC<CellItemsPopupProps> = ({
                         >
                           クイック選択
                         </label>
-                        <select
+                        <PriceQuickSelect
                           id={editDialogIds.pricePreset}
                           value={
                             editingItem.price === null
@@ -979,7 +980,7 @@ const CellItemsPopup: React.FC<CellItemsPopupProps> = ({
                                 {editingItem.price.toLocaleString()}円（手入力）
                               </option>
                             )}
-                        </select>
+                        </PriceQuickSelect>
                       </div>
                       <div>
                         <label
@@ -1357,7 +1358,7 @@ const CellItemsPopup: React.FC<CellItemsPopupProps> = ({
                   >
                     クイック選択
                   </label>
-                  <select
+                  <PriceQuickSelect
                     id={addDialogIds.pricePreset}
                     onChange={handlePriceSelectChange}
                     className={formInputClass}
@@ -1375,7 +1376,7 @@ const CellItemsPopup: React.FC<CellItemsPopupProps> = ({
                         {p.toLocaleString()}円
                       </option>
                     ))}
-                  </select>
+                  </PriceQuickSelect>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

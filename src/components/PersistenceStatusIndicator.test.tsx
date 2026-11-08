@@ -158,3 +158,25 @@ describe("PersistenceStatusIndicator", () => {
     expect(alert).not.toHaveTextContent("first line");
   });
 });
+
+it("keeps the unsaved departure notice visible on iOS even when routine status is hidden", () => {
+  const userAgent = vi
+    .spyOn(navigator, "userAgent", "get")
+    .mockReturnValue("Mozilla/5.0 (iPhone) AppleWebKit/605.1.15 Safari/604.1");
+  try {
+    render(
+      <PersistenceStatusIndicator
+        status="saving"
+        showRoutineStatus={false}
+        failedStores={[]}
+        onRetry={vi.fn()}
+        onExportBackup={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "保存・確認が完了するまで画面を離れないでください",
+    );
+  } finally {
+    userAgent.mockRestore();
+  }
+});

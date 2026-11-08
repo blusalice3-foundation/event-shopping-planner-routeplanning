@@ -30,20 +30,20 @@ describe("exportStartupRecoveryBundle", () => {
     });
 
     expect(result).toEqual({
-      status: "completed",
+      status: "started",
       fileName: "event-shopping-planner-recovery-2026-08-03T01-02-03-456Z.json",
       byteSize: expect.any(Number),
     });
-    expect(result.status === "completed" && result.byteSize).toBeGreaterThan(0);
+    expect(result.status === "started" && result.byteSize).toBeGreaterThan(0);
     expect(download).toHaveBeenCalledTimes(1);
     const [blob, fileName] = download.mock.calls[0] as [Blob, string];
     expect(blob).toBeInstanceOf(Blob);
     expect(blob.size).toBe(
-      result.status === "completed" ? result.byteSize : undefined,
+      result.status === "started" ? result.byteSize : undefined,
     );
     expect(blob.type).toBe("application/json;charset=utf-8");
     expect(fileName).toBe(
-      result.status === "completed" ? result.fileName : undefined,
+      result.status === "started" ? result.fileName : undefined,
     );
   });
 

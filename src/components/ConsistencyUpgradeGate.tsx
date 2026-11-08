@@ -15,6 +15,7 @@ export default function ConsistencyUpgradeGate({
     null,
   );
   const [error, setError] = useState("");
+  const [downloadStarted, setDownloadStarted] = useState(false);
   const [saved, setSaved] = useState(false);
   useEffect(() => {
     let alive = true;
@@ -57,6 +58,7 @@ export default function ConsistencyUpgradeGate({
           semanticSignature(contents(archive))
       ) {
         setArchive(latest);
+        setDownloadStarted(false);
         setSaved(false);
         setError(
           "別のタブで保存データが変わりました。最新の移行前データを保存してください。",
@@ -98,17 +100,41 @@ export default function ConsistencyUpgradeGate({
               className="border rounded p-2"
               onClick={() => {
                 if (!archive) return;
-                downloadBlob(
-                  new Blob([JSON.stringify(archive, null, 2)], {
-                    type: "application/json",
-                  }),
-                  "event-shopping-planner-pre-upgrade.json",
-                );
-                setSaved(true);
+                setSaved(false);
+                setDownloadStarted(false);
+                setError("");
+                try {
+                  downloadBlob(
+                    new Blob([JSON.stringify(archive, null, 2)], {
+                      type: "application/json",
+                    }),
+                    "event-shopping-planner-pre-upgrade.json",
+                  );
+                  setDownloadStarted(true);
+                } catch {
+                  setError(
+                    "移行前データのダウンロードを開始できませんでした。保存形式は更新していません。もう一度保存してください。",
+                  );
+                }
               }}
             >
               移行前データを保存
             </button>
+            {downloadStarted && (
+              <div className="space-y-2">
+                <p role="status">
+                  ダウンロードを開始しました。プレビューが開いた場合は共有メニューから「ファイルに保存」を選んでください。端末への保存はこのアプリでは確認できません。
+                </p>
+                <label className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    checked={saved}
+                    onChange={(event) => setSaved(event.target.checked)}
+                  />
+                  移行前データを端末に保存し、ファイルを開けることを確認しました
+                </label>
+              </div>
+            )}
             <button
               disabled={!saved}
               className="ml-3 bg-blue-600 text-white disabled:opacity-50 rounded p-2"

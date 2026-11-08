@@ -445,3 +445,37 @@ describe("AppHeaderShell typed navigation integration", () => {
     expect(props.actions.navigation.onShowImport).toHaveBeenCalledWith(null);
   });
 });
+
+it("includes the recovery slot in the measured header even when ordinary header controls are hidden", () => {
+  const props = minimalAppHeaderShellProps();
+  props.model.ui.showHeaderBar = false;
+  props.model.ui.showTabBar = false;
+  props.model.ui.uiSettingsPanelOpen = false;
+  const bounds = vi
+    .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+    .mockReturnValue({
+      x: 0,
+      y: 0,
+      width: 390,
+      height: 32,
+      top: 0,
+      left: 0,
+      right: 390,
+      bottom: 32,
+      toJSON: () => ({}),
+    });
+  try {
+    render(
+      <AppHeaderShell {...props} notice={<button>救済記録を表示</button>} />,
+    );
+    expect(screen.getByTestId("app-shell-header")).toContainElement(
+      screen.getByRole("button", { name: "救済記録を表示" }),
+    );
+    expect(document.documentElement).toHaveAttribute(
+      "data-app-header-height",
+      "32px",
+    );
+  } finally {
+    bounds.mockRestore();
+  }
+});

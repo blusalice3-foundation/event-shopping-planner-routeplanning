@@ -17,7 +17,7 @@ const archive = (value: number) => ({
   stores: { eventLists: [{ key: "data", value }] },
   localStorage: {},
 });
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => vi.resetAllMocks());
 describe("upgrade before mounting application persistence", () => {
   it("opens a new or already upgraded database without an unnecessary prompt", async () => {
     mocks.inspect.mockResolvedValue(null);
@@ -47,6 +47,12 @@ describe("upgrade before mounting application persistence", () => {
     });
     expect(upgrade).toBeDisabled();
     fireEvent.click(save);
+    expect(upgrade).toBeDisabled();
+    fireEvent.click(
+      screen.getByRole("checkbox", {
+        name: "移行前データを端末に保存し、ファイルを開けることを確認しました",
+      }),
+    );
     fireEvent.click(upgrade);
     expect(await screen.findByRole("alert")).toHaveTextContent("別のタブ");
     expect(screen.queryByText("購入リスト")).not.toBeInTheDocument();
@@ -55,10 +61,53 @@ describe("upgrade before mounting application persistence", () => {
     ).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "移行前データを保存" }));
     fireEvent.click(
+      screen.getByRole("checkbox", {
+        name: "移行前データを端末に保存し、ファイルを開けることを確認しました",
+      }),
+    );
+    fireEvent.click(
       screen.getByRole("button", { name: "保存形式を更新して開く" }),
     );
     expect(await screen.findByText("購入リスト")).toBeVisible();
     expect(mocks.download).toHaveBeenCalledTimes(2);
+  });
+  it("requires confirmation again after a new download and remains blocked on download failure", async () => {
+    mocks.inspect.mockResolvedValue(archive(1));
+    render(
+      <ConsistencyUpgradeGate>
+        <p>購入リスト</p>
+      </ConsistencyUpgradeGate>,
+    );
+    const save = await screen.findByRole("button", {
+      name: "移行前データを保存",
+    });
+    const upgrade = screen.getByRole("button", {
+      name: "保存形式を更新して開く",
+    });
+    fireEvent.click(save);
+    const confirmation = screen.getByRole("checkbox", {
+      name: "移行前データを端末に保存し、ファイルを開けることを確認しました",
+    });
+    expect(upgrade).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "端末への保存はこのアプリでは確認できません",
+    );
+    fireEvent.click(confirmation);
+    expect(upgrade).toBeEnabled();
+    fireEvent.click(save);
+    expect(confirmation).not.toBeChecked();
+    expect(upgrade).toBeDisabled();
+    fireEvent.click(confirmation);
+    mocks.download.mockImplementationOnce(() => {
+      throw new Error("Download rejected");
+    });
+    fireEvent.click(save);
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    expect(upgrade).toBeDisabled();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "ダウンロードを開始できませんでした",
+    );
+    expect(screen.queryByText("購入リスト")).not.toBeInTheDocument();
   });
   it("does not mount writers if inspection fails", async () => {
     mocks.inspect.mockRejectedValueOnce(new Error("他のタブを閉じてください"));

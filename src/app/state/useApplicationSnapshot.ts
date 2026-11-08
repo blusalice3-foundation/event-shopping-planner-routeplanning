@@ -111,6 +111,17 @@ import {
   recordShoppingMoveUiApply,
 } from "../../utils/shoppingPerformance";
 
+import {
+  createUnsavedChangesWriter,
+  createUnsavedComparisonBudget,
+  MAX_UNSAVED_JOURNAL_OPERATIONS,
+  canResumeUnsavedSnapshotChanges,
+  describeUnsavedSnapshotChanges,
+  unsavedSnapshotChanges,
+  UNSAVED_JOURNAL_DELAY_MS,
+  type UnsavedChangesRecord,
+} from "../../utils/unsavedChangesJournal";
+
 export const MEMO_SAVE_DELAY_MS = 300;
 export const MEMO_SAVE_MAX_WAIT_MS = 1000;
 
@@ -147,6 +158,7 @@ type Batch = {
   draft: PersistenceSnapshot;
   retainOnConflict?: boolean;
   retryOnFailure?: boolean;
+  recoveryReview?: boolean;
   acceptedBase?: PersistenceSnapshot;
   acceptedDraft?: PersistenceSnapshot;
   itemContentEdits?: readonly ItemContentEdit[];
@@ -509,13 +521,24 @@ export function useApplicationSnapshot(
     >(),
   );
   const sequence = useRef(0);
+  const unsavedJournal = useMemo(
+    () => createUnsavedChangesWriter("application"),
+    [],
+  );
+  const [unsavedJournalFailed, setUnsavedJournalFailed] = useState(false);
+  const plannedRecoveries = useRef(
+    new Map<
+      string,
+      { base: PersistenceSnapshot; draft: PersistenceSnapshot }
+    >(),
+  );
   const renderedGenerations = useRef<Record<string, number>>({});
   const draft = useRef<Batch | null>(null);
   const flushDraftRef = useRef(() => {});
   const submitted = useRef<Batch[]>([]);
   const memoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const memoMaxWaitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [, setItemDraftRevision] = useState(0);
+  const [itemDraftRevision, setItemDraftRevision] = useState(0);
   const previewRef = useRef<PersistenceSnapshot>(raw);
   const suspended = useRef(new Set<string>());
   const retained = useRef(new Set<string>());
@@ -720,6 +743,7 @@ export function useApplicationSnapshot(
             (batch) => !expired.has(batch.id),
           );
           for (const id of ids) {
+            plannedRecoveries.current.delete(id);
             releasePending(id);
             resolvers.current.get(id)?.reject(new MutationCancelledError());
             resolvers.current.delete(id);
@@ -896,6 +920,7 @@ export function useApplicationSnapshot(
                   "確認が無効になったため移動を中止しました。現在の内容を確認してやり直してください。",
               },
       );
+      plannedRecoveries.current.delete(id);
       releasePending(id);
       submitted.current = submitted.current.filter((batch) => batch.id !== id);
       rebuildPreview();
@@ -1016,6 +1041,7 @@ export function useApplicationSnapshot(
             : SHOPPING_PLACEMENT_CHANGED_REASON,
       });
       coordinator.discard(id);
+      plannedRecoveries.current.delete(id);
       releasePending(id);
       submitted.current = submitted.current.filter((batch) => batch.id !== id);
       setConfirmations((current) =>
@@ -1063,6 +1089,10 @@ export function useApplicationSnapshot(
                 )
               : null;
             const plan = intent.plan(snapshot, choices);
+            plannedRecoveries.current.set(id, {
+              base: rawRef.current,
+              draft: plan.snapshot,
+            });
             if (
               base &&
               !plan.confirmation?.choices?.some((choice) =>
@@ -1140,7 +1170,9 @@ export function useApplicationSnapshot(
             : undefined,
         // Snapshot guards must run in the planner, including on CAS retries.
         dayMutation:
-          batch.assertCurrent || batch.shoppingMoves?.length
+          batch.recoveryReview ||
+          batch.assertCurrent ||
+          batch.shoppingMoves?.length
             ? undefined
             : collectDayMutation(
                 batch.base,
@@ -1151,6 +1183,18 @@ export function useApplicationSnapshot(
               ),
         plan: (latest, choices) => {
           const plan = planBatch(batch, latest, choices);
+          if (batch.recoveryReview && !plan.confirmation) {
+            plan.confirmation = {
+              title: "未保存操作の再開を確認",
+              details: [
+                "離脱前の変更を現在の保存データと照合しました。内容を確認してから保存してください。",
+                ...describeUnsavedSnapshotChanges(
+                  unsavedSnapshotChanges(latest, plan.snapshot),
+                ),
+              ],
+              comparison: unsavedSnapshotChanges(latest, plan.snapshot),
+            };
+          }
           if (batch.itemContentEdits) {
             const blocked = new Set(
               plan.invalidItemContentEdits?.flatMap((edit) =>
@@ -1843,6 +1887,132 @@ export function useApplicationSnapshot(
     () => draft.current !== null || resolvers.current.size > 0,
     [],
   );
+  const checkpointUnsavedChanges = useCallback(() => {
+    if (
+      submitted.current.length + (draft.current ? 1 : 0) >
+        MAX_UNSAVED_JOURNAL_OPERATIONS ||
+      coordinator.pendingOperationCount() > MAX_UNSAVED_JOURNAL_OPERATIONS
+    ) {
+      setUnsavedJournalFailed(true);
+      return;
+    }
+    const batches = [
+      ...submitted.current,
+      ...(draft.current ? [draft.current] : []),
+    ];
+    const reviews = coordinator.readPendingRecovery();
+    const ids = new Set([
+      ...batches.map((batch) => batch.id),
+      ...reviews.map((review) => review.id),
+    ]);
+    if (ids.size > MAX_UNSAVED_JOURNAL_OPERATIONS) {
+      setUnsavedJournalFailed(true);
+      return;
+    }
+    const equal = createUnsavedComparisonBudget();
+    const batchById = new Map(batches.map((batch) => [batch.id, batch]));
+    const reviewById = new Map(reviews.map((review) => [review.id, review]));
+    for (const id of plannedRecoveries.current.keys())
+      if (!ids.has(id)) plannedRecoveries.current.delete(id);
+    const operations = [...ids].map((id) => {
+      const batch = batchById.get(id);
+      const planned = plannedRecoveries.current.get(id);
+      const review = reviewById.get(id);
+      const changes = batch
+        ? unsavedSnapshotChanges(batch.base, batch.draft, equal)
+        : planned
+          ? unsavedSnapshotChanges(planned.base, planned.draft, equal)
+          : [];
+      return {
+        id,
+        context: batch?.context,
+        changes,
+        review,
+        input: batch?.itemContentEdits,
+        inputUnavailable:
+          !batch &&
+          !planned &&
+          !review?.itemContentEdits &&
+          !review?.dayMutation &&
+          !review?.shoppingMove,
+        canResume:
+          !!batch &&
+          canResumeUnsavedSnapshotChanges(changes) &&
+          !batch.assertCurrent &&
+          !batch.shoppingMoves?.length &&
+          !batch.context.routeDays?.length &&
+          !batch.itemContentEdits?.some(requiresItemContentGuard),
+      };
+    });
+    const written = unsavedJournal.write(operations);
+    setUnsavedJournalFailed(
+      !written || operations.some((operation) => operation.inputUnavailable),
+    );
+  }, [coordinator, unsavedJournal]);
+  const resumeUnsavedChanges = useCallback(
+    async (record: UnsavedChangesRecord) => {
+      if (
+        !record.operations.length ||
+        record.operations.some(
+          (operation) =>
+            !operation.canResume ||
+            !canResumeUnsavedSnapshotChanges(operation.changes) ||
+            !operation.context ||
+            typeof operation.context.day !== "string" ||
+            (operation.context.eventName !== null &&
+              typeof operation.context.eventName !== "string"),
+        )
+      )
+        throw new Error(
+          "この記録は自動再開できません。JSON救済記録を確認して操作をやり直してください。",
+        );
+      const recoveries = record.operations.map((operation): Batch => {
+        const base = { ...rawRef.current };
+        const desired = { ...rawRef.current };
+        for (const change of operation.changes) {
+          base[change.store] = { ...base[change.store] } as never;
+          desired[change.store] = { ...desired[change.store] } as never;
+          if (change.baseline === undefined)
+            delete base[change.store][change.eventName];
+          else
+            setOwnValue(
+              base[change.store] as Record<string, unknown>,
+              change.eventName,
+              change.baseline,
+            );
+          if (change.desired === undefined)
+            delete desired[change.store][change.eventName];
+          else
+            setOwnValue(
+              desired[change.store] as Record<string, unknown>,
+              change.eventName,
+              change.desired,
+            );
+        }
+        const errors = [
+          ...validateSnapshotStructure(desired),
+          ...validateSnapshotReferences(desired),
+        ];
+        if (errors.length)
+          throw new Error(
+            "救済記録の内容を安全に再開できません。JSON救済記録を保存してください。",
+          );
+        return {
+          id: `application:recovered:${++sequence.current}`,
+          context: operation.context!,
+          base,
+          draft: desired,
+          retryOnFailure: true,
+          recoveryReview: true,
+        };
+      });
+      for (const batch of recoveries) {
+        // The previous confirmation is never reused: replan against durable values.
+        await submitBatch(batch);
+      }
+    },
+    [submitBatch],
+  );
   const flush = useCallback(async () => {
     flushDraft();
     await coordinator.enqueue(() => undefined);
@@ -1859,21 +2029,47 @@ export function useApplicationSnapshot(
     const flushMemo = () => {
       if (memoSaveTimer.current !== null) flushDraft();
     };
+    const checkpointAndFlush = () => {
+      checkpointUnsavedChanges();
+      flushMemo();
+    };
     const visibilityChange = () => {
-      if (document.visibilityState === "hidden") flushMemo();
+      if (document.visibilityState === "hidden") checkpointAndFlush();
     };
     document.addEventListener("focusout", flushMemo);
     document.addEventListener("visibilitychange", visibilityChange);
     window.addEventListener("beforeunload", beforeUnload);
+    window.addEventListener("pagehide", checkpointAndFlush);
     return () => {
       document.removeEventListener("focusout", flushMemo);
       document.removeEventListener("visibilitychange", visibilityChange);
       window.removeEventListener("beforeunload", beforeUnload);
+      window.removeEventListener("pagehide", checkpointAndFlush);
       if (memoSaveTimer.current !== null) clearTimeout(memoSaveTimer.current);
       if (memoMaxWaitTimer.current !== null)
         clearTimeout(memoMaxWaitTimer.current);
     };
-  }, [isPending, flushDraft]);
+  }, [isPending, flushDraft, checkpointUnsavedChanges]);
+  useEffect(() => {
+    if (!isPending() && !retainedOperationIds.length) {
+      checkpointUnsavedChanges();
+      return;
+    }
+    // Avoid synchronous storage writes on shopping input and its next frame.
+    const timeout = setTimeout(
+      checkpointUnsavedChanges,
+      UNSAVED_JOURNAL_DELAY_MS,
+    );
+    return () => clearTimeout(timeout);
+  }, [
+    pendingCount,
+    itemDraftRevision,
+    retainedOperationIds,
+    confirmations,
+    retryableFailures,
+    isPending,
+    checkpointUnsavedChanges,
+  ]);
   return {
     raw,
     rawRef,
@@ -1921,6 +2117,8 @@ export function useApplicationSnapshot(
     retryPending,
     discardPending,
     requiresReload,
+    unsavedJournalFailed,
+    resumeUnsavedChanges,
     failure,
     clearFailure: () => setFailure(null),
   };

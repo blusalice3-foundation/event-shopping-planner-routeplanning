@@ -405,6 +405,11 @@ test("persistence status visibility changes immediately and survives reload", as
   });
   await waitForApplication(page);
   await page.getByRole("button", { name: "移行前データを保存" }).click();
+  await page
+    .getByRole("checkbox", {
+      name: "移行前データを端末に保存し、ファイルを開けることを確認しました",
+    })
+    .check();
   await page.getByRole("button", { name: "保存形式を更新して開く" }).click();
   await page.getByText("表示設定テスト", { exact: true }).click();
 

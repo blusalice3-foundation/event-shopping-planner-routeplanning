@@ -1,3 +1,7 @@
+import {
+  getCanvasBackingSize,
+  MAX_CANVAS_BACKING_PIXELS,
+} from "../../features/map/canvas/canvasBackingSize";
 import { minimum, maximum } from "../../utils/numericExtrema";
 import { CanvasGestureRaster } from "../../features/map/canvas/CanvasGestureRaster";
 import { createLocationResolver } from "../../features/consistency/domain/membership";
@@ -118,17 +122,23 @@ export const syncCanvasBackingStoreSize = (
   cssWidth: number,
   cssHeight: number,
   dpr: number,
-): void => {
+): number => {
   // Canvas width/height setters truncate fractional values and reset the whole
   // drawing state. Avoid invoking them when the backing store is already sized.
-  const backingWidth = Math.max(0, Math.trunc(cssWidth * dpr));
-  const backingHeight = Math.max(0, Math.trunc(cssHeight * dpr));
+  const {
+    width: backingWidth,
+    height: backingHeight,
+    scale,
+  } = getCanvasBackingSize(cssWidth, cssHeight, dpr);
+  if (canvas.height * backingWidth > MAX_CANVAS_BACKING_PIXELS)
+    canvas.width = 0;
   if (canvas.width !== backingWidth) {
     canvas.width = backingWidth;
   }
   if (canvas.height !== backingHeight) {
     canvas.height = backingHeight;
   }
+  return scale;
 };
 
 export const shouldHighlightCandidateRemarks = (
@@ -677,13 +687,17 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     const container = containerRef.current;
     if (!canvas || !container) return;
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
 
-    syncCanvasBackingStoreSize(canvas, containerWidth, containerHeight, dpr);
+    const renderDpr = syncCanvasBackingStoreSize(
+      canvas,
+      containerWidth,
+      containerHeight,
+      dpr,
+    );
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
     if (
       gestureRaster.current.paint(
@@ -693,11 +707,11 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
         rotationRadians,
         gestureDependencies,
         isViewportInteracting,
-        dpr,
+        renderDpr,
       )
     )
       return;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.setTransform(renderDpr, 0, 0, renderDpr, 0, 0);
 
     ctx.clearRect(0, 0, containerWidth, containerHeight);
 
@@ -2214,10 +2228,10 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
       ctx.clip();
       ctx.drawImage(
         canvas,
-        srcX * dpr,
-        srcY * dpr,
-        sourceSize * dpr,
-        sourceSize * dpr,
+        srcX * renderDpr,
+        srcY * renderDpr,
+        sourceSize * renderDpr,
+        sourceSize * renderDpr,
         lensCenterX - lensRadius,
         lensCenterY - lensRadius,
         lensDiameter,

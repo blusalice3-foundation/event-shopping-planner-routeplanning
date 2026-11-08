@@ -1,3 +1,4 @@
+import { PriceQuickSelect } from "./PriceQuickSelect";
 import { getExactImportItemKey } from "../features/events/duplicateEvent";
 import type { BulkImportResult } from "../types/import";
 import React, { useState, useMemo, useEffect, useRef } from "react";
@@ -1094,7 +1095,7 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
                 <label htmlFor="price-quick-select" className={labelClass}>
                   クイック選択
                 </label>
-                <select
+                <PriceQuickSelect
                   id="price-quick-select"
                   onChange={handlePriceSelectChange}
                   className={formInputClass}
@@ -1112,7 +1113,7 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
                       {p.toLocaleString()}円
                     </option>
                   ))}
-                </select>
+                </PriceQuickSelect>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -6,7 +6,7 @@ import {
 
 export type PersistenceRecoveryExportResult =
   | {
-      status: "completed";
+      status: "started";
       fileName: string;
       byteSize: number;
     }
@@ -55,7 +55,7 @@ export function exportStartupRecoveryBundle(
     )}.json`;
     dependencies.download(blob, fileName);
     return {
-      status: "completed",
+      status: "started",
       fileName,
       byteSize: blob.size,
     };

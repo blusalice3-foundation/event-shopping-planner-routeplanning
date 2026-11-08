@@ -8,6 +8,9 @@ import { installPersistenceReleaseAMetricsBackend } from "./utils/persistenceRel
 import { appRuntime } from "./app/composition/appRuntime";
 import { installRoleUpdateBlockerBridge } from "./pwa/updateBlockerRegistry";
 
+import { installRuntimeLayoutCompatibility } from "./styles/runtimeLayoutCompatibility";
+
+installRuntimeLayoutCompatibility();
 installPersistenceReleaseAMetricsBackend();
 installRoleUpdateBlockerBridge();
 

@@ -1,3 +1,5 @@
+import { readUnsavedChanges } from "./utils/unsavedChangesJournal";
+import UnsavedChangesRecoveryNotice from "./components/UnsavedChangesRecoveryNotice";
 import { MutationCancelledError } from "./app/state/useApplicationSnapshot";
 import type { MapEditorSession } from "./features/map/domain/mapEditorSession";
 import { MutationConfirmationDialog } from "./features/app-shell/components/MutationConfirmationDialog";
@@ -136,6 +138,8 @@ const sortLabels: Record<SortState, string> = {
 };
 
 const App: React.FC = () => {
+  const [unsavedRecoveryRecords, setUnsavedRecoveryRecords] =
+    useState(readUnsavedChanges);
   const [placementRejection, setPlacementRejection] = useState<string | null>(
     null,
   );
@@ -486,6 +490,7 @@ const App: React.FC = () => {
     isInitialized,
     startupState,
     persistenceStatus,
+    unsavedJournalFailed: autosaveJournalFailed,
     legacyCleanupStatus,
     isAdoptingRecoveryCandidate,
     recoveryAdoptionError,
@@ -2290,6 +2295,28 @@ const App: React.FC = () => {
           </label>
         )}
       <AppHeaderShell
+        notice={
+          unsavedRecoveryRecords.length > 0 ||
+          application.unsavedJournalFailed ||
+          autosaveJournalFailed ? (
+            <>
+              <UnsavedChangesRecoveryNotice
+                ready={isInitialized}
+                onResume={application.resumeUnsavedChanges}
+                records={unsavedRecoveryRecords}
+                onRecordsChange={setUnsavedRecoveryRecords}
+              />
+              {(application.unsavedJournalFailed || autosaveJournalFailed) && (
+                <p
+                  role="alert"
+                  className="border-b border-amber-300 bg-amber-50 px-3 py-2 text-xs text-slate-900"
+                >
+                  一部の未保存入力を救済記録へ保持できません。保存・確認を完了するかJSONバックアップを保存してから画面を離れてください。iOSでは離脱確認が表示されない場合があります。
+                </p>
+              )}
+            </>
+          ) : null
+        }
         model={{
           navigation: {
             activeEventDate,

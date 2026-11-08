@@ -349,11 +349,17 @@ export type AppHeaderShellActions = {
 };
 
 export type AppHeaderShellProps = {
+  readonly notice?: React.ReactNode;
   readonly model: AppHeaderShellModel;
   readonly actions: AppHeaderShellActions;
 };
 
-const AppHeaderShell: React.FC<AppHeaderShellProps> = ({ model, actions }) => {
+const AppHeaderShell: React.FC<AppHeaderShellProps> = ({
+  model,
+  actions,
+  notice,
+}) => {
+  const hasNotice = Boolean(notice);
   const {
     navigation: {
       activeEventDate,
@@ -503,11 +509,14 @@ const AppHeaderShell: React.FC<AppHeaderShellProps> = ({ model, actions }) => {
       window.removeEventListener("resize", updateAppHeaderHeight);
       clearAppHeaderHeightAttribute(appHeaderHeightOwnerId);
     };
-  }, [appHeaderHeightOwnerId, showHeaderBar, showTabBar]);
+  }, [appHeaderHeightOwnerId, showHeaderBar, showTabBar, hasNotice]);
 
   React.useEffect(() => {
     if (!uiSettingsPanelOpen) return;
-    return acquireBodyScrollLock({ lockTouchAction: true });
+    return acquireBodyScrollLock({
+      lockTouchAction: true,
+      lockDocumentPosition: true,
+    });
   }, [uiSettingsPanelOpen]);
 
   const stopUiSettingsBackgroundScroll = (
@@ -525,7 +534,7 @@ const AppHeaderShell: React.FC<AppHeaderShellProps> = ({ model, actions }) => {
 
   return (
     <>
-      {(showHeaderBar || showTabBar) && (
+      {(showHeaderBar || showTabBar || hasNotice) && (
         <header
           ref={appHeaderRef}
           data-testid="app-shell-header"
@@ -533,6 +542,7 @@ const AppHeaderShell: React.FC<AppHeaderShellProps> = ({ model, actions }) => {
             uiSettingsPanelOpen ? "z-[80]" : "z-10"
           }`}
         >
+          {notice}
           {showHeaderBar && (
             <div className="max-w-7xl mx-auto py-2 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
               <div>

@@ -639,6 +639,18 @@ export function createApplicationMutationCoordinator(
     enqueue,
     stopWrites,
     getWriteStopReason: () => stopped,
+    pendingOperationCount: () => pending.size,
+    readPendingRecovery() {
+      return [...pending.values()].map((operation) => ({
+        id: operation.intent.id,
+        events: operation.intent.events,
+        choices: operation.choices,
+        confirmation: operation.confirmation,
+        itemContentEdits: operation.intent.itemContentEdits,
+        dayMutation: operation.intent.dayMutation,
+        shoppingMove: operation.intent.shoppingMove,
+      }));
+    },
     getPendingState(id: string) {
       const operation = pending.get(id);
       return {

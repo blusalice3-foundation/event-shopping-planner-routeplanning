@@ -32,6 +32,11 @@
   -webkit-touch-callout: none;
 }
 
+a[href],
+a[href] * {
+  -webkit-touch-callout: default;
+}
+
 body {
   color: var(--text-primary);
   background-color: var(--bg-primary);

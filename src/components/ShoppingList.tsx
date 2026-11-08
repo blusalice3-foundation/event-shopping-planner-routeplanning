@@ -1,3 +1,4 @@
+import { PriceQuickSelect } from "./PriceQuickSelect";
 import {
   buildExecutionPlacementVisitKey,
   buildCandidatePlacementVisitKey,
@@ -1660,6 +1661,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
     const releaseBodyScrollLock = acquireBodyScrollLock({
       lockOverscroll: true,
+      lockDocumentPosition: true,
     });
     addDialogInputRef.current?.focus({ preventScroll: true });
 
@@ -5058,7 +5060,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                       >
                         クイック選択
                       </label>
-                      <select
+                      <PriceQuickSelect
                         id={addDialogIds.quickPrice}
                         onChange={(e) => {
                           setNewItemForm((prev) => ({
@@ -5083,7 +5085,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                             {p.toLocaleString()}円
                           </option>
                         ))}
-                      </select>
+                      </PriceQuickSelect>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
