@@ -38,8 +38,8 @@ const syncAppHeaderHeightAttribute = (): void => {
 
 /**
  * Publishes measured layout state as non-style data. The application stylesheet
- * consumes this value through a static typed attr() rule, so neither inline
- * styles nor CSSOM rules are created or mutated at runtime.
+ * consumes this value through typed attr(), with an external CSSOM fallback
+ * on browsers that do not support typed attr(). Inline styles are never used.
  */
 export const setFooterHeightAttribute = (
   ownerId: string,

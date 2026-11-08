@@ -29,3 +29,5 @@ Thumbs.db
 
 # Development-only representative performance diagnostics.
 /artifacts/performance-quick-check/
+
+/artifacts/ios-compatibility/

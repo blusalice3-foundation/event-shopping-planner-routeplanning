@@ -1,3 +1,4 @@
+import { isAppleTouchWebKit } from "../utils/appleTouchWebKit";
 import {
   useCallback,
   useEffect,
@@ -50,6 +51,11 @@ export const useModalDialogBehavior = <T extends HTMLElement = HTMLDivElement>({
   fallbackFocusRef,
 }: UseModalDialogBehaviorOptions) => {
   const dialogRef = useRef<T>(null);
+
+  useLayoutEffect(() => {
+    if (!isOpen || !isAppleTouchWebKit()) return;
+    return acquireBodyScrollLock({ lockDocumentPosition: true });
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;

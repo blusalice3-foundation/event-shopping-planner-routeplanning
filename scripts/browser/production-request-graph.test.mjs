@@ -178,12 +178,20 @@ const htmlHandler =
     inlineStyle = false,
     runtimeCss = false,
     runtimeRule = false,
+    layoutRule = false,
+    unsafeLayoutRule = false,
+    unsafeLayoutProperty = false,
     redirect = null,
   } = {}) =>
   (request, response) => {
     if (redirect !== null && request.url === "/") {
       response.writeHead(302, { Location: `${redirect}/` });
       response.end();
+      return;
+    }
+    if (request.url === "/layout.css") {
+      response.writeHead(200, { "Content-Type": "text/css" });
+      response.end(":root { --esp-runtime-layout-sheet: 1; }");
       return;
     }
     if (request.url === "/release-identity.json") {
@@ -200,13 +208,17 @@ const htmlHandler =
     }
     response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
     response.end(
-      `<!doctype html><html><head></head><body>request graph${
+      `<!doctype html><html><head>${layoutRule || unsafeLayoutRule ? '<link rel="stylesheet" href="/layout.css">' : ""}</head><body>request graph${
         runtimeCss
           ? "<script>const style=document.createElement('style');style.textContent='body{color:red}';document.head.append(style)</script>"
           : ""
       }${
         runtimeRule
           ? "<script>const sheet=new CSSStyleSheet();sheet.insertRule('body{color:blue}')</script>"
+          : ""
+      }${
+        layoutRule || unsafeLayoutRule
+          ? `<script>const sheet=document.styleSheets[0];sheet.insertRule('${unsafeLayoutRule ? "body { color: red; }" : '[data-esp-runtime-layout="1"][data-esp-runtime-layout="1"] {}'}',sheet.cssRules.length);sheet.cssRules[sheet.cssRules.length-1].style.setProperty('${unsafeLayoutProperty ? "color" : "top"}','${unsafeLayoutProperty ? "red" : "100px"}')</script>`
           : ""
       }${
         inlineStyle ? "<script>document.body.style.color='green'</script>" : ""
@@ -645,5 +657,45 @@ test("writes output with create-only descriptor readback", async () => {
     );
   } finally {
     await rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("records bounded external layout CSSOM writes without accepting arbitrary CSS", async () => {
+  for (const mode of ["allowed", "selector", "property"]) {
+    const server = await startServer(
+      htmlHandler({
+        layoutRule: true,
+        unsafeLayoutRule: mode === "selector",
+        unsafeLayoutProperty: mode === "property",
+      }),
+    );
+    try {
+      const selectedBinding = binding({ deploymentUrl: `${server.origin}/` });
+      const raw = await observeProductionRequestGraph({
+        binding: selectedBinding,
+        namespace,
+        releaseStateHead: { sequence: 3, eventHash },
+        bindingSelection: selection(selectedBinding),
+        allowInsecureLocalhost: true,
+      });
+      assert.equal(raw.runtimeCssWrites.length > 0, true);
+      if (mode !== "allowed") {
+        assert.throws(
+          () => summarizeProductionRequestGraph(raw),
+          /forbidden runtime edges/,
+        );
+      } else {
+        assert.equal(
+          raw.runtimeCssWrites[0].operation,
+          "bounded-layout.insertRule",
+        );
+        assert.equal(
+          summarizeProductionRequestGraph(raw).runtimeCssWriteCount,
+          0,
+        );
+      }
+    } finally {
+      await server.close();
+    }
   }
 });

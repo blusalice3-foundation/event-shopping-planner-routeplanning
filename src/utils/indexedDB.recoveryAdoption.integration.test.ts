@@ -721,18 +721,18 @@ describe("d2389a0 orphan recovery E2E fixture", () => {
     });
 
     expect(exportResult).toEqual({
-      status: "completed",
+      status: "started",
       fileName: "event-shopping-planner-recovery-2026-08-03T02-03-04-567Z.json",
       byteSize: expect.any(Number),
     });
     expect(
-      exportResult.status === "completed" && exportResult.byteSize,
+      exportResult.status === "started" && exportResult.byteSize,
     ).toBeGreaterThan(0);
     expect(download).toHaveBeenCalledTimes(1);
     const [exportedBlob] = download.mock.calls[0] as [Blob, string];
     expect(exportedBlob).toBeInstanceOf(Blob);
     expect(exportedBlob.size).toBe(
-      exportResult.status === "completed" ? exportResult.byteSize : undefined,
+      exportResult.status === "started" ? exportResult.byteSize : undefined,
     );
     const exportedBundle = JSON.parse(exportedJson) as {
       candidates?: StartupRecoveryCandidate[];

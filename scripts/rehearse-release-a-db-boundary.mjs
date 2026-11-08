@@ -373,6 +373,20 @@ async function main() {
       assert.equal(archive.kind, "event-shopping-planner-pre-upgrade");
       assert.ok(archive.databaseVersion <= 7);
       assert.equal(archive.localStorage.syncQueue, LEGACY_SOURCES.syncQueue);
+      assert.ok(
+        await update.isDisabled(),
+        "Upgrade was enabled before the user confirmed saving the archive.",
+      );
+      await page
+        .getByRole("checkbox", {
+          name: "移行前データを端末に保存し、ファイルを開けることを確認しました",
+          exact: true,
+        })
+        .check();
+      assert.ok(
+        await update.isEnabled(),
+        "Upgrade was not enabled after the archive save confirmation.",
+      );
       await update.click();
       await page
         .getByRole("button", { name: "JSONバックアップ保存", exact: true })

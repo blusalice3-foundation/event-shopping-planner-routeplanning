@@ -99,7 +99,10 @@ export function SpaceNavigatorHost() {
 
   useEffect(() => {
     if (!navigationOverlayOpen) return;
-    return acquireBodyScrollLock({ lockOverscroll: true });
+    return acquireBodyScrollLock({
+      lockOverscroll: true,
+      lockDocumentPosition: true,
+    });
   }, [navigationOverlayOpen]);
 
   useEffect(() => {

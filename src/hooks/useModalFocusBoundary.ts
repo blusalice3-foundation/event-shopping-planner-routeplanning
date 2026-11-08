@@ -1,7 +1,9 @@
+import { acquireBodyScrollLock } from "../utils/bodyScrollLock";
+import { isAppleTouchWebKit } from "../utils/appleTouchWebKit";
 import { useEffect, useLayoutEffect, type RefObject } from "react";
 import { isTopModal, registerModalFocus } from "../utils/modalFocusBoundary";
 
-/** Registers dialogs whose existing focus, keyboard and scroll behavior is retained. */
+/** Registers modal focus and applies the iOS document-position scroll lock. */
 export function useModalFocusBoundary({
   isOpen,
   dialogRef,
@@ -9,6 +11,16 @@ export function useModalFocusBoundary({
   isOpen: boolean;
   dialogRef: RefObject<HTMLElement | null>;
 }) {
+  useLayoutEffect(() => {
+    if (
+      !isOpen ||
+      !isAppleTouchWebKit() ||
+      dialogRef.current?.getAttribute("aria-modal") === "false"
+    )
+      return;
+    return acquireBodyScrollLock({ lockDocumentPosition: true });
+  }, [dialogRef, isOpen]);
+
   useLayoutEffect(() => {
     if (!isOpen) return;
     const element = dialogRef.current;

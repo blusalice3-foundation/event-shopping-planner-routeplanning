@@ -15,7 +15,7 @@ const defaultProps = {
   isRetrying: false,
   onRetry: vi.fn(),
   onExport: vi.fn(() => ({
-    status: "completed" as const,
+    status: "started" as const,
     fileName: "recovery-default.json",
     byteSize: 1,
   })),
@@ -61,6 +61,15 @@ function createDeferred<T>() {
   return { promise, resolve, reject };
 }
 
+async function confirmExportSaved() {
+  fireEvent.click(screen.getByRole("button", { name: "保存候補をJSONで退避" }));
+  fireEvent.click(
+    await screen.findByRole("checkbox", {
+      name: "退避用JSONを端末に保存し、ファイルを開けることを確認しました",
+    }),
+  );
+}
+
 describe("PersistenceRecoveryScreen", () => {
   it("通常画面と自動保存を止めて候補を保持することを表示する", () => {
     render(<PersistenceRecoveryScreen {...defaultProps} />);
@@ -79,10 +88,10 @@ describe("PersistenceRecoveryScreen", () => {
     ).toHaveTextContent(defaultProps.details.join(""));
   });
 
-  it("再試行と保存候補のJSON退避を実行し、ファイル名とbyte数を完了表示する", async () => {
+  it("再試行と保存候補のJSON出力を開始し、ファイル名とbyte数を表示する", async () => {
     const onRetry = vi.fn();
     const onExport = vi.fn(() => ({
-      status: "completed" as const,
+      status: "started" as const,
       fileName: "event-shopping-planner-recovery-test.json",
       byteSize: 12_345,
     }));
@@ -111,7 +120,7 @@ describe("PersistenceRecoveryScreen", () => {
 
   it("0 byteの退避結果を完了扱いせず、固定文言で失敗を通知する", async () => {
     const onExport = vi.fn(() => ({
-      status: "completed" as const,
+      status: "started" as const,
       fileName: "empty-recovery.json",
       byteSize: 0,
     }));
@@ -130,7 +139,7 @@ describe("PersistenceRecoveryScreen", () => {
 
   it("再試行で候補bundleが更新されたら以前の選択と退避完了表示を破棄する", async () => {
     const onExport = vi.fn(() => ({
-      status: "completed" as const,
+      status: "started" as const,
       fileName: "first-recovery.json",
       byteSize: 321,
     }));
@@ -148,6 +157,14 @@ describe("PersistenceRecoveryScreen", () => {
       screen.getByRole("button", { name: "保存候補をJSONで退避" }),
     );
     expect(await screen.findByText("first-recovery.json")).toBeVisible();
+    fireEvent.click(
+      screen.getByRole("checkbox", {
+        name: "退避用JSONを端末に保存し、ファイルを開けることを確認しました",
+      }),
+    );
+    expect(
+      screen.getByRole("button", { name: "選択候補を明示的に採用" }),
+    ).toBeEnabled();
 
     const nextCandidates = recoveryCandidates.map((candidate) => ({
       ...candidate,
@@ -172,6 +189,72 @@ describe("PersistenceRecoveryScreen", () => {
     expect(
       screen.getByRole("button", { name: "選択候補を明示的に採用" }),
     ).toBeDisabled();
+  });
+
+  it("出力開始だけでは候補を採用せず、再出力と失敗で保存確認を解除する", async () => {
+    const pendingExport = createDeferred<{
+      status: "started";
+      fileName: string;
+      byteSize: number;
+    }>();
+    const onExport = vi
+      .fn()
+      .mockReturnValueOnce({
+        status: "started",
+        fileName: "first.json",
+        byteSize: 123,
+      })
+      .mockReturnValueOnce(pendingExport.promise)
+      .mockReturnValueOnce({ status: "failed" });
+    const onAdopt = vi.fn();
+    render(
+      <PersistenceRecoveryScreen
+        {...defaultProps}
+        candidates={recoveryCandidates}
+        onExport={onExport}
+        onAdopt={onAdopt}
+      />,
+    );
+    fireEvent.click(screen.getAllByRole("radio")[0]);
+    const adopt = screen.getByRole("button", {
+      name: "選択候補を明示的に採用",
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "保存候補をJSONで退避" }),
+    );
+    const confirmation = await screen.findByRole("checkbox", {
+      name: "退避用JSONを端末に保存し、ファイルを開けることを確認しました",
+    });
+    expect(adopt).toBeDisabled();
+    fireEvent.click(adopt);
+    expect(onAdopt).not.toHaveBeenCalled();
+    fireEvent.click(confirmation);
+    expect(adopt).toBeEnabled();
+    fireEvent.click(
+      screen.getByRole("button", { name: "保存候補をJSONで退避" }),
+    );
+    expect(adopt).toBeDisabled();
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    pendingExport.resolve({
+      status: "started",
+      fileName: "second.json",
+      byteSize: 456,
+    });
+    const nextConfirmation = await screen.findByRole("checkbox", {
+      name: "退避用JSONを端末に保存し、ファイルを開けることを確認しました",
+    });
+    expect(nextConfirmation).not.toBeChecked();
+    expect(adopt).toBeDisabled();
+    fireEvent.click(nextConfirmation);
+    fireEvent.click(
+      screen.getByRole("button", { name: "保存候補をJSONで退避" }),
+    );
+    await screen.findByText(
+      "退避用JSONのダウンロードを開始できませんでした。保存候補は変更されていません。",
+    );
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    expect(adopt).toBeDisabled();
+    expect(onAdopt).not.toHaveBeenCalled();
   });
 
   it("退避処理の例外詳細を画面に出さず、固定文言で失敗を通知する", async () => {
@@ -356,7 +439,7 @@ describe("PersistenceRecoveryScreen", () => {
     expect(adoptButton).toBeDisabled();
     expect(adoptButton).toHaveAccessibleDescription(
       expect.stringContaining(
-        "先にJSONで退避し、内容を確認できた候補だけを選択してください。",
+        "先にJSONで退避し、端末への保存とファイルを開けることを確認してから、内容を確認できた候補だけを選択してください。",
       ),
     );
     expect(adoptButton).toHaveAccessibleDescription(
@@ -374,6 +457,8 @@ describe("PersistenceRecoveryScreen", () => {
 
     fireEvent.click(runtimeCandidateRadio);
     expect(runtimeCandidateRadio).toBeChecked();
+    expect(adoptButton).toBeDisabled();
+    await confirmExportSaved();
     expect(adoptButton).toBeEnabled();
 
     fireEvent.click(adoptButton);
@@ -395,7 +480,7 @@ describe("PersistenceRecoveryScreen", () => {
     expect(screen.getByRole("main")).toHaveAttribute("aria-busy", "false");
   });
 
-  it("同一idでもdescriptorが異なる候補を別々に選択し、選んだ候補そのものを渡す", () => {
+  it("同一idでもdescriptorが異なる候補を別々に選択し、選んだ候補そのものを渡す", async () => {
     const firstCandidate: StartupRecoveryCandidate = {
       ...recoveryCandidates[0],
       id: "shared-candidate-id",
@@ -426,6 +511,7 @@ describe("PersistenceRecoveryScreen", () => {
 
     expect(firstRadio).not.toBeChecked();
     expect(secondRadio).toBeChecked();
+    await confirmExportSaved();
     fireEvent.click(
       screen.getByRole("button", {
         name: "選択候補を明示的に採用",

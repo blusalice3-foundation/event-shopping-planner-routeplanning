@@ -1,6 +1,7 @@
 :root {
-  --footer-height: attr(data-footer-height type(<length>), 0px);
-  --app-header-height: attr(data-app-header-height type(<length>), 0px);
+  --esp-runtime-layout-sheet: 1;
+  --footer-height: 0px;
+  --app-header-height: 0px;
   --app-main-content-padding: 1rem;
 }
 
@@ -48,4 +49,11 @@
 
 .esp-layout-nav-right {
   right: attr(data-nav-right type(<length>), 1rem);
+}
+
+@supports (height: attr(data-layout-height type(<length-percentage>), auto)) {
+  :root {
+    --footer-height: attr(data-footer-height type(<length>), 0px);
+    --app-header-height: attr(data-app-header-height type(<length>), 0px);
+  }
 }

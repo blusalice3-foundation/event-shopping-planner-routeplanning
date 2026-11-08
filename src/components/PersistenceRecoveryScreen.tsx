@@ -100,6 +100,7 @@ const PersistenceRecoveryScreen: React.FC<PersistenceRecoveryScreenProps> = ({
   const [hasSafelyExited, setHasSafelyExited] = React.useState(false);
   const [isAdoptionRequested, setIsAdoptionRequested] = React.useState(false);
   const [isExporting, setIsExporting] = React.useState(false);
+  const [hasSavedExport, setHasSavedExport] = React.useState(false);
   const [exportResult, setExportResult] =
     React.useState<PersistenceRecoveryExportResult | null>(null);
   const safeExitTitleRef = React.useRef<HTMLHeadingElement>(null);
@@ -130,6 +131,7 @@ const PersistenceRecoveryScreen: React.FC<PersistenceRecoveryScreenProps> = ({
     setSelectedCandidateReference(null);
     setIsAdoptionRequested(false);
     setExportResult(null);
+    setHasSavedExport(false);
     adoptionRequestIdRef.current += 1;
     exportRequestIdRef.current += 1;
     exportInProgressRef.current = false;
@@ -137,7 +139,7 @@ const PersistenceRecoveryScreen: React.FC<PersistenceRecoveryScreenProps> = ({
   }, [candidates, canExport, details, message]);
 
   const handleAdopt = async () => {
-    if (isBusy || !selectedCandidate || !onAdopt) return;
+    if (isBusy || !selectedCandidate || !onAdopt || !hasSavedExport) return;
     const requestId = adoptionRequestIdRef.current + 1;
     adoptionRequestIdRef.current = requestId;
     setIsAdoptionRequested(true);
@@ -157,11 +159,12 @@ const PersistenceRecoveryScreen: React.FC<PersistenceRecoveryScreenProps> = ({
     exportInProgressRef.current = true;
     setIsExporting(true);
     setExportResult(null);
+    setHasSavedExport(false);
     try {
       const result = await onExport();
       if (requestId !== exportRequestIdRef.current) return;
       if (
-        result.status !== "completed" ||
+        result.status !== "started" ||
         result.fileName.trim().length === 0 ||
         !Number.isSafeInteger(result.byteSize) ||
         result.byteSize <= 0
@@ -223,6 +226,7 @@ const PersistenceRecoveryScreen: React.FC<PersistenceRecoveryScreenProps> = ({
 
   const adoptionDescriptionIds = [
     ADOPTION_WARNING_ID,
+    !hasSavedExport ? "persistence-recovery-export-confirmation-reason" : null,
     !selectedCandidate ? ADOPTION_SELECTION_REASON_ID : null,
     !onAdopt ? ADOPTION_UNAVAILABLE_REASON_ID : null,
   ]
@@ -412,8 +416,16 @@ const PersistenceRecoveryScreen: React.FC<PersistenceRecoveryScreenProps> = ({
                 className="mt-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm leading-6 text-red-900 dark:border-red-800 dark:bg-red-950/50 dark:text-red-100"
               >
                 <span className="font-bold">警告:</span>{" "}
-                採用後は選択候補が今後の確定データになります。先にJSONで退避し、内容を確認できた候補だけを選択してください。採用しても旧原本と未選択候補は削除しません。
+                採用後は選択候補が今後の確定データになります。先にJSONで退避し、端末への保存とファイルを開けることを確認してから、内容を確認できた候補だけを選択してください。採用しても旧原本と未選択候補は削除しません。
               </p>
+              {!hasSavedExport && (
+                <p
+                  id="persistence-recovery-export-confirmation-reason"
+                  className="mt-2 text-sm text-slate-600 dark:text-slate-400"
+                >
+                  保存候補をJSONで退避し、端末に保存したファイルを確認してください。
+                </p>
+              )}
               {!selectedCandidate && (
                 <p
                   id={ADOPTION_SELECTION_REASON_ID}
@@ -443,7 +455,9 @@ const PersistenceRecoveryScreen: React.FC<PersistenceRecoveryScreenProps> = ({
                 type="button"
                 className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-red-700 px-4 py-2.5 font-semibold text-white hover:bg-red-800 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-offset-slate-900"
                 onClick={handleAdopt}
-                disabled={isBusy || !selectedCandidate || !onAdopt}
+                disabled={
+                  isBusy || !selectedCandidate || !onAdopt || !hasSavedExport
+                }
                 aria-describedby={adoptionDescriptionIds}
               >
                 {isAdopting || isAdoptionRequested
@@ -493,7 +507,7 @@ const PersistenceRecoveryScreen: React.FC<PersistenceRecoveryScreenProps> = ({
               退避できる保存候補を準備できていないため、JSONで退避できません。
             </p>
           )}
-          {exportResult?.status === "completed" && (
+          {exportResult?.status === "started" && (
             <p
               className="mt-3 rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-sm leading-6 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-100"
               role="status"
@@ -504,7 +518,21 @@ const PersistenceRecoveryScreen: React.FC<PersistenceRecoveryScreenProps> = ({
                 {exportResult.fileName}
               </span>{" "}
               / {exportResult.byteSize.toLocaleString("ja-JP")} bytes
+              <span className="mt-2 block">
+                プレビューが開いた場合は共有メニューから「ファイルに保存」を選んでください。端末への保存はこのアプリでは確認できません。
+              </span>
             </p>
+          )}
+          {exportResult?.status === "started" && (
+            <label className="mt-3 flex items-start gap-2 text-sm text-slate-800 dark:text-slate-100">
+              <input
+                type="checkbox"
+                checked={hasSavedExport}
+                disabled={isBusy}
+                onChange={(event) => setHasSavedExport(event.target.checked)}
+              />
+              退避用JSONを端末に保存し、ファイルを開けることを確認しました
+            </label>
           )}
           {exportResult?.status === "failed" && (
             <p

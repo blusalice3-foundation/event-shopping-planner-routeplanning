@@ -1,3 +1,4 @@
+import { PriceQuickSelect } from "../PriceQuickSelect";
 import type React from "react";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { useModalDialogBehavior } from "../../hooks/useModalDialogBehavior";
@@ -78,7 +79,10 @@ const CELL_POPUP_OPENING_CLICK_GUARD_MS = 500;
 const useModalInteractionLock = (isOpen: boolean) => {
   useEffect(() => {
     if (!isOpen) return;
-    return acquireBodyScrollLock({ lockOverscroll: true });
+    return acquireBodyScrollLock({
+      lockOverscroll: true,
+      lockDocumentPosition: true,
+    });
   }, [isOpen]);
 };
 
@@ -729,7 +733,7 @@ export function AddItemDialogView({
               <label htmlFor={ids.priceQuickSelect} className={labelClass}>
                 クイック選択
               </label>
-              <select
+              <PriceQuickSelect
                 id={ids.priceQuickSelect}
                 onChange={onPriceSelectChange}
                 className={formInputClass}
@@ -745,7 +749,7 @@ export function AddItemDialogView({
                     {price.toLocaleString()}円
                   </option>
                 ))}
-              </select>
+              </PriceQuickSelect>
             </div>
           </div>
 
