@@ -308,7 +308,8 @@ const cssInstrumentation = () => {
     try {
       return (
         Boolean(sheet.href) &&
-        new URL(sheet.href, document.baseURI).origin === globalThis.location.origin &&
+        new URL(sheet.href, document.baseURI).origin ===
+          globalThis.location.origin &&
         Array.from(sheet.cssRules).some(
           (rule) =>
             rule.style
