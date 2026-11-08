@@ -76,6 +76,7 @@ interface MapCanvasProps {
   };
   initialOffset?: { x: number; y: number };
   offsetRef?: React.MutableRefObject<{ x: number; y: number }>;
+  viewportZoomRef?: React.MutableRefObject<number>;
   numberCellOutlineStyle?: NumberCellOutlineStyle;
   routePointsOverride?: MapRoutePoint[];
   routeSegmentsOverride?: RouteSegment[];
@@ -263,6 +264,7 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
   selectionGuideOptions,
   initialOffset,
   offsetRef: externalOffsetRef,
+  viewportZoomRef,
   numberCellOutlineStyle = "rounded",
   routePointsOverride,
   routeSegmentsOverride,
@@ -311,6 +313,7 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     maxZoom: MAX_ZOOM,
     initialOffset,
     offsetRef: externalOffsetRef,
+    zoomRef: viewportZoomRef,
     onZoomChange,
     onRotationAngleChange,
   });
@@ -380,8 +383,14 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
   }, [cellSize, containerRef, offsetRef, prevCellSizeRef, setOffset]);
 
   const prevSelectedHallRef = useRef<HallDefinition | undefined>(undefined);
+  const prevViewportOwnerRef = useRef(externalOffsetRef);
 
   useEffect(() => {
+    if (prevViewportOwnerRef.current !== externalOffsetRef) {
+      prevViewportOwnerRef.current = externalOffsetRef;
+      prevSelectedHallRef.current = selectedHall;
+      return;
+    }
     if (prevSelectedHallRef.current?.id === selectedHall?.id) {
       return;
     }
@@ -427,7 +436,7 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     } else if (!selectedHall) {
       setOffset({ x: 0, y: 0 });
     }
-  }, [selectedHall, cellSize, containerRef, setOffset]);
+  }, [selectedHall, cellSize, containerRef, setOffset, externalOffsetRef]);
 
   const mergedCellsMap = useMemo(() => {
     const map = new Map<string, MergedCellInfo>();

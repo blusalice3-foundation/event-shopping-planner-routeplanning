@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type React from "react";
 
 export interface Point {
@@ -40,6 +47,7 @@ interface UseCanvasViewportOptions {
   maxZoom: number;
   initialOffset?: Point;
   offsetRef?: React.MutableRefObject<Point>;
+  zoomRef?: React.MutableRefObject<number>;
   onZoomChange?: (newZoom: number) => void;
   onRotationAngleChange?: (newAngle: number) => void;
 }
@@ -55,6 +63,7 @@ export const useCanvasViewport = ({
   maxZoom,
   initialOffset,
   offsetRef: externalOffsetRef,
+  zoomRef: externalZoomRef,
   onZoomChange,
   onRotationAngleChange,
 }: UseCanvasViewportOptions) => {
@@ -65,7 +74,12 @@ export const useCanvasViewport = ({
   );
   const internalOffsetRef = useRef(offset);
   const offsetRef = externalOffsetRef ?? internalOffsetRef;
-  const zoomLevelRef = useRef(zoomLevel);
+  const internalZoomLevelRef = useRef(zoomLevel);
+  const zoomLevelRef = externalZoomRef ?? internalZoomLevelRef;
+  const viewportOwner = useRef({ offsetRef, zoomLevelRef });
+  const viewportOwnerChanged =
+    viewportOwner.current.offsetRef !== offsetRef ||
+    viewportOwner.current.zoomLevelRef !== zoomLevelRef;
   const [isDragging, setIsDragging] = useState(false);
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef<Point>({ x: 0, y: 0 });
@@ -76,6 +90,7 @@ export const useCanvasViewport = ({
   const pinchStartDistRef = useRef(0);
   const pinchStartZoomRef = useRef(zoomLevel);
   const pinchStartOffsetRef = useRef<Point>({ x: 0, y: 0 });
+  const pinchStartCenterRef = useRef<Point>({ x: 0, y: 0 });
   const isPinchGestureRef = useRef(false);
   // Keep the gesture history through the final pointerup, regardless of touchend order.
   const hadPinchGestureRef = useRef(false);
@@ -110,7 +125,7 @@ export const useCanvasViewport = ({
         setIsViewportInteracting(false);
       }, 150);
     },
-    [baseCellSize, offsetRef, publishZoom],
+    [baseCellSize, offsetRef, publishZoom, zoomLevelRef],
   );
   useEffect(
     () => () => {
@@ -120,6 +135,42 @@ export const useCanvasViewport = ({
     },
     [],
   );
+  // A new external viewport owner must never receive an old gesture or offset.
+  useLayoutEffect(() => {
+    if (!viewportOwnerChanged) return;
+    viewportOwner.current = { offsetRef, zoomLevelRef };
+    if (zoomFrame.current !== null) cancelAnimationFrame(zoomFrame.current);
+    zoomFrame.current = null;
+    pendingZoom.current = null;
+    if (viewportIdleTimer.current !== null)
+      clearTimeout(viewportIdleTimer.current);
+    viewportIdleTimer.current = null;
+    // Releases from the old owner still reach this retained canvas. Keep their
+    // tap-suppression marker until the next pointerdown starts a fresh input.
+    hadPinchGestureRef.current =
+      hadPinchGestureRef.current ||
+      isDraggingRef.current ||
+      activeTouchesRef.current.size > 0;
+    if (hadPinchGestureRef.current) {
+      const now =
+        typeof performance !== "undefined" ? performance.now() : Date.now();
+      suppressClickUntilRef.current = now + 450;
+    }
+    activeTouchesRef.current.clear();
+    pinchStartDistRef.current = 0;
+    pinchStartZoomRef.current = zoomLevel;
+    pinchStartOffsetRef.current = { ...offsetRef.current };
+    pinchStartCenterRef.current = { x: 0, y: 0 };
+    isPinchGestureRef.current = false;
+    isDraggingRef.current = false;
+    dragStartRef.current = { x: 0, y: 0 };
+    dragStartOffsetRef.current = { ...offsetRef.current };
+    zoomLevelRef.current = zoomLevel;
+    prevCellSizeRef.current = baseCellSize * (zoomLevel / 100);
+    setOffsetState(offsetRef.current);
+    setIsDragging(false);
+    setIsViewportInteracting(false);
+  }, [baseCellSize, offsetRef, viewportOwnerChanged, zoomLevel, zoomLevelRef]);
   const rotationInteractionTimerRef = useRef<number | null>(null);
 
   const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
@@ -225,7 +276,14 @@ export const useCanvasViewport = ({
         y: viewY - rotatedPoint.y,
       };
     },
-    [baseCellSize, mapMaxCol, mapMaxRow, offsetRef, rotationRadians],
+    [
+      baseCellSize,
+      mapMaxCol,
+      mapMaxRow,
+      offsetRef,
+      rotationRadians,
+      zoomLevelRef,
+    ],
   );
 
   const getPointerViewMetrics = useCallback(
@@ -255,12 +313,13 @@ export const useCanvasViewport = ({
   );
 
   useEffect(() => {
-    if (!pendingZoom.current) offsetRef.current = offset;
-  }, [offset, offsetRef]);
+    if (!viewportOwnerChanged && !pendingZoom.current)
+      offsetRef.current = offset;
+  }, [offset, offsetRef, viewportOwnerChanged]);
 
   useEffect(() => {
     if (!pendingZoom.current) zoomLevelRef.current = zoomLevel;
-  }, [zoomLevel]);
+  }, [zoomLevel, zoomLevelRef]);
 
   useEffect(() => {
     setIsRotationInteracting(true);
@@ -320,6 +379,7 @@ export const useCanvasViewport = ({
       onZoomChange,
       rotationAngle,
       scheduleZoom,
+      zoomLevelRef,
     ],
   );
 
@@ -345,15 +405,22 @@ export const useCanvasViewport = ({
         isDraggingRef.current = false;
         setIsDragging(false);
         e.preventDefault();
+        const container = containerRef.current;
+        if (!container) return;
+        const rect = container.getBoundingClientRect();
         const touches = Array.from(activeTouchesRef.current.values());
         const dx = touches[1].x - touches[0].x;
         const dy = touches[1].y - touches[0].y;
         pinchStartDistRef.current = Math.sqrt(dx * dx + dy * dy);
         pinchStartZoomRef.current = zoomLevelRef.current;
         pinchStartOffsetRef.current = { ...offsetRef.current };
+        pinchStartCenterRef.current = {
+          x: ((touches[0].x + touches[1].x) / 2 - rect.left) / coordinateScale,
+          y: ((touches[0].y + touches[1].y) / 2 - rect.top) / coordinateScale,
+        };
       }
     },
-    [offsetRef],
+    [coordinateScale, offsetRef, zoomLevelRef],
   );
 
   const handleTouchMove = useCallback(
@@ -392,12 +459,27 @@ export const useCanvasViewport = ({
           ),
         );
 
-        if (newZoom === zoomLevelRef.current) return;
-
-        const newOffset = calculateOffsetForZoomPoint(midX, midY, newZoom, {
-          baseZoom: pinchStartZoomRef.current,
-          baseOffset: pinchStartOffsetRef.current,
-        });
+        const startCenter = pinchStartCenterRef.current;
+        const anchoredOffset = calculateOffsetForZoomPoint(
+          startCenter.x,
+          startCenter.y,
+          newZoom,
+          {
+            baseZoom: pinchStartZoomRef.current,
+            baseOffset: pinchStartOffsetRef.current,
+          },
+        );
+        // The original map point follows the fingers even at a zoom limit.
+        const newOffset = {
+          x: anchoredOffset.x + midX - startCenter.x,
+          y: anchoredOffset.y + midY - startCenter.y,
+        };
+        if (
+          newZoom === zoomLevelRef.current &&
+          newOffset.x === offsetRef.current.x &&
+          newOffset.y === offsetRef.current.y
+        )
+          return;
 
         scheduleZoom(newZoom, newOffset);
       }
@@ -408,7 +490,9 @@ export const useCanvasViewport = ({
       maxZoom,
       minZoom,
       onZoomChange,
+      offsetRef,
       scheduleZoom,
+      zoomLevelRef,
     ],
   );
 

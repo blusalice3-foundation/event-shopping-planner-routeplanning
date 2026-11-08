@@ -1,4 +1,5 @@
 import { getHallIdForItem, parseGroupId } from "../../utils/hallGrouping";
+import { useMapViewportSession } from "../../features/map/hooks/useMapViewportSession";
 import React, {
   useState,
   useCallback,
@@ -107,6 +108,7 @@ interface MapViewProps {
   mapData: DayMapData;
   mapName: string;
   operationScope: string;
+  viewportScope?: string;
   eventDate?: string;
   items: ShoppingItem[];
   executeModeItemIds: string[];
@@ -181,6 +183,7 @@ const MapView: React.FC<MapViewProps> = ({
   mapData,
   mapName,
   operationScope,
+  viewportScope = operationScope,
   eventDate,
   items,
   executeModeItemIds,
@@ -226,33 +229,13 @@ const MapView: React.FC<MapViewProps> = ({
   void _onMoveToFirst;
   void _onMoveToLast;
 
-  const [zoomLevel, setZoomLevelState] = useState<number>(
-    initialViewport?.zoomLevel ?? 100,
-  );
-  const zoomLevelRef = useRef(zoomLevel);
-  const canvasOffsetRef = useRef<{ x: number; y: number }>(
-    initialViewport
-      ? { x: initialViewport.offsetX, y: initialViewport.offsetY }
-      : { x: 0, y: 0 },
-  );
-  const onViewportChangeRef = useRef(onViewportChange);
-  onViewportChangeRef.current = onViewportChange;
-
-  const setZoomLevel = useCallback((newZoom: number) => {
-    zoomLevelRef.current = newZoom;
-    setZoomLevelState(newZoom);
-  }, []);
-
-  useEffect(() => {
-    const offsetRef = canvasOffsetRef;
-    return () => {
-      onViewportChangeRef.current?.({
-        zoomLevel: zoomLevelRef.current,
-        offsetX: offsetRef.current.x,
-        offsetY: offsetRef.current.y,
-      });
-    };
-  }, []);
+  const { zoomLevel, zoomLevelRef, canvasOffsetRef, setZoomLevel } =
+    useMapViewportSession(
+      viewportScope,
+      initialViewport,
+      onViewportChange,
+      mapData,
+    );
   const [internalIsRouteVisible, setInternalIsRouteVisible] = useState(true);
   const [visitMergeNotice, setVisitMergeNotice] = useState<string | null>(null);
   const [visitMergeNoticeRevision, setVisitMergeNoticeRevision] = useState(0);
@@ -278,11 +261,19 @@ const MapView: React.FC<MapViewProps> = ({
     mapRouteInsertPendingRef.current = mapRouteInsertPending;
   }, [mapRouteInsertPending]);
 
-  const selectedHallId =
-    externalSelectedHallId !== undefined
-      ? externalSelectedHallId
-      : internalSelectedHallId;
+  const requestedHallId = externalSelectedHallId ?? internalSelectedHallId;
+  const selectedHallId = useMemo(
+    () =>
+      requestedHallId === "all" ||
+      halls.some((hall) => hall.id === requestedHallId)
+        ? requestedHallId
+        : "all",
+    [halls, requestedHallId],
+  );
   const setSelectedHallId = onSelectedHallIdChange || setInternalSelectedHallId;
+  useLayoutEffect(() => {
+    if (selectedHallId !== requestedHallId) setSelectedHallId(selectedHallId);
+  }, [requestedHallId, selectedHallId, setSelectedHallId]);
   const isRouteVisible =
     externalIsRouteVisible !== undefined
       ? externalIsRouteVisible
@@ -2121,6 +2112,7 @@ const MapView: React.FC<MapViewProps> = ({
               : undefined
           }
           offsetRef={canvasOffsetRef}
+          viewportZoomRef={zoomLevelRef}
           numberCellOutlineStyle={numberCellOutlineStyle}
         />
       </div>
