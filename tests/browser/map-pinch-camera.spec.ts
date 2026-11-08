@@ -524,6 +524,14 @@ test("wheel keeps its cursor anchor and Shift+wheel rotates without changing sca
     cancelable: true,
   });
   await frames(page, 3);
+  // Rotation is published by the application settings writer. Wait for its
+  // actual 15-degree paint, independently of the pinch frame/latency checks.
+  await expect
+    .poll(async () => {
+      const { point } = await snapshot(canvas);
+      return Math.atan2(point.edgeY - point.y, point.edgeX - point.x);
+    })
+    .toBeCloseTo(Math.PI / 12, 5);
   const rotated = await snapshot(canvas);
   expect(
     Math.hypot(
