@@ -57,6 +57,10 @@ import {
   FocusMapViewportSnapshot,
 } from "../types/focus";
 import FocusModeMapCanvas from "./FocusModeMapCanvas";
+import type {
+  CanvasCamera,
+  CanvasZoomPublication,
+} from "../features/map/canvas/useCanvasViewport";
 import {
   AddItemDialogView,
   CellItemPopup,
@@ -335,7 +339,11 @@ const FocusMode: React.FC<FocusModeProps> = ({
   // スワイプコンテナのref
   const swipeContainerRef = useRef<HTMLDivElement>(null);
   const [isMapVisible, setIsMapVisible] = useState(false);
-  const [mapZoomLevel, setMapZoomLevel] = useState<number>(100);
+  const [mapZoomState, setMapZoomState] = useState<{
+    zoom: number;
+    publication: CanvasZoomPublication;
+  }>({ zoom: 100, publication: { camera: null } });
+  const { zoom: mapZoomLevel, publication: mapZoomPublication } = mapZoomState;
   const mapViewportSnapshotRef = useRef<FocusMapViewportSnapshot | null>(null);
   const mapViewportRestoreRevisionRef = useRef(0);
   const [mapViewportRestoreRequest, setMapViewportRestoreRequest] =
@@ -352,7 +360,10 @@ const FocusMode: React.FC<FocusModeProps> = ({
   );
   const restoreMapViewportSnapshot = useCallback(
     (snapshot: FocusMapViewportSnapshot) => {
-      setMapZoomLevel(snapshot.zoomLevel);
+      setMapZoomState({
+        zoom: snapshot.zoomLevel,
+        publication: { camera: null },
+      });
       stableMapRotationHandler(snapshot.rotationAngle);
       mapViewportRestoreRevisionRef.current += 1;
       setMapViewportRestoreRequest({
@@ -2641,9 +2652,16 @@ const FocusMode: React.FC<FocusModeProps> = ({
     splitDragRef.current = null;
   }, []);
   // マップズームレベル変更
-  const handleMapZoomChange = useCallback((newZoom: number) => {
-    setMapZoomLevel(newZoom);
-  }, []);
+  const handleMapZoomChange = useCallback(
+    (newZoom: number, publication?: CanvasCamera) => {
+      setMapZoomState((current) =>
+        publication && current.zoom === newZoom
+          ? current
+          : { zoom: newZoom, publication: { camera: publication ?? null } },
+      );
+    },
+    [],
+  );
   const isAutoAdvancing = useAutoSkipEmptyVisit({
     paused: isNavigatorInteractionActive || !formalTransitionReady,
     finishPhase: finishFormalPhase,
@@ -3329,6 +3347,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
               items={items}
               executeModeItemIds={executeModeItemIds}
               zoomLevel={mapZoomLevel}
+              zoomPublication={mapZoomPublication}
               selectedHall={selectedHall}
               currentVisitKey={currentVisitKey}
               formalCurrentVisitKey={formalCurrentVisitKey}
@@ -3496,6 +3515,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
               items={items}
               executeModeItemIds={executeModeItemIds}
               zoomLevel={mapZoomLevel}
+              zoomPublication={mapZoomPublication}
               selectedHall={selectedHall}
               currentVisitKey={currentVisitKey}
               formalCurrentVisitKey={formalCurrentVisitKey}

@@ -7,6 +7,10 @@ import {
   type MutableRefObject,
 } from "react";
 import type { DayMapData, MapViewportState } from "../../../types/map";
+import type {
+  CanvasCamera,
+  CanvasZoomPublication,
+} from "../canvas/useCanvasViewport";
 
 type SaveViewport = ((viewport: MapViewportState) => void) | undefined;
 type ViewportOwner = {
@@ -74,9 +78,14 @@ export function useMapViewportSession(
       { viewport: MapViewportState; hadStoredViewport: boolean }
     >(),
   );
-  const [state, setState] = useState(() => ({
+  const [state, setState] = useState<{
+    owner: ViewportOwner;
+    zoom: number;
+    publication: CanvasZoomPublication;
+  }>(() => ({
     owner: createOwner(key, initialViewport),
     zoom: initialViewport?.zoomLevel ?? 100,
+    publication: { camera: null },
   }));
   const storedViewportRemoved =
     state.owner.key === key &&
@@ -92,6 +101,7 @@ export function useMapViewportSession(
     setState({
       owner: createOwner(key, viewport, initialViewport !== undefined),
       zoom: viewport?.zoomLevel ?? 100,
+      publication: { camera: null },
     });
   }
   const { owner, zoom } = state;
@@ -141,11 +151,11 @@ export function useMapViewportSession(
   );
 
   const setZoomLevel = useCallback(
-    (newZoom: number) => {
+    (newZoom: number, camera?: CanvasCamera) => {
       owner.zoomRef.current = newZoom;
       setState((current) =>
-        current.owner === owner && current.zoom !== newZoom
-          ? { owner, zoom: newZoom }
+        current.owner === owner && (!camera || current.zoom !== newZoom)
+          ? { owner, zoom: newZoom, publication: { camera: camera ?? null } }
           : current,
       );
     },
@@ -154,6 +164,7 @@ export function useMapViewportSession(
 
   return {
     zoomLevel: zoom,
+    zoomPublication: state.publication,
     zoomLevelRef: owner.zoomRef,
     canvasOffsetRef: owner.offsetRef,
     setZoomLevel,

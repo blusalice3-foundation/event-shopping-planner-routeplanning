@@ -2,12 +2,58 @@ import { act, renderHook } from "@testing-library/react";
 import { StrictMode, type PropsWithChildren } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { MapViewportState } from "../../../types/map";
+import type { CanvasCamera } from "../canvas/useCanvasViewport";
 import { useMapViewportSession } from "./useMapViewportSession";
 
 const first = { zoomLevel: 150, offsetX: 20, offsetY: 30 };
 const second = { zoomLevel: 75, offsetX: 200, offsetY: 300 };
 
 describe("map viewport ownership", () => {
+  it("skips parent rendering for internal same-zoom input but issues a fresh receipt for external same-zoom requests", () => {
+    let renders = 0;
+    const { result } = renderHook(() => {
+      renders++;
+      return useMapViewportSession("map", first);
+    });
+    const initialReceipt = result.current.zoomPublication;
+    const camera: CanvasCamera = {
+      owner: {},
+      revision: 1,
+      zoom: 150,
+      offset: { x: 35, y: 45 },
+      origin: "gesture",
+    };
+    result.current.canvasOffsetRef.current = camera.offset;
+    const beforeInternal = renders;
+    act(() => result.current.setZoomLevel(150, camera));
+    expect(renders).toBe(beforeInternal);
+    expect(result.current.zoomPublication).toBe(initialReceipt);
+    act(() => result.current.setZoomLevel(150, { ...camera, revision: 2 }));
+    expect(renders).toBe(beforeInternal);
+    expect(result.current.zoomPublication).toBe(initialReceipt);
+    expect(result.current.zoomLevelRef.current).toBe(150);
+    expect(result.current.canvasOffsetRef.current).toEqual({ x: 35, y: 45 });
+    act(() => result.current.setZoomLevel(150));
+    expect(renders).toBe(beforeInternal + 1);
+    const externalReceipt = result.current.zoomPublication;
+    expect(externalReceipt).not.toBe(initialReceipt);
+    expect(externalReceipt.camera).toBeNull();
+    const beforeRepeatedInternal = renders;
+    act(() => result.current.setZoomLevel(150, { ...camera, revision: 2 }));
+    // React 18 may render once to bail out immediately after an external update.
+    expect(renders).toBeLessThanOrEqual(beforeRepeatedInternal + 1);
+    const afterBailout = renders;
+    for (const revision of [3, 4, 5]) {
+      act(() => result.current.setZoomLevel(150, { ...camera, revision }));
+    }
+    expect(renders).toBe(afterBailout);
+    expect(result.current.zoomLevel).toBe(150);
+    expect(result.current.zoomPublication).toBe(externalReceipt);
+    act(() => result.current.setZoomLevel(150));
+    expect(result.current.zoomPublication).not.toBe(externalReceipt);
+    expect(result.current.zoomPublication.camera).toBeNull();
+  });
+
   it("restores each map without writing unchanged values", () => {
     const saveFirst = vi.fn();
     const saveSecond = vi.fn();

@@ -7,6 +7,12 @@ import {
   useState,
 } from "react";
 import type React from "react";
+import {
+  useCanvasCamera,
+  type CanvasCamera,
+  type CanvasZoomPublication,
+} from "./useCanvasCamera";
+export type { CanvasCamera, CanvasZoomPublication } from "./useCanvasCamera";
 
 export interface Point {
   x: number;
@@ -48,7 +54,11 @@ interface UseCanvasViewportOptions {
   initialOffset?: Point;
   offsetRef?: React.MutableRefObject<Point>;
   zoomRef?: React.MutableRefObject<number>;
-  onZoomChange?: (newZoom: number) => void;
+  ownerKey?: unknown;
+  zoomPublication?: CanvasZoomPublication;
+  centerExternalZoom?: boolean;
+  onCameraInput?: (camera: CanvasCamera) => void;
+  onZoomChange?: (newZoom: number, camera?: CanvasCamera) => void;
   onRotationAngleChange?: (newAngle: number) => void;
 }
 
@@ -66,20 +76,22 @@ export const useCanvasViewport = ({
   zoomRef: externalZoomRef,
   onZoomChange,
   onRotationAngleChange,
+  ownerKey,
+  zoomPublication,
+  centerExternalZoom,
+  onCameraInput,
 }: UseCanvasViewportOptions) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [offset, setOffsetState] = useState<Point>(
-    initialOffset ?? { x: 0, y: 0 },
-  );
-  const internalOffsetRef = useRef(offset);
+  const internalOffsetRef = useRef(initialOffset ?? { x: 0, y: 0 });
   const offsetRef = externalOffsetRef ?? internalOffsetRef;
   const internalZoomLevelRef = useRef(zoomLevel);
   const zoomLevelRef = externalZoomRef ?? internalZoomLevelRef;
-  const viewportOwner = useRef({ offsetRef, zoomLevelRef });
+  const viewportOwner = useRef({ offsetRef, zoomLevelRef, ownerKey });
   const viewportOwnerChanged =
     viewportOwner.current.offsetRef !== offsetRef ||
-    viewportOwner.current.zoomLevelRef !== zoomLevelRef;
+    viewportOwner.current.zoomLevelRef !== zoomLevelRef ||
+    viewportOwner.current.ownerKey !== ownerKey;
   const [isDragging, setIsDragging] = useState(false);
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef<Point>({ x: 0, y: 0 });
@@ -98,38 +110,51 @@ export const useCanvasViewport = ({
   const prevCellSizeRef = useRef(baseCellSize * (zoomLevel / 100));
   const [isRotationInteracting, setIsRotationInteracting] = useState(false);
   const [isViewportInteracting, setIsViewportInteracting] = useState(false);
-  const pendingZoom = useRef<{ zoom: number; offset: Point } | null>(null);
-  const zoomFrame = useRef<number | null>(null);
   const viewportIdleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const zoomCallbackRef = useRef(onZoomChange);
-  zoomCallbackRef.current = onZoomChange;
-  const publishZoom = useCallback(() => {
-    zoomFrame.current = null;
-    const value = pendingZoom.current;
-    pendingZoom.current = null;
-    if (!value) return;
-    setOffsetState(value.offset);
-    zoomCallbackRef.current?.(value.zoom);
-  }, []);
+  const {
+    renderCamera,
+    scheduleCamera,
+    flushCamera,
+    setCamera,
+    setOffset,
+    setPanOffset,
+    getDrawCamera,
+    getHitCamera,
+    isCameraOwnerCurrent,
+    markCameraPainted,
+    latestCameraRef,
+  } = useCanvasCamera({
+    zoomLevel,
+    zoomPublication,
+    offsetRef,
+    zoomRef: zoomLevelRef,
+    ownerKey,
+    rotationAngle: normalizeRotationAngle(rotationAngle),
+    mapMaxCol,
+    mapMaxRow,
+    baseCellSize,
+    containerRef,
+    centerExternalZoom,
+    onZoomChange,
+    onCameraInput,
+  });
+  const offset = renderCamera.offset;
+  const setOffsetState = setOffset;
   const scheduleZoom = useCallback(
     (newZoom: number, newOffset: Point) => {
-      offsetRef.current = newOffset;
-      zoomLevelRef.current = newZoom;
-      prevCellSizeRef.current = baseCellSize * (newZoom / 100);
-      pendingZoom.current = { zoom: newZoom, offset: newOffset };
+      scheduleCamera(newZoom, newOffset);
       setIsViewportInteracting(true);
-      zoomFrame.current ??= requestAnimationFrame(publishZoom);
       if (viewportIdleTimer.current !== null)
         clearTimeout(viewportIdleTimer.current);
-      viewportIdleTimer.current = setTimeout(() => {
-        setIsViewportInteracting(false);
-      }, 150);
+      viewportIdleTimer.current = setTimeout(
+        () => setIsViewportInteracting(false),
+        150,
+      );
     },
-    [baseCellSize, offsetRef, publishZoom, zoomLevelRef],
+    [scheduleCamera],
   );
   useEffect(
     () => () => {
-      if (zoomFrame.current !== null) cancelAnimationFrame(zoomFrame.current);
       if (viewportIdleTimer.current !== null)
         clearTimeout(viewportIdleTimer.current);
     },
@@ -138,10 +163,7 @@ export const useCanvasViewport = ({
   // A new external viewport owner must never receive an old gesture or offset.
   useLayoutEffect(() => {
     if (!viewportOwnerChanged) return;
-    viewportOwner.current = { offsetRef, zoomLevelRef };
-    if (zoomFrame.current !== null) cancelAnimationFrame(zoomFrame.current);
-    zoomFrame.current = null;
-    pendingZoom.current = null;
+    viewportOwner.current = { offsetRef, zoomLevelRef, ownerKey };
     if (viewportIdleTimer.current !== null)
       clearTimeout(viewportIdleTimer.current);
     viewportIdleTimer.current = null;
@@ -158,32 +180,29 @@ export const useCanvasViewport = ({
     }
     activeTouchesRef.current.clear();
     pinchStartDistRef.current = 0;
-    pinchStartZoomRef.current = zoomLevel;
+    pinchStartZoomRef.current = zoomLevelRef.current;
     pinchStartOffsetRef.current = { ...offsetRef.current };
     pinchStartCenterRef.current = { x: 0, y: 0 };
     isPinchGestureRef.current = false;
     isDraggingRef.current = false;
     dragStartRef.current = { x: 0, y: 0 };
     dragStartOffsetRef.current = { ...offsetRef.current };
-    zoomLevelRef.current = zoomLevel;
-    prevCellSizeRef.current = baseCellSize * (zoomLevel / 100);
-    setOffsetState(offsetRef.current);
+    prevCellSizeRef.current = baseCellSize * (zoomLevelRef.current / 100);
     setIsDragging(false);
     setIsViewportInteracting(false);
-  }, [baseCellSize, offsetRef, viewportOwnerChanged, zoomLevel, zoomLevelRef]);
+  }, [
+    baseCellSize,
+    offsetRef,
+    ownerKey,
+    viewportOwnerChanged,
+    zoomLevel,
+    zoomLevelRef,
+  ]);
   const rotationInteractionTimerRef = useRef<number | null>(null);
 
   const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
-  const scale = zoomLevel / 100;
+  const scale = renderCamera.zoom / 100;
   const cellSize = baseCellSize * scale;
-
-  const setOffset = useCallback(
-    (newOffset: Point) => {
-      setOffsetState(newOffset);
-      offsetRef.current = newOffset;
-    },
-    [offsetRef],
-  );
 
   const normalizedRotationAngle = useMemo(
     () => normalizeRotationAngle(rotationAngle),
@@ -204,22 +223,41 @@ export const useCanvasViewport = ({
 
   const toMapCoordinates = useCallback(
     (viewX: number, viewY: number, currentOffset?: Point) => {
-      const ofs = currentOffset ?? offsetRef.current;
+      const hit = currentOffset ? null : getHitCamera();
+      const hitCellSize = hit
+        ? baseCellSize * (hit.camera.zoom / 100)
+        : cellSize;
+      const ofs = currentOffset ?? hit!.camera.offset;
       const translatedX = viewX - ofs.x;
       const translatedY = viewY - ofs.y;
-      if (rotationRadians === 0) return { x: translatedX, y: translatedY };
-
-      const dx = translatedX - mapCenterX;
-      const dy = translatedY - mapCenterY;
-      const cos = Math.cos(rotationRadians);
-      const sin = Math.sin(rotationRadians);
-
+      const angle = hit ? (hit.rotationAngle * Math.PI) / 180 : rotationRadians;
+      // Consumers divide by the render's cell size. Convert the painted camera's
+      // coordinates into that geometry after hit testing its actual transform.
+      const toRenderScale = cellSize / hitCellSize;
+      if (angle === 0)
+        return {
+          x: translatedX * toRenderScale,
+          y: translatedY * toRenderScale,
+        };
+      const centerX = (mapMaxCol * hitCellSize) / 2;
+      const centerY = (mapMaxRow * hitCellSize) / 2;
+      const dx = translatedX - centerX;
+      const dy = translatedY - centerY;
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
       return {
-        x: dx * cos + dy * sin + mapCenterX,
-        y: -dx * sin + dy * cos + mapCenterY,
+        x: (dx * cos + dy * sin + centerX) * toRenderScale,
+        y: (-dx * sin + dy * cos + centerY) * toRenderScale,
       };
     },
-    [offsetRef, rotationRadians, mapCenterX, mapCenterY],
+    [
+      baseCellSize,
+      cellSize,
+      getHitCamera,
+      mapMaxCol,
+      mapMaxRow,
+      rotationRadians,
+    ],
   );
 
   const rotateAroundMapCenter = useCallback(
@@ -312,15 +350,9 @@ export const useCanvasViewport = ({
     [dpr],
   );
 
-  useEffect(() => {
-    if (!viewportOwnerChanged && !pendingZoom.current)
-      offsetRef.current = offset;
-  }, [offset, offsetRef, viewportOwnerChanged]);
-
-  useEffect(() => {
-    if (!pendingZoom.current) zoomLevelRef.current = zoomLevel;
-  }, [zoomLevel, zoomLevelRef]);
-
+  useLayoutEffect(() => {
+    prevCellSizeRef.current = cellSize;
+  }, [cellSize]);
   useEffect(() => {
     setIsRotationInteracting(true);
     if (rotationInteractionTimerRef.current !== null) {
@@ -340,6 +372,7 @@ export const useCanvasViewport = ({
 
   const handleWheel = useCallback(
     (e: WheelEvent) => {
+      if (!isCameraOwnerCurrent()) return;
       e.preventDefault();
       if (e.shiftKey && onRotationAngleChange) {
         const delta = e.deltaY < 0 ? -15 : 15;
@@ -371,6 +404,7 @@ export const useCanvasViewport = ({
     },
     [
       calculateOffsetForZoomPoint,
+      isCameraOwnerCurrent,
       coordinateScale,
       maxZoom,
       minZoom,
@@ -385,6 +419,7 @@ export const useCanvasViewport = ({
 
   const handleTouchStart = useCallback(
     (e: TouchEvent) => {
+      if (!isCameraOwnerCurrent()) return;
       if (activeTouchesRef.current.size === 0) {
         hadPinchGestureRef.current = false;
       }
@@ -420,11 +455,12 @@ export const useCanvasViewport = ({
         };
       }
     },
-    [coordinateScale, offsetRef, zoomLevelRef],
+    [coordinateScale, isCameraOwnerCurrent, offsetRef, zoomLevelRef],
   );
 
   const handleTouchMove = useCallback(
     (e: TouchEvent) => {
+      if (!isCameraOwnerCurrent()) return;
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
         activeTouchesRef.current.set(touch.identifier, {
@@ -486,6 +522,7 @@ export const useCanvasViewport = ({
     },
     [
       calculateOffsetForZoomPoint,
+      isCameraOwnerCurrent,
       coordinateScale,
       maxZoom,
       minZoom,
@@ -498,6 +535,7 @@ export const useCanvasViewport = ({
 
   const handleTouchEnd = useCallback(
     (e: TouchEvent) => {
+      if (!isCameraOwnerCurrent()) return;
       if (hadPinchGestureRef.current) {
         const now =
           typeof performance !== "undefined" ? performance.now() : Date.now();
@@ -508,8 +546,7 @@ export const useCanvasViewport = ({
       }
 
       if (activeTouchesRef.current.size < 2) {
-        if (zoomFrame.current !== null) cancelAnimationFrame(zoomFrame.current);
-        publishZoom();
+        flushCamera();
         if (viewportIdleTimer.current !== null)
           clearTimeout(viewportIdleTimer.current);
         setIsViewportInteracting(false);
@@ -527,7 +564,7 @@ export const useCanvasViewport = ({
         }
       }
     },
-    [offsetRef, publishZoom],
+    [offsetRef, flushCamera, isCameraOwnerCurrent],
   );
 
   useEffect(() => {
@@ -554,6 +591,14 @@ export const useCanvasViewport = ({
   }, [handleWheel, handleTouchStart, handleTouchMove, handleTouchEnd]);
 
   return {
+    renderCamera,
+    getDrawCamera,
+    getHitCamera,
+    isCameraOwnerCurrent,
+    markCameraPainted,
+    setCamera,
+    setPanOffset,
+    latestCameraRef,
     activeTouchesRef,
     calculateOffsetForZoomPoint,
     canvasRef,

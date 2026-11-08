@@ -229,13 +229,18 @@ const MapView: React.FC<MapViewProps> = ({
   void _onMoveToFirst;
   void _onMoveToLast;
 
-  const { zoomLevel, zoomLevelRef, canvasOffsetRef, setZoomLevel } =
-    useMapViewportSession(
-      viewportScope,
-      initialViewport,
-      onViewportChange,
-      mapData,
-    );
+  const {
+    zoomLevel,
+    zoomPublication,
+    zoomLevelRef,
+    canvasOffsetRef,
+    setZoomLevel,
+  } = useMapViewportSession(
+    viewportScope,
+    initialViewport,
+    onViewportChange,
+    mapData,
+  );
   const [internalIsRouteVisible, setInternalIsRouteVisible] = useState(true);
   const [visitMergeNotice, setVisitMergeNotice] = useState<string | null>(null);
   const [visitMergeNoticeRevision, setVisitMergeNoticeRevision] = useState(0);
@@ -2083,6 +2088,7 @@ const MapView: React.FC<MapViewProps> = ({
           items={filteredItems}
           executeModeItemIds={filteredExecuteModeItemIds}
           zoomLevel={zoomLevel}
+          zoomPublication={zoomPublication}
           isRouteVisible={
             isRouteVisible && (halls.length === 0 || selectedHallId !== "all")
           }

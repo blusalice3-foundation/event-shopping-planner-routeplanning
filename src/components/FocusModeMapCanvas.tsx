@@ -28,6 +28,8 @@ import {
   FocusMapViewportSnapshot,
 } from "../types/focus";
 import {
+  type CanvasCamera,
+  type CanvasZoomPublication,
   rotatePointAroundCenter,
   useCanvasViewport,
 } from "../features/map/canvas/useCanvasViewport";
@@ -49,6 +51,7 @@ interface FocusModeMapCanvasProps {
   items: ShoppingItem[];
   executeModeItemIds: string[];
   zoomLevel: number;
+  zoomPublication?: CanvasZoomPublication;
   selectedHall: HallDefinition | null;
   currentVisitKey: string | null;
   /**
@@ -64,7 +67,7 @@ interface FocusModeMapCanvasProps {
   currentPhase: "normal" | "postponed" | "late";
   formalCurrentPhase?: "normal" | "postponed" | "late";
   selectedHallMode?: string | "follow";
-  onZoomChange?: (newZoom: number) => void;
+  onZoomChange?: (newZoom: number, publication?: CanvasCamera) => void;
   onCellClick?: (
     blockName: string,
     number: number,
@@ -254,6 +257,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
   items,
   executeModeItemIds,
   zoomLevel,
+  zoomPublication,
   selectedHall,
   currentVisitKey,
   formalCurrentVisitKey,
@@ -295,6 +299,35 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
   const resolvedFormalPhaseIndex = formalCurrentPhaseIndex ?? currentPhaseIndex;
   const resolvedFormalRouteIndex = formalCurrentRouteIndex ?? currentRouteIndex;
   const appScale = Math.max(0.01, appZoomLevel / 100);
+  const viewportOwnerKey = useMemo(
+    () => ({
+      cells: mapData.cells,
+      mergedCells: mapData.mergedCells,
+      maxRow: mapData.maxRow,
+      maxCol: mapData.maxCol,
+      mapName,
+      eventDate,
+    }),
+    [
+      mapData.cells,
+      mapData.mergedCells,
+      mapData.maxRow,
+      mapData.maxCol,
+      mapName,
+      eventDate,
+    ],
+  );
+  const publishViewportSnapshot = useCallback(
+    (camera: CanvasCamera) => {
+      onViewportSnapshotChange?.({
+        offsetX: camera.offset.x,
+        offsetY: camera.offset.y,
+        zoomLevel: camera.zoom,
+        rotationAngle,
+      });
+    },
+    [onViewportSnapshotChange, rotationAngle],
+  );
   const {
     activeTouchesRef,
     canvasRef,
@@ -304,28 +337,35 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     dragStartOffsetRef,
     dragStartRef,
     drawCanvasRef,
+    getDrawCamera,
     hadPinchGestureRef,
     isDragging,
     isDraggingRef,
     isPinchGestureRef,
     isRotationInteracting,
     isViewportInteracting,
+    latestCameraRef,
     mapCenterX,
     mapCenterY,
-    offset,
+    markCameraPainted,
+    renderCamera,
     offsetRef,
     rafPendingRef,
     rotationRadians,
     setIsDragging,
+    setCamera,
+    setPanOffset,
     setOffset,
     setOffsetState,
     suppressClickUntilRef,
     toMapCoordinates,
-    zoomLevelRef,
   } = useCanvasViewport({
     mapMaxCol: mapData.maxCol,
     mapMaxRow: mapData.maxRow,
     zoomLevel,
+    zoomPublication,
+    ownerKey: viewportOwnerKey,
+    onCameraInput: publishViewportSnapshot,
     rotationAngle,
     coordinateScale: appScale,
     baseCellSize: BASE_CELL_SIZE,
@@ -335,13 +375,9 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     onRotationAngleChange,
   });
   useEffect(() => {
-    onViewportSnapshotChange?.({
-      offsetX: offset.x,
-      offsetY: offset.y,
-      zoomLevel,
-      rotationAngle,
-    });
-  }, [offset.x, offset.y, onViewportSnapshotChange, rotationAngle, zoomLevel]);
+    // An older commit must not replace a pending input saved by the navigator.
+    publishViewportSnapshot(latestCameraRef.current);
+  }, [latestCameraRef, publishViewportSnapshot, renderCamera]);
   const isDarkMode =
     typeof document !== "undefined" &&
     document.documentElement.classList.contains("dark");
@@ -349,7 +385,10 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
   const showNumbers = true;
   const showBorders = true;
 
-  const prevSelectedHallRef = useRef<HallDefinition | null>(null);
+  const prevSelectedHallRef = useRef({
+    owner: viewportOwnerKey,
+    hall: null as HallDefinition | null,
+  });
 
   const mapRenderingSnapshot = useMemo(
     () => getMapRenderingSnapshot(mapData),
@@ -545,7 +584,10 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       ? routeBoundsCurrentOnly
       : routeBoundsPrevCurrent;
 
-  const prevCenterRequestRef = useRef<string | null>(null);
+  const prevCenterRequestRef = useRef<{
+    owner: typeof viewportOwnerKey;
+    key: string;
+  } | null>(null);
 
   const calculateCenteredOffset = useCallback(
     (
@@ -574,10 +616,16 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
   );
 
   useEffect(() => {
-    if (prevSelectedHallRef.current?.id === selectedHall?.id) {
+    if (
+      prevSelectedHallRef.current.owner === viewportOwnerKey &&
+      prevSelectedHallRef.current.hall?.id === selectedHall?.id
+    ) {
       return;
     }
-    prevSelectedHallRef.current = selectedHall;
+    prevSelectedHallRef.current = {
+      owner: viewportOwnerKey,
+      hall: selectedHall,
+    };
 
     const container = containerRef.current;
     if (!container) return;
@@ -599,17 +647,14 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
         Math.min(MAX_ZOOM, Math.round(optimalZoom)),
       );
 
-      if (onZoomChange) {
-        onZoomChange(newZoom);
-      }
-
       const newCellSize = BASE_CELL_SIZE * (newZoom / 100);
       const routeCenterCol = (routeBounds.minCol + routeBounds.maxCol) / 2;
       const routeCenterRow = (routeBounds.minRow + routeBounds.maxRow) / 2;
       const routeCenterX = (routeCenterCol - 0.5) * newCellSize;
       const routeCenterY = (routeCenterRow - 0.5) * newCellSize;
 
-      setOffset(
+      setCamera(
+        newZoom,
         calculateCenteredOffset(
           routeCenterX,
           routeCenterY,
@@ -618,6 +663,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
           newCellSize,
           rotationRadians,
         ),
+        "center",
       );
       return;
     }
@@ -666,10 +712,11 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     }
   }, [
     cellSize,
+    viewportOwnerKey,
     selectedHall,
     routeBounds,
     currentCellCoords,
-    onZoomChange,
+    setCamera,
     showPrevRoute,
     mapCenteringMode,
     calcOptimalZoom,
@@ -681,10 +728,16 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
 
   useEffect(() => {
     const centerRequestKey = `${positionKeys.centerVisitKey ?? ""}:${recenterRevision}`;
-    if (prevCenterRequestRef.current === centerRequestKey) {
+    if (
+      prevCenterRequestRef.current?.owner === viewportOwnerKey &&
+      prevCenterRequestRef.current.key === centerRequestKey
+    ) {
       return;
     }
-    prevCenterRequestRef.current = centerRequestKey;
+    prevCenterRequestRef.current = {
+      owner: viewportOwnerKey,
+      key: centerRequestKey,
+    };
 
     if (!routeBounds || !currentCellCoords) return;
     const container = containerRef.current;
@@ -706,17 +759,14 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       Math.min(MAX_ZOOM, Math.round(optimalZoom)),
     );
 
-    if (onZoomChange) {
-      onZoomChange(newZoom);
-    }
-
     const newCellSize = BASE_CELL_SIZE * (newZoom / 100);
     const routeCenterCol = (routeBounds.minCol + routeBounds.maxCol) / 2;
     const routeCenterRow = (routeBounds.minRow + routeBounds.maxRow) / 2;
     const routeCenterX = (routeCenterCol - 0.5) * newCellSize;
     const routeCenterY = (routeCenterRow - 0.5) * newCellSize;
 
-    setOffset(
+    setCamera(
+      newZoom,
       calculateCenteredOffset(
         routeCenterX,
         routeCenterY,
@@ -725,13 +775,15 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
         newCellSize,
         rotationRadians,
       ),
+      "center",
     );
   }, [
     positionKeys.centerVisitKey,
+    viewportOwnerKey,
     recenterRevision,
     routeBounds,
     currentCellCoords,
-    onZoomChange,
+    setCamera,
     showPrevRoute,
     mapCenteringMode,
     calcOptimalZoom,
@@ -767,17 +819,14 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       Math.min(MAX_ZOOM, Math.round(optimalZoom)),
     );
 
-    if (onZoomChange) {
-      onZoomChange(newZoom);
-    }
-
     const newCellSize = BASE_CELL_SIZE * (newZoom / 100);
     const routeCenterCol = (routeBounds.minCol + routeBounds.maxCol) / 2;
     const routeCenterRow = (routeBounds.minRow + routeBounds.maxRow) / 2;
     const routeCenterX = (routeCenterCol - 0.5) * newCellSize;
     const routeCenterY = (routeCenterRow - 0.5) * newCellSize;
 
-    setOffset(
+    setCamera(
+      newZoom,
       calculateCenteredOffset(
         routeCenterX,
         routeCenterY,
@@ -786,12 +835,13 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
         newCellSize,
         rotationRadians,
       ),
+      "center",
     );
   }, [
     mapCenteringMode,
     routeBounds,
     currentCellCoords,
-    onZoomChange,
+    setCamera,
     showPrevRoute,
     calcOptimalZoom,
     calculateCenteredOffset,
@@ -810,23 +860,22 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     }
     restoredViewportRevisionRef.current = viewportRestoreRequest.revision;
     const snapshot = viewportRestoreRequest.snapshot;
-    if (onZoomChange && snapshot.zoomLevel !== zoomLevelRef.current) {
-      zoomLevelRef.current = snapshot.zoomLevel;
-      onZoomChange(snapshot.zoomLevel);
-    }
+
     if (onRotationAngleChange && snapshot.rotationAngle !== rotationAngle) {
       onRotationAngleChange(snapshot.rotationAngle);
     }
-    setOffset({ x: snapshot.offsetX, y: snapshot.offsetY });
+    setCamera(
+      snapshot.zoomLevel,
+      { x: snapshot.offsetX, y: snapshot.offsetY },
+      "restore",
+    );
     onViewportRestoreApplied?.(viewportRestoreRequest.revision);
   }, [
     onRotationAngleChange,
-    onZoomChange,
     onViewportRestoreApplied,
     rotationAngle,
-    setOffset,
+    setCamera,
     viewportRestoreRequest,
-    zoomLevelRef,
   ]);
 
   // ドラッグ中の再描画で再計算しないよう、ルート交差データをキャッシュする。
@@ -859,7 +908,13 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     () => [
       mapData,
       cellStates,
+      cellItems,
+      cellLabels,
       routeSegments,
+      resolvedFormalRouteIndex,
+      resolvedFormalPhase,
+      numberCellOutlineStyle,
+      isRotationInteracting,
       isDetailedView,
       showNumbers,
       showBorders,
@@ -868,7 +923,13 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     [
       mapData,
       cellStates,
+      cellItems,
+      cellLabels,
       routeSegments,
+      resolvedFormalRouteIndex,
+      resolvedFormalPhase,
+      numberCellOutlineStyle,
+      isRotationInteracting,
       isDetailedView,
       showNumbers,
       showBorders,
@@ -880,6 +941,9 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     const canvas = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container) return;
+    const rasterCamera = getDrawCamera(renderCamera, true);
+    if (!rasterCamera) return;
+    const fullCamera = getDrawCamera(renderCamera);
 
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
@@ -889,6 +953,8 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       scale: renderDpr,
     } = getCanvasBackingSize(containerWidth, containerHeight, dpr);
     if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+      // Keep the last coherent frame until a committed camera can refill a resized backing.
+      if (!fullCamera) return;
       // Release the previous backing before changing either dimension.
       canvas.width = 0;
       canvas.height = pixelHeight;
@@ -916,20 +982,21 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     if (
       gestureRaster.current.paint(
         ctx,
-        cellSize,
-        offsetRef.current,
+        BASE_CELL_SIZE * (rasterCamera.zoom / 100),
+        rasterCamera.offset,
         rotationRadians,
         gestureDependencies,
         isViewportInteracting,
         renderDpr,
       )
-    )
+    ) {
+      markCameraPainted(rasterCamera);
       return;
+    }
+    if (!fullCamera) return;
+    const currentOffset = fullCamera.offset;
     ctx.setTransform(renderDpr, 0, 0, renderDpr, 0, 0);
     ctx.clearRect(0, 0, containerWidth, containerHeight);
-
-    // ドラッグ中の最新オフセットを即時反映するため、ref から読み取る。
-    const currentOffset = offsetRef.current;
 
     ctx.save();
     ctx.translate(currentOffset.x, currentOffset.y);
@@ -1755,7 +1822,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
             gestureRaster.current.paint(
               ctx,
               cellSize,
-              offsetRef.current,
+              currentOffset,
               rotationRadians,
               gestureDependencies,
               isViewportInteracting,
@@ -2065,11 +2132,15 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     gestureRaster.current.capture(
       ctx,
       cellSize,
-      offsetRef.current,
+      currentOffset,
       rotationRadians,
       gestureDependencies,
     );
+    markCameraPainted(fullCamera);
   }, [
+    getDrawCamera,
+    markCameraPainted,
+    renderCamera,
     gestureDependencies,
     cellViewportIndex,
     canvasRef,
@@ -2096,7 +2167,6 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
     mapCenterY,
     numberCellOutlineStyle,
     routeCrossingData,
-    offsetRef,
   ]);
 
   // rAF から最新の描画関数を呼べるよう drawCanvasRef を更新する。
@@ -2104,9 +2174,9 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
 
   // 依存値が変わったら再描画する。
   useEffect(() => {
-    const frame = requestAnimationFrame(drawCanvas);
+    const frame = requestAnimationFrame(() => drawCanvasRef.current?.());
     return () => cancelAnimationFrame(frame);
-  }, [drawCanvas]);
+  }, [drawCanvas, drawCanvasRef]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -2478,7 +2548,7 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       }
 
       // ドラッグ中は React の再レンダリングを避けるため、ref だけ更新して rAF で再描画する。
-      offsetRef.current = { x: newX, y: newY };
+      setPanOffset({ x: newX, y: newY });
       if (!rafPendingRef.current) {
         rafPendingRef.current = true;
         requestAnimationFrame(() => {
@@ -2496,8 +2566,8 @@ const FocusModeMapCanvas: React.FC<FocusModeMapCanvasProps> = ({
       drawCanvasRef,
       isDraggingRef,
       isPinchGestureRef,
-      offsetRef,
       rafPendingRef,
+      setPanOffset,
       setIsDragging,
     ],
   );

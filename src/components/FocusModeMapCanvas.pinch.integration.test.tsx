@@ -38,11 +38,14 @@ const renderMap = (
 ) => {
   const snapshots = vi.fn<(snapshot: FocusMapViewportSnapshot) => void>();
   const onCellClick = vi.fn();
+  let replaceMap!: React.Dispatch<React.SetStateAction<DayMapData>>;
   const Harness = () => {
     const [zoomLevel, setZoomLevel] = useState(initialZoom);
+    const [currentData, setCurrentData] = useState(data);
+    replaceMap = setCurrentData;
     return (
       <FocusModeMapCanvas
-        mapData={data}
+        mapData={currentData}
         mapName="Day1"
         items={[]}
         executeModeItemIds={[]}
@@ -102,7 +105,16 @@ const renderMap = (
     });
   };
   const latestSnapshot = () => snapshots.mock.calls.at(-1)![0];
-  return { canvas, center, touch, pinch, latestSnapshot, onCellClick, ...view };
+  return {
+    canvas,
+    center,
+    touch,
+    pinch,
+    latestSnapshot,
+    onCellClick,
+    replaceMap,
+    ...view,
+  };
 };
 
 const frames = new Map<number, FrameRequestCallback>();
@@ -185,6 +197,71 @@ describe("FocusModeMapCanvas zoom center", () => {
     },
   );
 
+  it("keeps a navigator snapshot current before a pinch publication or unmount", () => {
+    const { canvas, touch, latestSnapshot, unmount } = renderMap(100);
+    fireEvent.touchStart(canvas, {
+      changedTouches: [touch(1, -50), touch(2, 50)],
+    });
+    fireEvent.touchMove(canvas, {
+      changedTouches: [touch(1, -51), touch(2, 51)],
+    });
+    expect(latestSnapshot()).toMatchObject({ zoomLevel: 102 });
+    expect(latestSnapshot().offsetX).toBeCloseTo(-6);
+    expect(latestSnapshot().offsetY).toBeCloseTo(-4);
+    fireEvent.touchMove(canvas, {
+      changedTouches: [touch(1, -52), touch(2, 52)],
+    });
+    const saved = latestSnapshot();
+    expect(saved).toMatchObject({ zoomLevel: 104 });
+    expect(saved.offsetX).toBeCloseTo(-12);
+    expect(saved.offsetY).toBeCloseTo(-8);
+    unmount();
+    expect(latestSnapshot()).toEqual(saved);
+    expect(frames.size).toBe(0);
+  });
+  it("cancels an unpublished pinch when the map drawing owner changes", () => {
+    const { canvas, touch, latestSnapshot, replaceMap } = renderMap(100);
+    fireEvent.touchStart(canvas, {
+      changedTouches: [touch(1, -50), touch(2, 50)],
+    });
+    fireEvent.touchMove(canvas, {
+      changedTouches: [touch(1, -52), touch(2, 52)],
+    });
+    expect(latestSnapshot().zoomLevel).toBe(104);
+    act(() => replaceMap({ ...mapData, cells: [] }));
+    const replacementSnapshot = latestSnapshot();
+    expect(replacementSnapshot).toMatchObject({
+      zoomLevel: 100,
+      offsetX: 0,
+      offsetY: 0,
+    });
+    fireEvent.touchEnd(canvas, {
+      changedTouches: [touch(1, -52), touch(2, 52)],
+    });
+    act(() => {
+      const pending = Array.from(frames.values());
+      frames.clear();
+      pending.forEach((callback) => callback(16));
+    });
+    expect(latestSnapshot()).toEqual(replacementSnapshot);
+  });
+
+  it("retains pending input when only the map data wrapper changes", () => {
+    const { canvas, touch, latestSnapshot, replaceMap } = renderMap(100);
+    fireEvent.touchStart(canvas, {
+      changedTouches: [touch(1, -50), touch(2, 50)],
+    });
+    fireEvent.touchMove(canvas, {
+      changedTouches: [touch(1, -52), touch(2, 52)],
+    });
+    const pendingSnapshot = latestSnapshot();
+    act(() => replaceMap({ ...mapData }));
+    expect(latestSnapshot()).toEqual(pendingSnapshot);
+    fireEvent.touchEnd(canvas, {
+      changedTouches: [touch(1, -52), touch(2, 52)],
+    });
+    expect(latestSnapshot()).toEqual(pendingSnapshot);
+  });
   it("ignores both finger releases after a pinch and accepts the next independent tap", () => {
     const { canvas, touch, center, onCellClick } = renderMap(100);
     pointer(canvas, "pointerdown", touch(1, -50));
@@ -558,6 +635,30 @@ describe("FocusModeMapCanvas container resize", () => {
       vi.useRealTimers();
     }
   });
+  it.each([false, true])(
+    "selects the displayed cell with pending wheel input and raster painted=%s",
+    (paintRaster) => {
+      useDrawingContexts();
+      const { canvas, center, onCellClick } = renderMap(100);
+      Object.defineProperties(canvas.parentElement!, {
+        clientWidth: { configurable: true, value: 600 },
+        clientHeight: { configurable: true, value: 400 },
+      });
+      flushFrames();
+      fireEvent.wheel(canvas, { ...center, deltaY: -100 });
+      if (paintRaster) {
+        const [id, draw] = Array.from(frames.entries()).at(-1)!;
+        frames.delete(id);
+        act(() => draw(16));
+      }
+      // Number 8 is at (210, 210) initially and (201, 211) in the 110% raster.
+      fireEvent.click(canvas, {
+        clientX: 60 + (paintRaster ? 201 : 210),
+        clientY: 80 + (paintRaster ? 211 : 210),
+      });
+      expect(onCellClick).toHaveBeenCalledExactlyOnceWith("A", 8, []);
+    },
+  );
   it("redraws on window resize when ResizeObserver is unavailable", () => {
     vi.stubGlobal("ResizeObserver", undefined);
     useDrawingContexts();

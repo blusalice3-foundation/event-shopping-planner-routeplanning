@@ -2,7 +2,10 @@
 import React from "react";
 import { act, fireEvent, render } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import { useCanvasViewport } from "./useCanvasViewport";
+import {
+  rotatePointAroundCenter,
+  useCanvasViewport,
+} from "./useCanvasViewport";
 afterEach(() => {
   vi.unstubAllGlobals();
 });
@@ -421,3 +424,45 @@ it("starts a new viewport owner without writing the previous state or pending pi
   act(() => frames[1](16));
   expect(publishZoom).toHaveBeenCalledExactlyOnceWith(85);
 });
+
+it.each([0, 37])(
+  "hit tests the displayed camera while wheel input is pending at rotation %s",
+  (rotationAngle) => {
+    vi.stubGlobal("requestAnimationFrame", () => 1);
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    const { root, getViewport } = renderScaledViewport(1, rotationAngle);
+    const before = getViewport();
+    before.markCameraPainted(before.renderCamera);
+    const initialHit = before.toMapCoordinates(500, 300);
+    fireEvent.wheel(root, {
+      deltaY: -100,
+      clientX: 360,
+      clientY: 280,
+    });
+    const pending = getViewport();
+    expect(pending.zoomLevelRef.current).toBe(110);
+    const beforePaint = pending.toMapCoordinates(500, 300);
+    expect(beforePaint.x / pending.cellSize).toBeCloseTo(
+      initialHit.x / before.cellSize,
+    );
+    expect(beforePaint.y / pending.cellSize).toBeCloseTo(
+      initialHit.y / before.cellSize,
+    );
+    const raster = pending.getDrawCamera(pending.renderCamera, true)!;
+    pending.markCameraPainted(raster);
+    const paintedCellSize = 32 * (raster.zoom / 100);
+    const point = rotatePointAroundCenter(
+      10 * paintedCellSize,
+      12 * paintedCellSize,
+      (200 * paintedCellSize) / 2,
+      (200 * paintedCellSize) / 2,
+      (rotationAngle * Math.PI) / 180,
+    );
+    const paintedHit = pending.toMapCoordinates(
+      point.x + raster.offset.x,
+      point.y + raster.offset.y,
+    );
+    expect(paintedHit.x / pending.cellSize).toBeCloseTo(10);
+    expect(paintedHit.y / pending.cellSize).toBeCloseTo(12);
+  },
+);
