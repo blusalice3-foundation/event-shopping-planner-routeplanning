@@ -253,6 +253,10 @@ describe("XLSX ZIP preflight worker gate", () => {
         platform: "Linux aarch64",
       },
     },
+    {
+      label: "a runtime without navigator",
+      navigator: undefined,
+    },
   ])("retains native inflater use on $label", async ({ navigator }) => {
     const input = await createDeflatedZip(validEntries());
     const OriginalInflater = DecompressionStream;
