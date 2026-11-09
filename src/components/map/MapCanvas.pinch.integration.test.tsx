@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { fireEvent, render, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DayMapData } from "../../types/map";
 import MapCanvas from "./MapCanvas";
@@ -108,12 +108,15 @@ const renderCanvas = async () => {
   const view = render(<Harness />);
   const canvas = view.container.querySelector("canvas");
   if (!canvas) throw new Error("canvas not found");
-  await waitFor(() => expect(canvas.width).toBe(280));
+  await act(async () => {
+    await vi.waitFor(() => expect(canvas.width).toBe(280));
+  });
   return { canvas, onCellClick, offsetRef };
 };
 
 describe("MapCanvas pinch gesture tap isolation", () => {
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     mapCellClick.mockClear();
     window.addEventListener("mapCellClick", mapCellClick);
     vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(280);
@@ -144,10 +147,21 @@ describe("MapCanvas pinch gesture tap isolation", () => {
     });
   });
 
-  afterEach(() => {
-    window.removeEventListener("mapCellClick", mapCellClick);
-    vi.restoreAllMocks();
-    vi.unstubAllGlobals();
+  afterEach(async () => {
+    try {
+      // Keep gesture cooldown callbacks inside this test's jsdom lifetime.
+      await act(async () => {
+        await vi.runOnlyPendingTimersAsync();
+      });
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      cleanup();
+      window.removeEventListener("mapCellClick", mapCellClick);
+      vi.clearAllTimers();
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    }
   });
 
   it.each<ReleaseOrder>(["pointer-first", "touch-first"])(
