@@ -68,6 +68,7 @@ export async function launch(
   page: Page,
   forbidNativeCodecs = true,
   interceptWorker = true,
+  startUrl = "/",
 ) {
   const failures: string[] = [];
   const navigations: string[] = [];
@@ -150,7 +151,7 @@ export async function launch(
       await route.fulfill({ response, body });
     });
   }
-  await page.goto("/");
+  await page.goto(startUrl);
   await expect(page.locator("#loading-screen")).toBeHidden();
   page.on("framenavigated", (frame) => {
     if (frame === page.mainFrame()) navigations.push(frame.url());

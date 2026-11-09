@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { createServer, request } from "node:http";
 import { expect, test } from "@playwright/test";
 import ExcelJS from "exceljs";
 import { addInflateRegressionPart } from "../../src/xlsx/fixtures/inflateWindowWrap";
@@ -20,57 +21,90 @@ test.describe.configure({ timeout: 60_000 });
 
 test("@ios-compat controlled offline PWA imports the fixed inflate corpus through the cached product Worker", async ({
   page,
-  context,
 }, testInfo) => {
-  const trace = await launch(page, false, false);
-  await page.evaluate(async () => {
-    await navigator.serviceWorker.ready;
-  });
-  await page.reload();
-  await expect
-    .poll(() =>
-      page.evaluate(() => Boolean(navigator.serviceWorker.controller)),
-    )
-    .toBe(true);
-  const identity = await readRuntimeIdentity(page);
-  expect(identity.sourceSha).toMatch(/^[0-9a-f]{40}$/);
-  expect(identity.variantId).toMatch(/^[0-9a-f]{64}$/);
-  expect(identity.controller).toMatch(/\/sw\.js$/);
-  const book = new ExcelJS.Workbook();
-  const sheet = book.addWorksheet("アイテムデータ");
-  sheet.addRow([
-    "ID",
-    "サークル",
-    "参加日",
-    "ブロック",
-    "番号",
-    "タイトル",
-    "価格",
-    "数量",
-    "購入状況",
-    "備考",
-  ]);
-  sheet.addRow([
-    item.id,
-    item.circle,
-    item.eventDate,
-    item.block,
-    item.number,
-    item.title,
-    item.price,
-    item.quantity,
-    item.purchaseStatus,
-    item.remarks,
-  ]);
-  const metadata = book.addWorksheet("メタデータ");
-  metadata.addRow(["key", "value"]);
-  metadata.addRow(["eventName", eventName]);
-  metadata.addRow(["version", "1.0"]);
-  const bytes = Buffer.from(
-    addInflateRegressionPart(new Uint8Array(await book.xlsx.writeBuffer())),
+  // Closing network connections exercises the browser's real offline fallback.
+  // Playwright WebKit's protocol-level setOffline can fail navigation before
+  // its Service Worker gets a chance to respond on Windows.
+  let networkUnavailable = false;
+  const upstream = new URL(
+    process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:4173",
   );
-  await context.setOffline(true);
+  const server = createServer((incoming, outgoing) => {
+    if (networkUnavailable) {
+      incoming.socket.destroy();
+      return;
+    }
+    const forwarded = request(
+      new URL(incoming.url ?? "/", upstream),
+      { method: incoming.method },
+      (response) => {
+        outgoing.writeHead(response.statusCode ?? 502, response.headers);
+        response.pipe(outgoing);
+      },
+    );
+    forwarded.on("error", () => {
+      outgoing.destroy();
+    });
+    incoming.pipe(forwarded);
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  if (!address || typeof address === "string")
+    throw new Error("Offline test server address is missing.");
   try {
+    const trace = await launch(
+      page,
+      false,
+      false,
+      `http://127.0.0.1:${address.port}/`,
+    );
+    await page.evaluate(async () => {
+      await navigator.serviceWorker.ready;
+    });
+    await page.reload();
+    await expect
+      .poll(() =>
+        page.evaluate(() => Boolean(navigator.serviceWorker.controller)),
+      )
+      .toBe(true);
+    const identity = await readRuntimeIdentity(page);
+    expect(identity.sourceSha).toMatch(/^[0-9a-f]{40}$/);
+    expect(identity.variantId).toMatch(/^[0-9a-f]{64}$/);
+    expect(identity.controller).toMatch(/\/sw\.js$/);
+    const book = new ExcelJS.Workbook();
+    const sheet = book.addWorksheet("アイテムデータ");
+    sheet.addRow([
+      "ID",
+      "サークル",
+      "参加日",
+      "ブロック",
+      "番号",
+      "タイトル",
+      "価格",
+      "数量",
+      "購入状況",
+      "備考",
+    ]);
+    sheet.addRow([
+      item.id,
+      item.circle,
+      item.eventDate,
+      item.block,
+      item.number,
+      item.title,
+      item.price,
+      item.quantity,
+      item.purchaseStatus,
+      item.remarks,
+    ]);
+    const metadata = book.addWorksheet("メタデータ");
+    metadata.addRow(["key", "value"]);
+    metadata.addRow(["eventName", eventName]);
+    metadata.addRow(["version", "1.0"]);
+    const bytes = Buffer.from(
+      addInflateRegressionPart(new Uint8Array(await book.xlsx.writeBuffer())),
+    );
+    networkUnavailable = true;
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page.locator("#loading-screen")).toBeHidden();
     expect(await readRuntimeIdentity(page)).toEqual(identity);
@@ -108,6 +142,7 @@ test("@ios-compat controlled offline PWA imports the fixed inflate corpus throug
             .digest("hex"),
           inputSha256: createHash("sha256").update(bytes).digest("hex"),
           physicalDevice: false,
+          networkLoss: "connections-destroyed-at-test-http-gate",
           updateAcrossBuildsVerified: false,
         }),
       ),
@@ -119,6 +154,10 @@ test("@ios-compat controlled offline PWA imports the fixed inflate corpus throug
     expect(reloaded.eventSettings).toEqual(saved.eventSettings);
     expect(await readRuntimeIdentity(page)).toEqual(identity);
   } finally {
-    await context.setOffline(false);
+    networkUnavailable = false;
+    server.closeAllConnections();
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
   }
 });

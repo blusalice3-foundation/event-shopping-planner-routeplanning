@@ -144,12 +144,15 @@ for (const forceJs of [false, true])
       contentDigest({
         maxRow: 250,
         maxCol: 200,
-        cells: cells.map((cell) => ({
-          ...cell,
-          fontColor: null,
-          isMerged: false,
-          isVerticalText: false,
-        })),
+        // Persistence omits empty, unstyled cells by the existing sparse-map contract.
+        cells: cells
+          .filter((cell) => cell.value !== null)
+          .map((cell) => ({
+            ...cell,
+            fontColor: null,
+            isMerged: false,
+            isVerticalText: false,
+          })),
         mergedCells: [],
         blocks: [],
       }),
@@ -348,28 +351,38 @@ test("@ios-compat map import through the JS Worker persists every parsed cell af
   const saved = await exportBackup(page);
   const map = saved.data.mapData[eventName]["1日目マップ"];
   expect(map).toMatchObject({ maxRow: 56, maxCol: 56 });
-  expect(map.cells).toHaveLength(36);
-  expect(map.cells).toEqual(
-    expect.arrayContaining([
-      expect.objectContaining({ row: 26, col: 26, value: "A" }),
-      expect.objectContaining({ row: 26, col: 27, value: 1 }),
-      expect.objectContaining({
-        row: 31,
-        col: 31,
-        value: "ユーザー登録・エラーが発生しました",
-      }),
-    ]),
-  );
-  for (const cell of map.cells as Array<{
-    row: number;
-    col: number;
-    value: unknown;
-  }>)
-    if (
-      !(cell.row === 26 && cell.col <= 27) &&
-      !(cell.row === 31 && cell.col === 31)
-    )
-      expect(cell.value).toBeNull();
+  const red = { color: "#FF0000", style: "medium" };
+  const defaults = {
+    backgroundColor: null,
+    isMerged: false,
+    isVerticalText: false,
+  };
+  expect(map.cells).toEqual([
+    {
+      ...defaults,
+      row: 26,
+      col: 26,
+      value: "A",
+      fontColor: "#000000",
+      borders: { top: red, right: null, bottom: red, left: red },
+    },
+    {
+      ...defaults,
+      row: 26,
+      col: 27,
+      value: 1,
+      fontColor: "#000000",
+      borders: { top: red, right: red, bottom: red, left: null },
+    },
+    {
+      ...defaults,
+      row: 31,
+      col: 31,
+      value: "ユーザー登録・エラーが発生しました",
+      fontColor: null,
+      borders: { top: null, right: null, bottom: null, left: null },
+    },
+  ]);
   const traces = await trace.verify(1, testInfo);
   expect(traces.flatMap((worker) => worker.responses)).toEqual([
     { type: "XLSX_IMPORT_RESULT", kind: "map-import" },
