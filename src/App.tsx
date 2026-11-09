@@ -773,6 +773,9 @@ const App: React.FC = () => {
   } = useMapRouteCommands({
     requestMutation: application.request,
     state: {
+      eventGeneration: activeEventName
+        ? application.coordinator.generation(activeEventName)
+        : 0,
       activeEventName,
       activeEventDate,
       isMapTab,

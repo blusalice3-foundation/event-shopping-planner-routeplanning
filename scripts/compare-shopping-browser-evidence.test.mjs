@@ -181,6 +181,7 @@ async function partialShoppingRun(directory, phase, base = 10, options = {}) {
       headed: false,
       build: "npm run build:release-a",
       workerCount: 1,
+      ...options.runEnvironment,
     },
   };
   metadata.releaseCapabilityRaw = JSON.stringify(metadata.releaseCapability);
@@ -198,6 +199,10 @@ async function partialShoppingRun(directory, phase, base = 10, options = {}) {
           (condition, index) => {
             const data = {
               ...shopping(base),
+              environment: {
+                ...browserEnvironment,
+                ...options.artifactEnvironment,
+              },
               ...condition,
               ...(options.identityFactory ?? evidenceIdentity)(
                 "shopping",
@@ -294,6 +299,147 @@ test("missing extra categories retain every valid core before/after row and expl
         row.reasons.length > 0,
     ),
   );
+});
+const gpuLaunch = {
+  gpuRequested: true,
+  browserLaunchArgs: ["--enable-gpu", "--disable-accelerated-2d-canvas"],
+};
+const defaultLaunch = { gpuRequested: false, browserLaunchArgs: [] };
+function launchRunOptions(metadata) {
+  return { runEnvironment: metadata, artifactEnvironment: metadata };
+}
+for (const [label, metadata] of [
+  ["legacy missing", undefined],
+  ["GPU", gpuLaunch],
+  ["recorded default", defaultLaunch],
+])
+  test(`comparison preserves matching ${label} browser launch metadata`, async (t) => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), "esp launch same "));
+    t.after(() => rm(directory, { recursive: true, force: true }));
+    const beforeRoot = await partialShoppingRun(
+      directory,
+      "before",
+      10,
+      launchRunOptions(metadata),
+    );
+    const afterRoot = await partialShoppingRun(
+      directory,
+      "after",
+      12,
+      launchRunOptions(metadata),
+    );
+    const { result } = await compareBrowserEvidence({ beforeRoot, afterRoot });
+    assert.equal(result.coverage.compared, 192);
+    assert.ok(
+      result.rows
+        .filter((row) => row.group === "shopping")
+        .every((row) => row.status === "compared"),
+    );
+  });
+for (const scope of ["run", "artifact"])
+  for (const [label, beforeLaunch, afterLaunch] of [
+    ["GPU versus default", gpuLaunch, defaultLaunch],
+    ["GPU versus missing", gpuLaunch, undefined],
+    ["default versus missing", defaultLaunch, undefined],
+  ])
+    test(`comparison rejects ${scope} ${label} browser launch metadata`, async (t) => {
+      const directory = await mkdtemp(
+        path.join(os.tmpdir(), "esp launch mismatch "),
+      );
+      t.after(() => rm(directory, { recursive: true, force: true }));
+      const options = (metadata) =>
+        scope === "run"
+          ? { runEnvironment: metadata, artifactEnvironment: gpuLaunch }
+          : { runEnvironment: gpuLaunch, artifactEnvironment: metadata };
+      const beforeRoot = await partialShoppingRun(
+        directory,
+        "before",
+        10,
+        options(beforeLaunch),
+      );
+      const afterRoot = await partialShoppingRun(
+        directory,
+        "after",
+        12,
+        options(afterLaunch),
+      );
+      const { exitCode, result } = await compareBrowserEvidence({
+        beforeRoot,
+        afterRoot,
+      });
+      assert.equal(exitCode, 1);
+      assert.equal(result.coverage.compared, 0);
+      const row = result.rows.find((row) => row.group === "shopping");
+      assert.equal(row.status, "uncomparable");
+      assert.equal(row.deltaMs, null);
+      assert.ok(
+        row.reasons.some((reason) =>
+          /GPU launch metadata mismatch or missing/.test(reason),
+        ),
+      );
+    });
+for (const scope of ["run", "artifact"])
+  for (const [label, metadata] of [
+    ["partial", { gpuRequested: true }],
+    ["contradictory", { gpuRequested: true, browserLaunchArgs: [] }],
+    [
+      "reordered arguments",
+      {
+        gpuRequested: true,
+        browserLaunchArgs: [...gpuLaunch.browserLaunchArgs].reverse(),
+      },
+    ],
+  ])
+    test(`comparison rejects ${scope} ${label} browser launch metadata`, async (t) => {
+      const directory = await mkdtemp(
+        path.join(os.tmpdir(), "esp launch invalid "),
+      );
+      t.after(() => rm(directory, { recursive: true, force: true }));
+      const beforeRoot = await partialShoppingRun(
+        directory,
+        "before",
+        10,
+        launchRunOptions(gpuLaunch),
+      );
+      const afterRoot = await partialShoppingRun(directory, "after", 12, {
+        runEnvironment: scope === "run" ? metadata : gpuLaunch,
+        artifactEnvironment: scope === "artifact" ? metadata : gpuLaunch,
+      });
+      const { exitCode, result } = await compareBrowserEvidence({
+        beforeRoot,
+        afterRoot,
+      });
+      assert.equal(exitCode, 1);
+      assert.equal(
+        result.rows.filter((row) => row.status === "compared").length,
+        0,
+      );
+      assert.match(
+        result.errors.join("\n"),
+        /GPU|gpuRequested|browserLaunchArgs|launch/i,
+      );
+    });
+test("matching GPU metadata never bridges a source instrument mismatch", async (t) => {
+  const directory = await mkdtemp(
+    path.join(os.tmpdir(), "esp launch instrument "),
+  );
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const beforeRoot = await partialShoppingRun(
+    directory,
+    "before",
+    10,
+    launchRunOptions(gpuLaunch),
+  );
+  const afterRoot = await partialShoppingRun(directory, "after", 12, {
+    ...launchRunOptions(gpuLaunch),
+    instrumentHash: "c",
+  });
+  const { result } = await compareBrowserEvidence({ beforeRoot, afterRoot });
+  assert.equal(result.coverage.compared, 0);
+  const row = result.rows.find((row) => row.group === "shopping");
+  assert.equal(row.status, "uncomparable");
+  assert.equal(row.deltaMs, null);
+  assert.ok(row.reasons.includes("instrumentPatch mismatch"));
 });
 test("comparison labels current 65ms judgments and preserves original run verdicts", async (t) => {
   const directory = await mkdtemp(

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ShoppingItem } from "../../types/item";
-import { createAppBackup, parseAppBackup } from "../../utils/appBackup";
+import { parseAppBackup } from "../../utils/appBackup";
 import {
   exportToXlsx,
   importFromXlsx,
@@ -60,15 +60,7 @@ describe("XLSX event restore", () => {
 
     const importedData = toImportedEventData(result);
     const restoreSource = buildXlsxEventRestoreSource(importedData);
-    const validation = parseAppBackup(
-      createAppBackup(
-        restoreSource.data,
-        new Date("2026-08-02T00:00:00.000Z"),
-        {
-          blockDetectionSettings: restoreSource.blockDetectionSettings,
-        },
-      ),
-    );
+    const validation = parseAppBackup(restoreSource.backup);
 
     expect(validation.ok).toBe(true);
   });
@@ -122,15 +114,7 @@ describe("XLSX event restore", () => {
     const importedData = toImportedEventData(result);
     const importedCell = importedData.mapData?.["1日目マップ"].cells[0] ?? null;
     const restoreSource = buildXlsxEventRestoreSource(importedData);
-    const validation = parseAppBackup(
-      createAppBackup(
-        restoreSource.data,
-        new Date("2026-08-02T00:00:00.000Z"),
-        {
-          blockDetectionSettings: restoreSource.blockDetectionSettings,
-        },
-      ),
-    );
+    const validation = parseAppBackup(restoreSource.backup);
 
     expect(result.success).toBe(true);
     expect(importedCell).not.toHaveProperty("mergeParent");

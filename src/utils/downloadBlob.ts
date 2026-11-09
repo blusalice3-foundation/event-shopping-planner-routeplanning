@@ -1,14 +1,22 @@
 export const downloadBlob = (blob: Blob, fileName: string): void => {
+  const anchor = document.createElement("a");
   const objectUrl = URL.createObjectURL(blob);
+  let started = false;
   try {
-    const anchor = document.createElement("a");
     anchor.href = objectUrl;
     anchor.download = fileName;
     anchor.rel = "noopener";
     document.body.appendChild(anchor);
     anchor.click();
-    anchor.remove();
+    started = true;
   } finally {
-    URL.revokeObjectURL(objectUrl);
+    anchor.remove();
+    if (started) {
+      // Safari may resolve the Blob after click() returns. Keep it alive while
+      // the browser starts the download, then release it for long-lived PWAs.
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } else {
+      URL.revokeObjectURL(objectUrl);
+    }
   }
 };

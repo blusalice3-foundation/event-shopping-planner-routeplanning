@@ -4037,7 +4037,7 @@ for (const outcome of ["save", "cancel", "abort"] as const) {
 }
 
 for (const choice of ["保存して確定", "キャンセル（破棄）"] as const) {
-  test(`visit long press commits source visits and a different target mode with scoped commands: ${choice}`, async ({
+  test(`visit long press commits source visits and a different target mode without unchanged viewport writes: ${choice}`, async ({
     page,
   }) => {
     await page.addInitScript(() => {
@@ -4064,6 +4064,7 @@ for (const choice of ["保存して確定", "キャンセル（破棄）"] as co
       string,
       Record<string, string>
     >;
+    const beforeViewports = await stored(page, "mapViewportSettings");
     await reorderVisitList(page);
     await page.evaluate(() => {
       (window as unknown as { visitDayCommands: unknown[] }).visitDayCommands =
@@ -4097,20 +4098,9 @@ for (const choice of ["保存して確定", "キャンセル（破棄）"] as co
           }
         ).visitDayCommands,
     );
-    expect(commands.map((command) => command.method)).toEqual(["day", "day"]);
-    expect(commands[1]).toMatchObject({
-      method: "day",
-      args: [
-        {
-          kind: "map-viewport",
-          eventName,
-          day: "1日目",
-          mapKey: "1日目マップ",
-        },
-        expect.any(String),
-        expect.any(Object),
-      ],
-    });
+    // Leaving an untouched map must not add a second, no-op viewport write.
+    expect(commands.map((command) => command.method)).toEqual(["day"]);
+    expect(await stored(page, "mapViewportSettings")).toEqual(beforeViewports);
     expect(commands[0]).toMatchObject({
       method: "day",
       args: [

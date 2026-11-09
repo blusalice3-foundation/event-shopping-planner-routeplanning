@@ -1,8 +1,15 @@
-import { createEventConsistency } from "../../types/consistency";
+import {
+  createDayConsistency,
+  createEventConsistency,
+  createVisitContext,
+} from "../../types/consistency";
 import { describe, expect, it } from "vitest";
 import type { AppData } from "../../app/ports/PersistenceCommandPort";
 import type { ShoppingItem } from "../../types/item";
-import { DEFAULT_BLOCK_DETECTION_SETTINGS } from "../../types/map";
+import {
+  DEFAULT_BLOCK_DETECTION_SETTINGS,
+  type DayMapData,
+} from "../../types/map";
 import { createAppBackup, parseAppBackup } from "../../utils/appBackup";
 import { buildEventRestoreData } from "./backupRestore";
 import {
@@ -108,6 +115,119 @@ const currentEventData = (eventName: string): AppData => ({
 });
 
 describe("buildXlsxEventRestoreSource", () => {
+  it.each(["legacy", "v2"] as const)(
+    "%s backup reuse preserves validated restore contents and isolation",
+    (format) => {
+      const retainedFields = {
+        purchaseStatus: "LimitedPurchase" as const,
+        quantity: 3,
+        limitedPurchasedQuantity: 1,
+        catalogPrice: 1200,
+        sheetRemarks: "ユーザー登録",
+        sheetIdentityVerified: true,
+        remarks: "エラーが発生しました",
+        priorityLevel: "highest" as const,
+        protectionLevel: "deletable" as const,
+        source: "spreadsheet" as const,
+        assignedTo: "担当者",
+        orderIndex: 0,
+        postponed: false,
+      };
+      const imported: ImportedEventData = {
+        ...completeImport(),
+        items: [
+          {
+            ...item,
+            ...retainedFields,
+            url: "  ",
+            lastSyncedAt: undefined,
+            ...(format === "legacy" ? { manualHallId: "missing-hall" } : {}),
+          },
+        ],
+      };
+      if (format === "v2") {
+        const event = createEventConsistency();
+        event.blockDetectionSettings = {
+          ...structuredClone(DEFAULT_BLOCK_DETECTION_SETTINGS),
+          maxBlockNameLength: 6,
+        };
+        const day = createDayConsistency();
+        const context = createVisitContext();
+        const hall = {
+          kind: "map" as const,
+          mapKey: "1日目マップ",
+          hallId: "hall-1",
+        };
+        context.assignments = { [item.id]: hall, "missing-item": hall };
+        context.hallOrder = [{ hall, priority: "highest" }];
+        context.hallVisitLists = [
+          { group: { hall, priority: "highest" }, itemIds: [item.id] },
+        ];
+        context.route = { isRouteVisible: false, visitOrder: [] };
+        day.selectedMapKey = "1日目マップ";
+        day.maps["1日目マップ"] = context;
+        event.days[item.eventDate] = day;
+        imported.eventConsistency = event;
+        imported.blockDetectionSettings = null;
+        imported.routeSettings = null;
+        imported.hallRouteSettings = null;
+      }
+      const originalImport = structuredClone(imported);
+      const source = buildXlsxEventRestoreSource(imported);
+      const originalBackup = structuredClone(source.backup);
+      // Compare against the previous public restore path at the same timestamp.
+      const previous = parseAppBackup(
+        createAppBackup(source.data, new Date(source.backup.exportedAt), {
+          blockDetectionSettings: source.blockDetectionSettings,
+        }),
+      );
+      const reused = parseAppBackup(source.backup);
+      expect(previous.ok).toBe(true);
+      expect(reused.ok).toBe(true);
+      if (!previous.ok || !reused.ok)
+        throw new Error("Restore candidate rejected");
+      expect(reused.backup).toEqual(previous.backup);
+      expect(reused.data.eventLists[imported.eventName]).toEqual([
+        { ...item, ...retainedFields },
+      ]);
+      expect(
+        reused.data.eventConsistency[imported.eventName].blockDetectionSettings,
+      ).toEqual(
+        format === "v2"
+          ? imported.eventConsistency!.blockDetectionSettings
+          : imported.blockDetectionSettings,
+      );
+      expect(source.notices).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: expect.stringContaining(
+              format === "legacy" ? "manualHallId" : "assignments.missing-item",
+            ),
+          }),
+        ]),
+      );
+      expect([...source.notices, ...(reused.backup.notices ?? [])]).toEqual([
+        ...source.notices,
+        ...(previous.backup.notices ?? []),
+      ]);
+      // Editing one candidate must not alter its source or a second candidate.
+      const candidateItems = reused.data.eventLists[
+        imported.eventName
+      ] as ShoppingItem[];
+      const candidateMaps = reused.data.mapData[imported.eventName] as Record<
+        string,
+        DayMapData
+      >;
+      candidateItems[0].quantity = 99;
+      candidateMaps["1日目マップ"].maxRow = 99;
+      reused.data.eventConsistency[
+        imported.eventName
+      ].blockDetectionSettings!.allowedCharTypes.symbol = true;
+      expect(source.backup).toEqual(originalBackup);
+      expect(imported).toEqual(originalImport);
+      expect(previous.data).toEqual(originalBackup.data);
+    },
+  );
   it("maps a complete XLSX import into every event-scoped backup section", () => {
     const imported = completeImport();
 
@@ -117,6 +237,8 @@ describe("buildXlsxEventRestoreSource", () => {
       expect(source.data[sectionName]).toHaveProperty(imported.eventName);
     }
     expect(source.data.eventLists[imported.eventName]).toEqual([item]);
+    expect(source.backup.data).toBe(source.data);
+    expect(parseAppBackup(source.backup).ok).toBe(true);
     expect(source.data.mapRotationSettings[imported.eventName]).toEqual(
       imported.mapRotationSettings,
     );
@@ -145,11 +267,7 @@ describe("buildXlsxEventRestoreSource", () => {
       blockDetectionSettings: null,
     };
     const source = buildXlsxEventRestoreSource(imported);
-    const validation = parseAppBackup(
-      createAppBackup(source.data, new Date("2026-08-02T00:00:00.000Z"), {
-        blockDetectionSettings: source.blockDetectionSettings,
-      }),
-    );
+    const validation = parseAppBackup(source.backup);
 
     const restored = buildEventRestoreData(
       currentEventData(eventName),
@@ -178,15 +296,7 @@ describe("buildXlsxEventRestoreSource", () => {
       errors: [],
     });
     const source = buildXlsxEventRestoreSource(imported);
-    const backup = createAppBackup(
-      source.data,
-      new Date("2026-08-02T00:00:00.000Z"),
-      {
-        blockDetectionSettings: source.blockDetectionSettings,
-      },
-    );
-
-    const validation = parseAppBackup(backup);
+    const validation = parseAppBackup(source.backup);
 
     expect(validation.ok).toBe(true);
     if (!validation.ok) throw new Error("XLSX restore source was rejected");

@@ -1,7 +1,7 @@
 import { normalizeItemsOptionalFields } from "../../utils/itemOptionalFields";
 import type { ConsistencyChange } from "../consistency/domain/migration";
 import type { EventConsistencyV1 } from "../../types/consistency";
-import { createAppBackup } from "../../utils/appBackup";
+import { createAppBackup, type AppBackupV1 } from "../../utils/appBackup";
 import type {
   DayModeState,
   EventMetadata,
@@ -40,6 +40,7 @@ export type ImportedEventData = {
 };
 
 export type XlsxEventRestoreSource = {
+  backup: AppBackupV1;
   notices: ConsistencyChange[];
   data: AppData;
   blockDetectionSettings: BlockDetectionSettingsStore;
@@ -137,6 +138,7 @@ export function buildXlsxEventRestoreSource(
     },
   );
   return {
+    backup,
     data: backup.data,
     notices: backup.notices ?? [],
     blockDetectionSettings: eventSection(

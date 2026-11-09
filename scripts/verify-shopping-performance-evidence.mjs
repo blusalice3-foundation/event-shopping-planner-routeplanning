@@ -11,6 +11,7 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { validatePerformanceBrowserLaunchMetadata } from "./lib/performance-browser-launch.mjs";
 
 import {
   expectedPerformanceCases,
@@ -986,6 +987,7 @@ export function validateBrowserArtifactEnvironment(environment) {
       environment.retries === 0,
     "Artifact environment headed/workers/retries is missing or invalid",
   );
+  validatePerformanceBrowserLaunchMetadata(environment, { allowLegacy: true });
 }
 // A comparison witness never substitutes for the requested profile count of accepted frames.
 export function validateBaselineFrameObservationArtifact(
@@ -1702,6 +1704,18 @@ export async function verifyGroupEvidence({
   };
   try {
     assert(Object.hasOwn(groupSpecs, group), "Unknown evidence group");
+    let runLaunchMetadata = null;
+    try {
+      const run = JSON.parse(
+        await readFile(path.join(runRoot, "run-result.json"), "utf8"),
+      );
+      runLaunchMetadata = validatePerformanceBrowserLaunchMetadata(
+        Object.hasOwn(run, "environment") ? run.environment : {},
+        { allowLegacy: true },
+      );
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
     const reportPath = path.join(groupRoot, "report.json");
     const reportBytes = await readFile(reportPath);
     result.hashes["report.json"] = createHash("sha256")
@@ -1759,6 +1773,15 @@ export async function verifyGroupEvidence({
         acceptance[0],
         path.join(groupRoot, "test-results"),
         result.hashes,
+      );
+      const artifactLaunchMetadata = validatePerformanceBrowserLaunchMetadata(
+        artifact.environment,
+        { allowLegacy: true },
+      );
+      assert(
+        JSON.stringify(artifactLaunchMetadata) ===
+          JSON.stringify(runLaunchMetadata),
+        "Artifact browser launch metadata differs from the canonical run",
       );
       if (group === "transfer" && artifact.measurementKind === "frame")
         await verifyFrameFiles(

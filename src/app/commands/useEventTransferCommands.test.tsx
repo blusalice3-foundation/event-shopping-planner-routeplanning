@@ -1,5 +1,6 @@
 import type { EventWorkbookAdditionalData } from "../../xlsx/domain/eventWorkbook";
 import type { XlsxImportResult } from "../../xlsx/domain/types";
+import xlsxLimits from "../../../config/xlsx-limits.json";
 import {
   buildXlsxEventRestoreSource,
   toImportedEventData,
@@ -182,6 +183,57 @@ const createPorts = (
   };
   return ports;
 };
+
+describe("XLSX input allocation guard", () => {
+  it.each([0, 1])(
+    "checks the compressed limit before reading bytes (excess %i)",
+    async (excess) => {
+      const alert = vi.spyOn(window, "alert").mockImplementation(() => {});
+      try {
+        const ports = createPorts();
+        vi.mocked(
+          ports.appRuntime.xlsxCommands.importWorkbook,
+        ).mockResolvedValue({
+          kind: "event-import",
+          value: {
+            success: false,
+            eventName: "",
+            items: [],
+            errors: ["fixture"],
+          },
+        });
+        const arrayBuffer = vi.fn(async () => new ArrayBuffer(1));
+        const file = {
+          name: "bounded.xlsx",
+          size: xlsxLimits.maxCompressedBytes + excess,
+          arrayBuffer,
+        } as unknown as File;
+        const input = {
+          target: { files: [file], value: "bounded.xlsx" },
+        } as unknown as Parameters<
+          ReturnType<typeof useEventTransferCommands>["handleExportFileImport"]
+        >[0];
+        const { result, unmount } = renderHook(() =>
+          useEventTransferCommands(ports),
+        );
+        await act(() => result.current.handleExportFileImport(input));
+        expect(input.target.value).toBe("");
+        expect(arrayBuffer).toHaveBeenCalledTimes(excess ? 0 : 1);
+        expect(
+          ports.appRuntime.xlsxCommands.importWorkbook,
+        ).toHaveBeenCalledTimes(excess ? 0 : 1);
+        if (excess)
+          expect(alert).toHaveBeenCalledWith(expect.stringContaining("32 MiB"));
+        expect(ports.openBackupRestore).not.toHaveBeenCalled();
+        expect(ports.requestMutation).not.toHaveBeenCalled();
+        expect(ports.clearXlsxOperation).toHaveBeenCalledOnce();
+        unmount();
+      } finally {
+        alert.mockRestore();
+      }
+    },
+  );
+});
 
 describe("useEventTransferCommands", () => {
   it("opens export options only for an event with exportable items", async () => {

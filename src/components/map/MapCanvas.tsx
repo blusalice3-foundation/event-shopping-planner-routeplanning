@@ -25,7 +25,11 @@ import {
   MAX_ZOOM,
 } from "../../types/map";
 import { ShoppingItem } from "../../types/item";
-import { useCanvasViewport } from "../../features/map/canvas/useCanvasViewport";
+import {
+  useCanvasViewport,
+  type CanvasCamera,
+  type CanvasZoomPublication,
+} from "../../features/map/canvas/useCanvasViewport";
 import { useRouteCalculation } from "../../features/map/routing/useRouteCalculation";
 import {
   filterFirstRouteMarkers,
@@ -68,7 +72,8 @@ interface MapCanvasProps {
     clickedCells: { row: number; col: number }[];
   } | null;
   highlightedCell?: { row: number; col: number } | null;
-  onZoomChange?: (newZoom: number) => void;
+  zoomPublication?: CanvasZoomPublication;
+  onZoomChange?: (newZoom: number, camera?: CanvasCamera) => void;
   onRotationAngleChange?: (newAngle: number) => void;
   selectionGuideOptions?: {
     showGrid: boolean;
@@ -76,6 +81,7 @@ interface MapCanvasProps {
   };
   initialOffset?: { x: number; y: number };
   offsetRef?: React.MutableRefObject<{ x: number; y: number }>;
+  viewportZoomRef?: React.MutableRefObject<number>;
   numberCellOutlineStyle?: NumberCellOutlineStyle;
   routePointsOverride?: MapRoutePoint[];
   routeSegmentsOverride?: RouteSegment[];
@@ -251,6 +257,7 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
   items,
   executeModeItemIds,
   zoomLevel,
+  zoomPublication,
   rotationAngle = 0,
   isRouteVisible,
   onCellClick,
@@ -263,6 +270,7 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
   selectionGuideOptions,
   initialOffset,
   offsetRef: externalOffsetRef,
+  viewportZoomRef,
   numberCellOutlineStyle = "rounded",
   routePointsOverride,
   routeSegmentsOverride,
@@ -272,7 +280,29 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
   onRouteInsertHit,
   onRouteInsertMiss,
 }) => {
+  const viewportOwnerKey = useMemo(
+    () => ({
+      cells: mapData.cells,
+      mergedCells: mapData.mergedCells,
+      maxRow: mapData.maxRow,
+      maxCol: mapData.maxCol,
+      mapName,
+      eventDate,
+    }),
+    [
+      mapData.cells,
+      mapData.mergedCells,
+      mapData.maxRow,
+      mapData.maxCol,
+      mapName,
+      eventDate,
+    ],
+  );
   const {
+    renderCamera,
+    getDrawCamera,
+    markCameraPainted,
+    setPanOffset,
     activeTouchesRef,
     canvasRef,
     cellSize,
@@ -291,7 +321,6 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     mapCenterX,
     mapCenterY,
     offsetRef,
-    prevCellSizeRef,
     rafPendingRef,
     rotateAroundMapCenter,
     rotationRadians,
@@ -305,12 +334,16 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     mapMaxCol: mapData.maxCol,
     mapMaxRow: mapData.maxRow,
     zoomLevel,
+    zoomPublication,
+    ownerKey: viewportOwnerKey,
+    centerExternalZoom: true,
     rotationAngle,
     baseCellSize: BASE_CELL_SIZE,
     minZoom: MIN_ZOOM,
     maxZoom: MAX_ZOOM,
     initialOffset,
     offsetRef: externalOffsetRef,
+    zoomRef: viewportZoomRef,
     onZoomChange,
     onRotationAngleChange,
   });
@@ -328,7 +361,6 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
   const showBorders = true;
   const effectiveRouteVisible = isRouteVisible || forceRouteVisible;
 
-  const initializedRef = useRef<boolean>(false);
   const showSelectionGrid = selectionGuideOptions?.showGrid ?? false;
   const showSelectionRuler = selectionGuideOptions?.showRuler ?? false;
 
@@ -351,37 +383,15 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     };
   }, []);
 
+  const prevSelectedHallRef = useRef<HallDefinition | undefined>(undefined);
+  const prevViewportOwnerRef = useRef(externalOffsetRef);
+
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const prevCellSize = prevCellSizeRef.current;
-
-    if (!initializedRef.current || prevCellSize === cellSize) {
-      prevCellSizeRef.current = cellSize;
-      initializedRef.current = true;
+    if (prevViewportOwnerRef.current !== externalOffsetRef) {
+      prevViewportOwnerRef.current = externalOffsetRef;
+      prevSelectedHallRef.current = selectedHall;
       return;
     }
-
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
-    const centerX = containerWidth / 2;
-    const centerY = containerHeight / 2;
-
-    const currentOffset = offsetRef.current;
-    const mapCenterX = (centerX - currentOffset.x) / prevCellSize;
-    const mapCenterY = (centerY - currentOffset.y) / prevCellSize;
-
-    const newOffsetX = centerX - mapCenterX * cellSize;
-    const newOffsetY = centerY - mapCenterY * cellSize;
-
-    setOffset({ x: newOffsetX, y: newOffsetY });
-    prevCellSizeRef.current = cellSize;
-  }, [cellSize, containerRef, offsetRef, prevCellSizeRef, setOffset]);
-
-  const prevSelectedHallRef = useRef<HallDefinition | undefined>(undefined);
-
-  useEffect(() => {
     if (prevSelectedHallRef.current?.id === selectedHall?.id) {
       return;
     }
@@ -427,7 +437,7 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     } else if (!selectedHall) {
       setOffset({ x: 0, y: 0 });
     }
-  }, [selectedHall, cellSize, containerRef, setOffset]);
+  }, [selectedHall, cellSize, containerRef, setOffset, externalOffsetRef]);
 
   const mergedCellsMap = useMemo(() => {
     const map = new Map<string, MergedCellInfo>();
@@ -662,6 +672,11 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
   }, [effectiveRouteVisible, routeSegments, cellSize]);
 
   const gestureRaster = useRef(new CanvasGestureRaster());
+  const lastDrawnViewportRef = useRef<{
+    width: number;
+    height: number;
+    scale: number;
+  } | null>(null);
   const gestureDependencies = useMemo(
     () => [
       mapData,
@@ -671,6 +686,17 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
       showNumbers,
       showBorders,
       isDarkMode,
+      numberCellOutlineStyle,
+      effectiveRouteVisible,
+      visibleRouteMarkers,
+      isRotationInteracting,
+      showSelectionGrid,
+      showSelectionRuler,
+      vertexSelectionMode,
+      cellSelectionMode,
+      highlightedCell,
+      hoverGuide,
+      tapAssist,
     ],
     [
       mapData,
@@ -680,6 +706,17 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
       showNumbers,
       showBorders,
       isDarkMode,
+      numberCellOutlineStyle,
+      effectiveRouteVisible,
+      visibleRouteMarkers,
+      isRotationInteracting,
+      showSelectionGrid,
+      showSelectionRuler,
+      vertexSelectionMode,
+      cellSelectionMode,
+      highlightedCell,
+      hoverGuide,
+      tapAssist,
     ],
   );
   const drawCanvas = useCallback(() => {
@@ -687,8 +724,19 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     const container = containerRef.current;
     if (!canvas || !container) return;
 
+    // Geometry prepared by this render must use its complete camera. A raster
+    // may use newer input, but a subsequent full paint must never move backwards.
+    const rasterCamera = getDrawCamera(renderCamera, true);
+    const fullCamera = getDrawCamera(renderCamera);
+    if (!rasterCamera) return;
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
+    const backing = getCanvasBackingSize(containerWidth, containerHeight, dpr);
+    if (
+      !fullCamera &&
+      (canvas.width !== backing.width || canvas.height !== backing.height)
+    )
+      return;
 
     const renderDpr = syncCanvasBackingStoreSize(
       canvas,
@@ -698,25 +746,42 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     );
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    const previousViewport = lastDrawnViewportRef.current;
+    if (
+      !previousViewport ||
+      previousViewport.width !== containerWidth ||
+      previousViewport.height !== containerHeight ||
+      previousViewport.scale !== renderDpr
+    ) {
+      // A capped backing can keep its pixel size while logical size/DPR changes.
+      gestureRaster.current = new CanvasGestureRaster();
+      lastDrawnViewportRef.current = {
+        width: containerWidth,
+        height: containerHeight,
+        scale: renderDpr,
+      };
+    }
 
     if (
       gestureRaster.current.paint(
         ctx,
-        cellSize,
-        offsetRef.current,
+        BASE_CELL_SIZE * (rasterCamera.zoom / 100),
+        rasterCamera.offset,
         rotationRadians,
         gestureDependencies,
         isViewportInteracting,
         renderDpr,
       )
-    )
+    ) {
+      markCameraPainted(rasterCamera);
       return;
+    }
+    if (!fullCamera) return;
     ctx.setTransform(renderDpr, 0, 0, renderDpr, 0, 0);
 
     ctx.clearRect(0, 0, containerWidth, containerHeight);
 
-    // Read from the ref so dragging reflects the latest offset immediately.
-    const currentOffset = offsetRef.current;
+    const currentOffset = fullCamera.offset;
 
     ctx.save();
     ctx.translate(currentOffset.x, currentOffset.y);
@@ -2289,11 +2354,15 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     gestureRaster.current.capture(
       ctx,
       cellSize,
-      offsetRef.current,
+      currentOffset,
       rotationRadians,
       gestureDependencies,
     );
+    markCameraPainted(fullCamera);
   }, [
+    renderCamera,
+    getDrawCamera,
+    markCameraPainted,
     gestureDependencies,
     canvasRef,
     containerRef,
@@ -2324,7 +2393,6 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     mapCenterY,
     numberCellOutlineStyle,
     routeCrossingData,
-    offsetRef,
   ]);
 
   // Keep drawCanvasRef current so rAF can call the latest draw function.
@@ -2332,9 +2400,9 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
 
   // Redraw when dependencies change.
   useEffect(() => {
-    const frame = requestAnimationFrame(drawCanvas);
+    const frame = requestAnimationFrame(() => drawCanvasRef.current?.());
     return () => cancelAnimationFrame(frame);
-  }, [drawCanvas]);
+  }, [drawCanvas, drawCanvasRef]);
 
   const hasRouteInsertRouteSnapshot =
     routeInsertSelectionActive &&
@@ -2752,7 +2820,7 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
         y: newY,
       };
       // During drag, update only the ref and redraw via rAF to avoid React rerenders.
-      offsetRef.current = nextOffset;
+      setPanOffset(nextOffset);
       if (!rafPendingRef.current) {
         rafPendingRef.current = true;
         requestAnimationFrame(() => {
@@ -2763,6 +2831,7 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
     },
     [
       calculateScrollLimits,
+      setPanOffset,
       activeTouchesRef,
       dragStartOffsetRef,
       dragStartRef,
@@ -2770,7 +2839,6 @@ const MapCanvas: React.FC<MapCanvasProps> = ({
       hoverGuide,
       isDraggingRef,
       isPinchGestureRef,
-      offsetRef,
       rafPendingRef,
       setIsDragging,
       updateHoverGuideFromPointer,

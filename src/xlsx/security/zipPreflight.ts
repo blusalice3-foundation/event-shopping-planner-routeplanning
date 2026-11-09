@@ -7,7 +7,7 @@ import {
   Uint8ArrayReader,
   Uint8ArrayWriter,
   ZipReader,
-} from "@zip.js/zip.js";
+} from "@zip.js/zip.js/lib/zip-core-native.js";
 import limitsDocument from "../../../config/xlsx-limits.json";
 import type { XlsxProgress } from "../domain/types";
 
@@ -596,6 +596,17 @@ type CrossCheckedZip = Readonly<{
   entries: Entry[];
 }>;
 
+const preferNativeInflater = (): boolean => {
+  if (typeof navigator === "undefined") return true;
+  // WorkerNavigator has no maxTouchPoints. Include Mac identities so an iPad
+  // requesting desktop pages keeps the workaround; macOS workers do as well.
+  return !(
+    /AppleWebKit/i.test(navigator.userAgent) &&
+    /iPad|iPhone|iPod|Macintosh|MacIntel/i.test(
+      `${navigator.userAgent} ${navigator.platform}`,
+    )
+  );
+};
 const openCrossCheckedZip = async (
   bytes: Uint8Array,
   parsedEntries: ZipEntry[],
@@ -603,12 +614,17 @@ const openCrossCheckedZip = async (
   startedAt: number,
   now: () => number,
   limits: XlsxLimits,
+  useCompressionStream: boolean,
 ): Promise<CrossCheckedZip> => {
+  // Apple WebKit uses the bundled JS inflater to avoid native stream crashes:
+  // https://github.com/WebKit/WebKit/commit/43a1b0bafb0c4d47208338c97756cfcb9304fa1f
+  // Other platforms retain native acceleration with a CSP-safe JS fallback.
   const reader = new ZipReader(new Uint8ArrayReader(bytes), {
     checkAmbiguity: true,
     filenameEncoding: "utf-8",
     maxAppendedDataSize: 0,
     strictness: "strict",
+    useCompressionStream,
     useWebWorkers: false,
   });
   try {
@@ -644,6 +660,7 @@ const extractZipEntry = async (
   startedAt: number,
   now: () => number,
   limits: XlsxLimits,
+  useCompressionStream: boolean,
 ): Promise<Uint8Array> => {
   if (entry.directory) return new Uint8Array();
   try {
@@ -676,6 +693,7 @@ const extractZipEntry = async (
       },
       signal,
       strictness: "strict",
+      useCompressionStream,
       useWebWorkers: false,
     });
   } catch (error) {
@@ -733,6 +751,7 @@ export const preflightXlsx = async (
   options: XlsxPreflightOptions = {},
 ): Promise<XlsxPreflightResult> => {
   const limits = resolveXlsxLimits(options.limits);
+  const useCompressionStream = preferNativeInflater();
   const signal = options.signal;
   const now =
     options.now ??
@@ -790,6 +809,7 @@ export const preflightXlsx = async (
     startedAt,
     now,
     limits,
+    useCompressionStream,
   );
   try {
     for (let index = 0; index < entries.length; index += 1) {
@@ -804,6 +824,7 @@ export const preflightXlsx = async (
         startedAt,
         now,
         limits,
+        useCompressionStream,
       );
       if (inflated.byteLength !== entry.uncompressedSize) {
         throw new XlsxPreflightError(

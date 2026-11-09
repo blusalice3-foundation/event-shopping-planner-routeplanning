@@ -235,7 +235,7 @@
           "kind": "module-import",
           "graph": "production",
           "file": "src/xlsx/security/zipPreflight.ts",
-          "specifier": "@zip.js/zip.js"
+          "specifier": "@zip.js/zip.js/lib/zip-core-native.js"
         }
       ]
     },

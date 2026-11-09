@@ -644,6 +644,11 @@ const AppMainContent: React.FC<AppMainContentProps> = ({
           mapData={currentMapData}
           mapName={currentMapTabName}
           operationScope={mapOperationScope}
+          viewportScope={JSON.stringify([
+            activeEventName,
+            eventGeneration,
+            currentMapTabName,
+          ])}
           eventDate={activeEventDate}
           items={items}
           executeModeItemIds={currentMapExecuteItemIds}

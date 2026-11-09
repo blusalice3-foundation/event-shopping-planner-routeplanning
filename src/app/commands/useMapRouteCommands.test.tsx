@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, renderHook } from "@testing-library/react";
+import { MutationCancelledError } from "../state/useApplicationSnapshot";
 import { describe, expect, it, vi } from "vitest";
 import type { ExecuteModeItems, ShoppingItem } from "../../types/item";
 import {
@@ -72,6 +73,7 @@ const maplessRouteSettings = (): HallRouteSettings => ({
 const baseState = (): MapRouteStatePort => ({
   activeEventName: EVENT,
   activeEventDate: DAY_ONE,
+  eventGeneration: 0,
   isMapTab: true,
   currentMapTabName: MAP_ONE,
   currentFocusMapName: MAP_TWO,
@@ -431,6 +433,7 @@ it("sends viewport cleanup for the captured source date without using the whole-
   expect(requestMutation).toHaveBeenCalledWith(
     expect.objectContaining({
       events: [EVENT],
+      expectedGenerations: { [EVENT]: 0 },
       dayMutation: {
         kind: "map-viewport",
         eventName: EVENT,
@@ -440,4 +443,165 @@ it("sends viewport cleanup for the captured source date without using the whole-
       },
     }),
   );
+});
+
+describe("viewport ownership across context changes", () => {
+  const viewport = { zoomLevel: 125, offsetX: 15, offsetY: 25 };
+
+  it.each(["day", "event"] as const)(
+    "saves the captured source after switching the active %s",
+    (target) => {
+      const harness = createHarness();
+      const requestMutation = vi.fn().mockResolvedValue({});
+      const { result, rerender } = renderHook(
+        ({ state }) =>
+          useMapRouteCommands({ ...harness.ports, state, requestMutation }),
+        { initialProps: { state: harness.ports.state } },
+      );
+      const saveSource = result.current.updateMapViewport;
+      rerender({
+        state: {
+          ...harness.ports.state,
+          activeEventName: target === "event" ? OTHER_EVENT : EVENT,
+          activeEventDate: DAY_TWO,
+          eventGeneration: target === "event" ? 7 : 0,
+          currentMapTabName: MAP_TWO,
+          // Ordinary commits can replace the store while retaining map owners.
+          mapData: { ...harness.ports.state.mapData },
+        },
+      });
+
+      act(() => saveSource(viewport));
+
+      expect(requestMutation).toHaveBeenCalledOnce();
+      const intent = requestMutation.mock.calls[0][0];
+      expect(intent).toEqual(
+        expect.objectContaining({
+          events: [EVENT],
+          expectedGenerations: { [EVENT]: 0 },
+          dayMutation: {
+            kind: "map-viewport",
+            eventName: EVENT,
+            day: DAY_ONE,
+            mapKey: MAP_ONE,
+            viewport,
+          },
+        }),
+      );
+      expect(() => intent.assertApplicable()).not.toThrow();
+      expect(harness.spies.setMapViewportSettings).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["generation", "reimport", "removed-event", "cleared-viewport"])(
+    "does not recreate stale viewport state after %s",
+    (change) => {
+      const harness = createHarness();
+      const requestMutation = vi.fn().mockResolvedValue({});
+      const { result, rerender } = renderHook(
+        ({ state }) =>
+          useMapRouteCommands({ ...harness.ports, state, requestMutation }),
+        { initialProps: { state: harness.ports.state } },
+      );
+      const saveSource = result.current.updateMapViewport;
+      const state = harness.ports.state;
+      rerender({
+        state: {
+          ...state,
+          eventGeneration: change === "generation" ? 1 : 0,
+          mapData:
+            change === "removed-event"
+              ? {}
+              : change === "reimport"
+                ? {
+                    ...state.mapData,
+                    [EVENT]: {
+                      ...state.mapData[EVENT],
+                      [MAP_ONE]: dayMap("replacement"),
+                    },
+                  }
+                : state.mapData,
+          mapViewportSettings:
+            change === "cleared-viewport" ? {} : state.mapViewportSettings,
+        },
+      });
+
+      act(() => saveSource(viewport));
+
+      expect(requestMutation).not.toHaveBeenCalled();
+      expect(harness.spies.setMapViewportSettings).not.toHaveBeenCalled();
+    },
+  );
+
+  it("retains the captured viewport after block definitions change on the same drawing", () => {
+    const harness = createHarness();
+    const requestMutation = vi.fn().mockResolvedValue({});
+    const { result, rerender } = renderHook(
+      ({ state }) =>
+        useMapRouteCommands({ ...harness.ports, state, requestMutation }),
+      { initialProps: { state: harness.ports.state } },
+    );
+    const saveSource = result.current.updateMapViewport;
+    const state = harness.ports.state;
+    const sourceMap = state.mapData[EVENT][MAP_ONE];
+    const editedState = {
+      ...state,
+      mapData: {
+        ...state.mapData,
+        [EVENT]: {
+          ...state.mapData[EVENT],
+          // The block editor replaces this object while retaining its drawing.
+          [MAP_ONE]: {
+            ...sourceMap,
+            blocks: [
+              {
+                name: "A",
+                startRow: 1,
+                startCol: 1,
+                endRow: 1,
+                endCol: 1,
+                numberCells: [{ row: 1, col: 1, value: 1 }],
+              },
+            ],
+          },
+        },
+      },
+    };
+    rerender({ state: editedState });
+
+    act(() => saveSource(viewport));
+
+    expect(requestMutation).toHaveBeenCalledOnce();
+    const intent = requestMutation.mock.calls[0][0];
+    expect(() => intent.assertApplicable()).not.toThrow();
+    rerender({
+      state: {
+        ...editedState,
+        mapData: {
+          ...editedState.mapData,
+          [EVENT]: {
+            ...editedState.mapData[EVENT],
+            [MAP_ONE]: { ...editedState.mapData[EVENT][MAP_ONE], blocks: [] },
+          },
+        },
+      },
+    });
+    expect(() => intent.assertApplicable()).not.toThrow();
+  });
+  it("rechecks the map owner after the save was queued", () => {
+    const harness = createHarness();
+    const requestMutation = vi.fn().mockResolvedValue({});
+    const { result, rerender } = renderHook(
+      ({ state }) =>
+        useMapRouteCommands({ ...harness.ports, state, requestMutation }),
+      { initialProps: { state: harness.ports.state } },
+    );
+    act(() => result.current.updateMapViewport(viewport));
+    const intent = requestMutation.mock.calls[0][0];
+    expect(() => intent.assertApplicable()).not.toThrow();
+
+    rerender({ state: { ...harness.ports.state, mapData: {} } });
+
+    expect(() => intent.assertApplicable()).toThrow(MutationCancelledError);
+  });
 });

@@ -1,4 +1,9 @@
-import { TextReader, Uint8ArrayWriter, ZipWriter } from "@zip.js/zip.js";
+import {
+  configure,
+  TextReader,
+  Uint8ArrayWriter,
+  ZipWriter,
+} from "@zip.js/zip.js/lib/zip-core-native.js";
 import { describe, expect, it, vi } from "vitest";
 import { XlsxPreflightError, preflightXlsx } from "./zipPreflight";
 
@@ -152,6 +157,7 @@ const createDeflatedZip = async (
 ): Promise<ArrayBuffer> => {
   const writer = new ZipWriter(new Uint8ArrayWriter(), {
     level: 6,
+    useCompressionStream: false,
     useWebWorkers: false,
     zip64: false,
   });
@@ -160,6 +166,7 @@ const createDeflatedZip = async (
       extendedTimestamp: false,
       lastModDate: new Date("2000-01-01T00:00:00.000Z"),
       level: 6,
+      useCompressionStream: false,
       useWebWorkers: false,
       zip64: false,
     });
@@ -229,6 +236,138 @@ describe("XLSX ZIP preflight worker gate", () => {
     });
   });
 
+  it.each([
+    {
+      label: "Windows Chromium",
+      navigator: {
+        userAgent:
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140.0 Safari/537.36",
+        platform: "Win32",
+      },
+    },
+    {
+      label: "Android Chromium",
+      navigator: {
+        userAgent:
+          "Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/140.0 Mobile Safari/537.36",
+        platform: "Linux aarch64",
+      },
+    },
+    {
+      label: "a runtime without navigator",
+      navigator: undefined,
+    },
+  ])("retains native inflater use on $label", async ({ navigator }) => {
+    const input = await createDeflatedZip(validEntries());
+    const OriginalInflater = DecompressionStream;
+    const nativeInflater = vi.fn(function (format: CompressionFormat) {
+      return new OriginalInflater(format);
+    });
+    type InflaterConstructor = Parameters<
+      typeof configure
+    >[0]["DecompressionStream"];
+    vi.stubGlobal("navigator", navigator);
+    configure({
+      DecompressionStream: nativeInflater as unknown as InflaterConstructor,
+    });
+    try {
+      const result = await preflightXlsx(input);
+      expect(result).toMatchObject({ entryCount: 6, cellCount: 1 });
+      expect(nativeInflater).toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+      configure({
+        DecompressionStream: OriginalInflater as unknown as InflaterConstructor,
+      });
+    }
+  });
+
+  it.each([
+    {
+      label: "iPhone",
+      navigator: {
+        userAgent:
+          "Mozilla/5.0 (iPhone; CPU iPhone OS 27_2 like Mac OS X) AppleWebKit/605.1.15 Version/27.2 Mobile Safari/604.1",
+        platform: "iPhone",
+      },
+    },
+    {
+      label: "iPad mobile identity",
+      navigator: {
+        userAgent:
+          "Mozilla/5.0 (iPad; CPU OS 27_2 like Mac OS X) AppleWebKit/605.1.15 Version/27.2 Mobile Safari/604.1",
+        platform: "iPad",
+      },
+    },
+    {
+      label: "iPad desktop identity without maxTouchPoints",
+      navigator: {
+        userAgent:
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15 Version/27.2 Safari/605.1.15",
+        platform: "MacIntel",
+      },
+    },
+  ])(
+    "validates $label without constructing a native inflater",
+    async ({ navigator }) => {
+      const input = await createDeflatedZip(validEntries());
+      const nativeInflater = vi.fn(function () {
+        throw new Error("The browser-native inflater must not run.");
+      });
+      type InflaterConstructor = Parameters<
+        typeof configure
+      >[0]["DecompressionStream"];
+      const originalInflater =
+        DecompressionStream as unknown as InflaterConstructor;
+      vi.stubGlobal("navigator", navigator);
+      configure({
+        DecompressionStream: nativeInflater as unknown as InflaterConstructor,
+      });
+      try {
+        const result = await preflightXlsx(input);
+        expect(result).toMatchObject({ entryCount: 6, cellCount: 1 });
+        expect(nativeInflater).not.toHaveBeenCalled();
+        await expect(
+          preflightXlsx(mutateDeflatedPayload(input)),
+        ).rejects.toBeInstanceOf(XlsxPreflightError);
+        expect(nativeInflater).not.toHaveBeenCalled();
+      } finally {
+        vi.unstubAllGlobals();
+        configure({ DecompressionStream: originalInflater });
+      }
+    },
+  );
+
+  it("uses the JS fallback if a non-Apple native constructor is unavailable", async () => {
+    const input = await createDeflatedZip(validEntries());
+    const nativeInflater = vi.fn(function () {
+      throw new Error("Native decompression is unavailable.");
+    });
+    type InflaterConstructor = Parameters<
+      typeof configure
+    >[0]["DecompressionStream"];
+    const originalInflater =
+      DecompressionStream as unknown as InflaterConstructor;
+    vi.stubGlobal("navigator", {
+      userAgent:
+        "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 Chrome/140.0 Safari/537.36",
+      platform: "Win32",
+    });
+    configure({
+      DecompressionStream: nativeInflater as unknown as InflaterConstructor,
+    });
+    try {
+      const result = await preflightXlsx(input);
+      expect(result).toMatchObject({ entryCount: 6, cellCount: 1 });
+      expect(nativeInflater).toHaveBeenCalled();
+      await expect(
+        preflightXlsx(mutateDeflatedPayload(input)),
+      ).rejects.toBeInstanceOf(XlsxPreflightError);
+    } finally {
+      vi.unstubAllGlobals();
+      configure({ DecompressionStream: originalInflater });
+    }
+  });
   it("rejects local-header metadata that disagrees with the central directory", async () => {
     await expect(
       preflightXlsx(mutateFirstLocalCrc(createStoredZip(validEntries()))),

@@ -1,6 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
+import { resolvePerformanceBrowserLaunchOptions } from "./scripts/lib/performance-browser-launch.mjs";
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:4173";
+const { args: performanceBrowserArgs, ...performanceBrowserOptions } =
+  resolvePerformanceBrowserLaunchOptions(process.env);
 
 export default defineConfig({
   testDir: "./tests/browser",
@@ -31,8 +34,10 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         userAgent: undefined,
-        channel: process.env.PERFORMANCE_BROWSER_CHANNEL,
-        headless: process.env.PERFORMANCE_HEADED !== "1",
+        ...performanceBrowserOptions,
+        ...(performanceBrowserArgs
+          ? { launchOptions: { args: performanceBrowserArgs } }
+          : {}),
       },
     },
   ],

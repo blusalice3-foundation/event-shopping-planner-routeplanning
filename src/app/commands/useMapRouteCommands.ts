@@ -1,11 +1,12 @@
 import { recordEntry } from "../../utils/ownRecord";
+import { MutationCancelledError } from "../state/useApplicationSnapshot";
 import { planDayMutation } from "../../features/consistency/domain/dayMutation";
 import type {
   ApplicationDayMutation,
   PersistenceSnapshot,
 } from "../ports/PersistenceCommandPort";
 import type { MutationIntent } from "./applicationMutationCoordinator";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import type { ExecuteModeItems, ShoppingItem } from "../../types/item";
 import {
   getMaplessKey,
@@ -36,6 +37,7 @@ type ExecuteModeItemsStore = Record<string, ExecuteModeItems>;
 export interface MapRouteStatePort {
   readonly activeEventName: string | null;
   readonly activeEventDate: string;
+  readonly eventGeneration: number;
   readonly isMapTab: boolean;
   readonly currentMapTabName: string | null;
   readonly currentFocusMapName: string;
@@ -101,6 +103,7 @@ export const useMapRouteCommands = ({
   const {
     activeEventName,
     activeEventDate,
+    eventGeneration,
     isMapTab,
     currentMapTabName,
     currentFocusMapName,
@@ -121,6 +124,8 @@ export const useMapRouteCommands = ({
     updateExecuteModeItems,
   } = actions;
   const { getMapTabForDate } = selectors;
+  const liveStateRef = useRef(state);
+  liveStateRef.current = state;
 
   const rotations = useMemo(
     () =>
@@ -240,9 +245,38 @@ export const useMapRouteCommands = ({
   const updateMapViewport = useCallback(
     (viewport: MapViewportState) => {
       if (!activeEventName || !isMapTab || !currentMapTabName) return;
+      const sourceMap = recordEntry(mapData, activeEventName)?.[
+        currentMapTabName
+      ];
+      const sourceViewport = recordEntry(
+        mapViewportSettings,
+        activeEventName,
+      )?.[currentMapTabName];
+      const stillOwnsViewport = () => {
+        const latest = liveStateRef.current;
+        const latestMap = recordEntry(latest.mapData, activeEventName)?.[
+          currentMapTabName
+        ];
+        return (
+          sourceMap !== undefined &&
+          latestMap !== undefined &&
+          // Editing block definitions retains the same drawing and viewport.
+          latestMap.cells === sourceMap.cells &&
+          latestMap.mergedCells === sourceMap.mergedCells &&
+          latestMap.maxRow === sourceMap.maxRow &&
+          latestMap.maxCol === sourceMap.maxCol &&
+          (latest.activeEventName !== activeEventName ||
+            latest.eventGeneration === eventGeneration) &&
+          (sourceViewport === undefined ||
+            recordEntry(latest.mapViewportSettings, activeEventName)?.[
+              currentMapTabName
+            ] !== undefined)
+        );
+      };
+      if (!stillOwnsViewport()) return;
       if (requestMutation) {
         const previous = recordEntry(
-          state.mapViewportSettings,
+          liveStateRef.current.mapViewportSettings,
           activeEventName,
         )?.[currentMapTabName];
         if (
@@ -261,6 +295,10 @@ export const useMapRouteCommands = ({
         };
         void requestMutation({
           events: [activeEventName],
+          expectedGenerations: { [activeEventName]: eventGeneration },
+          assertApplicable: () => {
+            if (!stillOwnsViewport()) throw new MutationCancelledError();
+          },
           dayMutation: command,
           plan: (snapshot) => planDayMutation(snapshot, command),
         }).catch(() => {});
@@ -289,11 +327,13 @@ export const useMapRouteCommands = ({
     [
       activeEventName,
       activeEventDate,
+      eventGeneration,
       currentMapTabName,
       isMapTab,
+      mapData,
+      mapViewportSettings,
       setMapViewportSettings,
       requestMutation,
-      state.mapViewportSettings,
     ],
   );
 

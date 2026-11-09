@@ -42,12 +42,12 @@ import type {
   PersistenceStartupState,
 } from "../../hooks/useIndexedDbPersistence";
 import {
-  createAppBackup,
   parseAppBackup,
   createAppBackupFile,
   type AppBackupV1,
 } from "../../utils/appBackup";
 import { downloadBlob } from "../../utils/downloadBlob";
+import xlsxLimits from "../../../config/xlsx-limits.json";
 import {
   exportStartupRecoveryBundle,
   type PersistenceRecoveryExportResult,
@@ -587,6 +587,12 @@ export const useEventTransferCommands = ({
       };
       xlsxOperationRef.current = operation;
       try {
+        if (file.size > xlsxLimits.maxCompressedBytes) {
+          alert(
+            `xlsxファイルのサイズが上限（${xlsxLimits.maxCompressedBytes / 1024 / 1024} MiB）を超えています。ファイルを小さくしてから選び直してください。`,
+          );
+          return;
+        }
         const input = await file.arrayBuffer();
         if (controller.signal.aborted || restoreOwnerRef.current !== owner)
           return;
@@ -702,11 +708,9 @@ export const useEventTransferCommands = ({
 
         const importedData = toImportedEventData(resolvedResult);
         const restoreSource = buildXlsxEventRestoreSource(importedData);
-        const validation = parseAppBackup(
-          createAppBackup(restoreSource.data, new Date(), {
-            blockDetectionSettings: restoreSource.blockDetectionSettings,
-          }),
-        );
+        // The restore source already owns a normalized backup. Reuse it rather
+        // than serializing and copying the entire map again before validation.
+        const validation = parseAppBackup(restoreSource.backup);
         if (!validation.ok) {
           alert(
             `Excel復元データを検証できませんでした。\n${validation.errors.join("\n")}`,

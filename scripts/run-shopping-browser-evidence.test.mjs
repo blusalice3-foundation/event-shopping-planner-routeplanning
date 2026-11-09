@@ -18,6 +18,11 @@ import {
 
 import { performanceAcceptanceCriteriaByGroup } from "./shopping-performance-evidence-contract.mjs";
 
+import {
+  performanceBrowserLaunchMetadata,
+  resolvePerformanceBrowserLaunchOptions,
+  validatePerformanceBrowserLaunchMetadata,
+} from "./lib/performance-browser-launch.mjs";
 const repository = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
@@ -30,7 +35,7 @@ async function fixture(t) {
     npmCli: path.join(cwd, "npm cli/npm-cli.js"),
     runId: "test-run",
     phase: "after",
-    env: { CI: "1" },
+    env: { CI: "1", PERFORMANCE_ENABLE_GPU: "1" },
     provenance: {
       productCommit: "fixture",
       instrumentVersion: "fixture",
@@ -71,6 +76,7 @@ test("normal runner keeps group order, siblings, argument boundaries and parent 
     assert.equal(env.PLAYWRIGHT_HTML_REPORT, env.PLAYWRIGHT_HTML_OUTPUT_DIR);
     assert.equal(call.command, process.execPath);
     assert.equal(env.PLAYWRIGHT_HTML_OPEN, "never");
+    assert.equal(env.PERFORMANCE_ENABLE_GPU, "1");
     assert.ok(call.args.includes("--reporter=line,html,json"));
     if (env.ESP_EVIDENCE_GROUP === "functional") {
       assert.ok(call.args.includes("--grep-invert"));
@@ -794,4 +800,122 @@ test("performance measurement is dispatch-only and preserves full completion evi
   );
   assert.ok(manual.includes("path: artifacts/dnd-selection-rendering/"));
   assert.ok(manual.includes("overwrite: false"));
+});
+
+test("GPU launch support leaves defaults unchanged and preserves browser identity options", () => {
+  for (const env of [{}, { PERFORMANCE_ENABLE_GPU: "0" }]) {
+    const options = resolvePerformanceBrowserLaunchOptions(env);
+    assert.deepEqual(options, { channel: undefined, headless: true });
+    assert.equal(Object.hasOwn(options, "args"), false);
+    assert.deepEqual(performanceBrowserLaunchMetadata(env), {
+      gpuRequested: false,
+      browserLaunchArgs: [],
+    });
+  }
+  const env = {
+    PERFORMANCE_ENABLE_GPU: "1",
+    PERFORMANCE_BROWSER_CHANNEL: "chromium",
+    PERFORMANCE_HEADED: "1",
+  };
+  const original = structuredClone(env);
+  const options = resolvePerformanceBrowserLaunchOptions(env);
+  assert.deepEqual(options, {
+    channel: "chromium",
+    headless: false,
+    args: ["--enable-gpu", "--disable-accelerated-2d-canvas"],
+  });
+  assert.deepEqual(performanceBrowserLaunchMetadata(env), {
+    gpuRequested: true,
+    browserLaunchArgs: options.args,
+  });
+  options.args.push("unrelated-flag");
+  assert.deepEqual(resolvePerformanceBrowserLaunchOptions(env).args, [
+    "--enable-gpu",
+    "--disable-accelerated-2d-canvas",
+  ]);
+  assert.deepEqual(env, original);
+  for (const value of ["", "true", "yes", "2"])
+    assert.throws(
+      () =>
+        resolvePerformanceBrowserLaunchOptions({
+          PERFORMANCE_ENABLE_GPU: value,
+        }),
+      /PERFORMANCE_ENABLE_GPU/,
+    );
+});
+
+test("launch metadata validates explicit settings and leaves only fully absent legacy metadata unspecified", () => {
+  assert.equal(validatePerformanceBrowserLaunchMetadata({}), null);
+  assert.throws(
+    () => validatePerformanceBrowserLaunchMetadata({}, { allowLegacy: false }),
+    /Browser launch metadata/,
+  );
+  for (const env of [{}, { PERFORMANCE_ENABLE_GPU: "1" }]) {
+    const metadata = performanceBrowserLaunchMetadata(env);
+    const validated = validatePerformanceBrowserLaunchMetadata(metadata, {
+      allowLegacy: false,
+    });
+    assert.deepEqual(validated, metadata);
+    validated.browserLaunchArgs.push("changed-by-caller");
+    assert.deepEqual(metadata, performanceBrowserLaunchMetadata(env));
+  }
+  for (const invalid of [
+    null,
+    [],
+    { gpuRequested: true },
+    { browserLaunchArgs: [] },
+    { gpuRequested: "true", browserLaunchArgs: [] },
+    { gpuRequested: false, browserLaunchArgs: "--enable-gpu" },
+    { gpuRequested: true, browserLaunchArgs: [] },
+    {
+      gpuRequested: false,
+      browserLaunchArgs: ["--enable-gpu", "--disable-accelerated-2d-canvas"],
+    },
+    { gpuRequested: true, browserLaunchArgs: ["--enable-gpu"] },
+    {
+      gpuRequested: true,
+      browserLaunchArgs: ["--disable-accelerated-2d-canvas", "--enable-gpu"],
+    },
+    {
+      gpuRequested: true,
+      browserLaunchArgs: [
+        "--enable-gpu",
+        "--disable-accelerated-2d-canvas",
+        "extra",
+      ],
+    },
+  ])
+    assert.throws(
+      () => validatePerformanceBrowserLaunchMetadata(invalid),
+      /Browser launch/,
+    );
+});
+
+test("measurement config, runner probe, and instrument hashes bind the shared GPU launch helper", async () => {
+  const [config, runner] = await Promise.all([
+    readFile(path.join(repository, "playwright.config.ts"), "utf8"),
+    readFile(
+      path.join(repository, "scripts/run-shopping-browser-evidence.mjs"),
+      "utf8",
+    ),
+  ]);
+  assert.match(
+    config,
+    /resolvePerformanceBrowserLaunchOptions\(process\.env\)/,
+  );
+  assert.match(
+    config,
+    /launchOptions:\s*\{\s*args: performanceBrowserArgs\s*\}/,
+  );
+  assert.match(
+    runner,
+    /chromium\.launch\(\s*resolvePerformanceBrowserLaunchOptions\(env\)/,
+  );
+  assert.match(runner, /\.\.\.performanceBrowserLaunchMetadata\(env\)/);
+  for (const instrument of [
+    "playwright.config.ts",
+    "scripts/lib/performance-browser-launch.mjs",
+    "scripts/lib/performance-browser-launch.d.mts",
+  ])
+    assert.ok(runner.includes(`      "${instrument}",`));
 });

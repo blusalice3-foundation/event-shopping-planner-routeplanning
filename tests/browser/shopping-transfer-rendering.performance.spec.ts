@@ -1,6 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import { summarizePerformanceSamples } from "./performance-summary";
+import { performanceBrowserLaunchMetadata } from "../../scripts/lib/performance-browser-launch.mjs";
 import {
   shoppingEvidenceIdentity,
   performanceMeasurementSampleCount,
@@ -119,6 +120,7 @@ for (const condition of transferConditions)
           browserChannel:
             process.env.PERFORMANCE_BROWSER_CHANNEL ?? "bundled-chromium",
           headed: process.env.PERFORMANCE_HEADED === "1",
+          ...performanceBrowserLaunchMetadata(process.env),
           workers: 1,
           retries: testInfo.retry,
         },
