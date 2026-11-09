@@ -25,6 +25,7 @@ import {
 } from "./shopping-performance-evidence-contract.mjs";
 import { validateBrowserSourceIdentity } from "./run-shopping-browser-evidence.mjs";
 import { loadBeforePolicyBridge } from "./browser-evidence-before-policy.mjs";
+import { validatePerformanceBrowserLaunchMetadata } from "./lib/performance-browser-launch.mjs";
 const groups = ["shopping", "range", "drag", "transfer"];
 const names = {
   shopping: "shopping-operation-timings",
@@ -36,6 +37,18 @@ const specs = performanceGroupSpecs;
 const assert = (value, message) => {
   if (!value) throw new Error(message);
 };
+function browserLaunchMismatch(beforeEnvironment, afterEnvironment, label) {
+  const before = validatePerformanceBrowserLaunchMetadata(beforeEnvironment);
+  const after = validatePerformanceBrowserLaunchMetadata(afterEnvironment);
+  if (before === null && after === null) return null;
+  return !before ||
+    !after ||
+    before.gpuRequested !== after.gpuRequested ||
+    JSON.stringify(before.browserLaunchArgs) !==
+      JSON.stringify(after.browserLaunchArgs)
+    ? `${label} GPU launch metadata mismatch or missing`
+    : null;
+}
 const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
 function collect(suites, result = []) {
   for (const suite of suites ?? []) {
@@ -228,6 +241,7 @@ async function readRun(runRoot, phase, profile, historical = null) {
     workers: run.environment.workerCount,
     retries: 0,
   });
+  validatePerformanceBrowserLaunchMetadata(run.environment);
   const capability = run.releaseCapability;
   assert(
     capability?.kind === "event-shopping-planner-release-capabilities" &&
@@ -330,6 +344,7 @@ async function readRun(runRoot, phase, profile, historical = null) {
           }
           assert(body, "empty artifact");
           const artifact = JSON.parse(body.toString("utf8"));
+          validatePerformanceBrowserLaunchMetadata(artifact.environment);
           if (
             phase === "before" &&
             group === "transfer" &&
@@ -617,6 +632,12 @@ export async function compareBrowserEvidence({
           JSON.stringify(after.run.environment[field])
       )
         compatibility.push(`environment ${field} mismatch or missing`);
+    const runLaunchMismatch = browserLaunchMismatch(
+      before.run.environment,
+      after.run.environment,
+      "environment",
+    );
+    if (runLaunchMismatch) compatibility.push(runLaunchMismatch);
     result.errors.push(...before.errors, ...after.errors, ...compatibility);
     for (const descriptor of expectedMetricRows()) {
       const oldMetric = before.rows.get(descriptor.key),
@@ -666,6 +687,12 @@ export async function compareBrowserEvidence({
           if (JSON.stringify(a) !== JSON.stringify(b))
             reasons.push(`artifact environment ${field} mismatch`);
         }
+        const artifactLaunchMismatch = browserLaunchMismatch(
+          oldArtifact.environment,
+          newArtifact.environment,
+          "artifact environment",
+        );
+        if (artifactLaunchMismatch) reasons.push(artifactLaunchMismatch);
       }
       const criteria = performanceAcceptanceCriteriaForGroup(
         descriptor.group,

@@ -739,6 +739,148 @@ for (const transform of [
   });
 }
 
+for (const group of ["shopping", "range", "drag", "transfer"]) {
+  test(`${group} accepts explicit GPU launch metadata and legacy evidence without either field`, () => {
+    for (const metadata of [
+      {},
+      { gpuRequested: false, browserLaunchArgs: [] },
+      {
+        gpuRequested: true,
+        browserLaunchArgs: ["--enable-gpu", "--disable-accelerated-2d-canvas"],
+      },
+    ]) {
+      const data = artifact(group);
+      data.environment = { ...data.environment, ...metadata };
+      assert.doesNotThrow(() =>
+        validateEvidenceArtifact(data, group, identity),
+      );
+    }
+  });
+
+  test(`${group} rejects partial, malformed, or contradictory GPU launch metadata`, () => {
+    for (const metadata of [
+      { gpuRequested: true },
+      { browserLaunchArgs: [] },
+      {
+        gpuRequested: "1",
+        browserLaunchArgs: ["--enable-gpu", "--disable-accelerated-2d-canvas"],
+      },
+      { gpuRequested: null, browserLaunchArgs: [] },
+      { gpuRequested: false, browserLaunchArgs: null },
+      {
+        gpuRequested: false,
+        browserLaunchArgs: ["--enable-gpu", "--disable-accelerated-2d-canvas"],
+      },
+      { gpuRequested: true, browserLaunchArgs: [] },
+      { gpuRequested: true, browserLaunchArgs: ["--enable-gpu"] },
+      {
+        gpuRequested: true,
+        browserLaunchArgs: ["--disable-accelerated-2d-canvas", "--enable-gpu"],
+      },
+      {
+        gpuRequested: true,
+        browserLaunchArgs: [
+          "--enable-gpu",
+          "--disable-accelerated-2d-canvas",
+          "--disable-gpu",
+        ],
+      },
+    ]) {
+      const data = artifact(group);
+      data.environment = { ...data.environment, ...metadata };
+      assert.throws(() => validateEvidenceArtifact(data, group, identity));
+    }
+  });
+}
+
+test("group verification accepts matching enabled, disabled, and legacy launch metadata in every group", async (t) => {
+  for (const group of ["shopping", "range", "drag", "transfer"]) {
+    const f = await fixture(t, group);
+    for (const metadata of [
+      {},
+      { gpuRequested: false, browserLaunchArgs: [] },
+      {
+        gpuRequested: true,
+        browserLaunchArgs: ["--enable-gpu", "--disable-accelerated-2d-canvas"],
+      },
+    ]) {
+      await writeFile(
+        path.join(f.runRoot, "run-result.json"),
+        JSON.stringify({ environment: metadata }),
+        "utf8",
+      );
+      for (const spec of f.report.suites[0].specs) {
+        const attachment = spec.tests[0].results[0].attachments[0];
+        const data = JSON.parse(
+          Buffer.from(attachment.body, "base64").toString("utf8"),
+        );
+        delete data.environment.gpuRequested;
+        delete data.environment.browserLaunchArgs;
+        Object.assign(data.environment, metadata);
+        attachment.body = Buffer.from(JSON.stringify(data)).toString("base64");
+      }
+      await f.save();
+      const result = await f.verify();
+      assert.equal(
+        result.status,
+        "passed",
+        `${group}: ${JSON.stringify(result.errors)}`,
+      );
+    }
+  }
+});
+
+for (const [name, runMetadata, artifactMetadata] of [
+  ["run-only pair", { gpuRequested: false, browserLaunchArgs: [] }, {}],
+  ["artifact-only pair", {}, { gpuRequested: false, browserLaunchArgs: [] }],
+  [
+    "different GPU request",
+    {
+      gpuRequested: true,
+      browserLaunchArgs: ["--enable-gpu", "--disable-accelerated-2d-canvas"],
+    },
+    { gpuRequested: false, browserLaunchArgs: [] },
+  ],
+  [
+    "partial run metadata",
+    { gpuRequested: true },
+    {
+      gpuRequested: true,
+      browserLaunchArgs: ["--enable-gpu", "--disable-accelerated-2d-canvas"],
+    },
+  ],
+]) {
+  test(`group verification rejects ${name} without relabeling old artifacts`, async (t) => {
+    const f = await fixture(t);
+    await writeFile(
+      path.join(f.runRoot, "run-result.json"),
+      JSON.stringify({ environment: runMetadata }),
+      "utf8",
+    );
+    for (const spec of f.report.suites[0].specs) {
+      const entry = spec.tests[0].results[0].attachments[0];
+      const value = JSON.parse(
+        Buffer.from(entry.body, "base64").toString("utf8"),
+      );
+      Object.assign(value.environment, runMetadata);
+      entry.body = Buffer.from(JSON.stringify(value)).toString("base64");
+    }
+    const attachment =
+      f.report.suites[0].specs.at(-1).tests[0].results[0].attachments[0];
+    const data = JSON.parse(
+      Buffer.from(attachment.body, "base64").toString("utf8"),
+    );
+    delete data.environment.gpuRequested;
+    delete data.environment.browserLaunchArgs;
+    Object.assign(data.environment, artifactMetadata);
+    attachment.body = Buffer.from(JSON.stringify(data)).toString("base64");
+    await f.save();
+    const result = await f.verify();
+    assert.equal(result.status, "failed");
+    assert.match(result.errors.join("\n"), /launch/i);
+  });
+}
+
 test("known normal matrices pass with exact expected coverage and response/frame separation", async (t) => {
   assert.deepEqual(
     ["shopping", "range", "drag", "transfer"].map(

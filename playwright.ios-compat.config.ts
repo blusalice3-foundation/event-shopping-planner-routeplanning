@@ -6,6 +6,7 @@ export default defineConfig({
   ...base,
   testMatch: [
     "ios-compatibility.spec.ts",
+    "ios-file-transfer.spec.ts",
     "map-import-layout.spec.ts",
     "map-workspace-continuity.spec.ts",
   ],

@@ -30,8 +30,17 @@ whole buffer を直接 parse しており、cancel、ZIP preflight、単一 term
   main-thread adapter へ silent fallback しない。
 - main-thread adapter は nonproduction QA/test が明示的に import する場合だけ利用でき、
   production mode では constructor 自体が拒否する。
-- `DecompressionStream("deflate-raw")` が利用できない runtime は
-  `INFLATER_UNAVAILABLE` として fail closed する。追加 parser dependency を暗黙に導入しない。
+- 2026-11-08: Safari の native `DecompressionStream` を回避するため、既存 zip.js の
+  JavaScript fallback を持つ `lib/zip-core-native.js` を採用した。
+- 2026-11-09: Worker の UA / platform が Apple 系なら `useCompressionStream: false` とし、
+  それ以外では既存の native inflater 経路を優先する。Worker では `maxTouchPoints` に頼れないため、
+  Mac 形式 UA の iPad を含めて Apple 系を保守的に対象とする。AppleWebKit を名乗る macOS の Safari / Chromium も JavaScript 経路になる。
+  native が未対応の場合も同じライブラリ内の JavaScript fallback を使用する。
+  入力と生成済み出力の両方で同じ検証を維持し、追加 dependency や CSP 緩和は行わない。
+  WebKit の stream 終了時のクラッシュ修正を踏まえた互換対応であり、報告端末での原因確定を意味しない。
+  参照: https://github.com/WebKit/WebKit/commit/43a1b0bafb0c4d47208338c97756cfcb9304fa1f
+- イベント xlsx は `File.arrayBuffer()` の前にも圧縮後の 32 MiB 上限を確認する。
+  Worker 内の上限・CRC・XML・整合性検証は引き続き必須とする。
 
 ## Limits
 

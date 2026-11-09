@@ -28,6 +28,10 @@ import {
   shoppingLargeListDiagnosticTag,
 } from "./shopping-performance-evidence-contract.mjs";
 
+import {
+  performanceBrowserLaunchMetadata,
+  resolvePerformanceBrowserLaunchOptions,
+} from "./lib/performance-browser-launch.mjs";
 export const GROUPS = [
   { group: "functional", script: null },
   { group: "shopping", script: "test:shopping-performance:run" },
@@ -225,10 +229,9 @@ export async function collectBrowserEnvironment(cwd, env, sourceIdentity) {
   }
   const require = createRequire(path.join(cwd, "package.json"));
   const { chromium, devices } = require("@playwright/test");
-  const browser = await chromium.launch({
-    channel: env.PERFORMANCE_BROWSER_CHANNEL || undefined,
-    headless: env.PERFORMANCE_HEADED !== "1",
-  });
+  const browser = await chromium.launch(
+    resolvePerformanceBrowserLaunchOptions(env),
+  );
   try {
     const context = await browser.newContext({
       ...devices["Desktop Chrome"],
@@ -271,6 +274,7 @@ export async function collectBrowserEnvironment(cwd, env, sourceIdentity) {
         ...actual,
         browserChannel: env.PERFORMANCE_BROWSER_CHANNEL ?? "bundled-chromium",
         headed: env.PERFORMANCE_HEADED === "1",
+        ...performanceBrowserLaunchMetadata(env),
         build: "npm run build:release-a",
         workerCount: 1,
         githubRunId: env.GITHUB_RUN_ID ?? null,
@@ -307,6 +311,9 @@ export async function collectBrowserProvenance(cwd, env) {
       "scripts/baseline-frame-performance-observations.mjs",
       "scripts/baseline-shopping-performance-observations.mjs",
       "scripts/run-shopping-browser-evidence.mjs",
+      "playwright.config.ts",
+      "scripts/lib/performance-browser-launch.mjs",
+      "scripts/lib/performance-browser-launch.d.mts",
       "scripts/shopping-performance-evidence-contract.mjs",
       "scripts/performance-quick-check-metadata.mjs",
       ...transferSources,

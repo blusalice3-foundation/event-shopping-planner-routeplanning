@@ -5,6 +5,7 @@ import {
   resolvePerformanceProfile,
 } from "../../scripts/shopping-performance-evidence-contract.mjs";
 import { performanceCollectionMetadata } from "../../scripts/performance-quick-check-metadata.mjs";
+import { performanceBrowserLaunchMetadata } from "../../scripts/lib/performance-browser-launch.mjs";
 
 export const performanceMeasurementProfile = resolvePerformanceProfile(
   undefined,
@@ -387,6 +388,7 @@ export async function shoppingBrowserEnvironment(page: Page, retry: number) {
     browserChannel:
       process.env.PERFORMANCE_BROWSER_CHANNEL ?? "bundled-chromium",
     headed: process.env.PERFORMANCE_HEADED === "1",
+    ...performanceBrowserLaunchMetadata(process.env),
     workers: 1,
     retries: retry,
   };

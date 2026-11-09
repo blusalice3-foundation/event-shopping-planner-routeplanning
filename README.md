@@ -702,6 +702,8 @@ cleanなworktreeでpreviewを停止した後、`npm run test:release-a-rollback`
 
 GitHubで測定する場合は、Actionsの `Shopping and D&D performance (manual)` から `Run workflow` を選択してください。手動workflowは `completion` 固定で、失敗時も採取済みのcanonical証拠を保存します。
 
+ローカルでGPUを利用する場合は、PowerShellで `$env:PERFORMANCE_ENABLE_GPU='1'` を設定して正式runnerを実行できます。指定時だけ `--enable-gpu` と `--disable-accelerated-2d-canvas` を追加し、GPUによる合成・ラスタライズと、従来のソフトウェアCanvas2D処理を組み合わせます。このCanvas2D指定は解析とアプリ全体に適用されます。GPUの実利用は環境に依存するため別途確認し、起動指定はrunと全測定artifactへ記録します。未指定または `'0'` では既定の起動を維持します。設定が異なる記録や、新しい起動情報を持たない旧記録との相対比較は成立させません。
+
 ローカル測定の待ち時間を減らすため、rangeのDOM走査は確認済みの連続した描画範囲を使ってスクロールの重複を減らし、欠落時は従来の走査へ戻ります。各時点の全品目・表示順・選択状態の確認は維持します。transferは計測停止後に比較用画像をサンプル内で再利用し、証拠ファイルを最大4件ずつ保存します。保存失敗時も全保存の終了を待ち、次の測定へI/Oを持ち越しません。性能測定の並列数・条件・回数・終了点は変更しません。これらの補助ソースも計測器のhashへ記録するため、変更前の記録とは計測器が異なります。全144ケースの所要時間短縮と性能合格は別途確認が必要です。
 
 通常CIの結果は `browser-functional-<run ID>-<attempt>` として保存し、性能用canonical `run-result.json` は生成しません。未測定は性能未確認として扱い、通常CI通過を性能合格へ読み替えません。DOM走査停止の原因は未解消で、必要時の手動測定で引き続き確認できます。
