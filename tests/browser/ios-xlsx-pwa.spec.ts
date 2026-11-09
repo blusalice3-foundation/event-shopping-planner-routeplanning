@@ -4,6 +4,7 @@ import ExcelJS from "exceljs";
 import { addInflateRegressionPart } from "../../src/xlsx/fixtures/inflateWindowWrap";
 import {
   confirmRestore,
+  contentDigest,
   eventName,
   exportBackup,
   item,
@@ -114,7 +115,7 @@ test("@ios-compat controlled offline PWA imports the fixed inflate corpus throug
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page.locator("#loading-screen")).toBeHidden();
     const reloaded = await exportBackup(page);
-    expect(reloaded.data).toEqual(saved.data);
+    expect(contentDigest(reloaded.data)).toBe(contentDigest(saved.data));
     expect(reloaded.eventSettings).toEqual(saved.eventSettings);
     expect(await readRuntimeIdentity(page)).toEqual(identity);
   } finally {
