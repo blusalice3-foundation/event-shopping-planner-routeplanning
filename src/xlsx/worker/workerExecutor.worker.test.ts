@@ -1,10 +1,11 @@
 import { createHash } from "node:crypto";
 import ExcelJS from "exceljs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_BLOCK_DETECTION_SETTINGS } from "../../types/map";
 import type { EventWorkbookExportSnapshot } from "../domain/eventWorkbook";
 import type { XlsxImportResult } from "../domain/types";
 import semanticGoldenSource from "../fixtures/event-workbook-semantic-golden.v1.json";
+import { addInflateRegressionPart } from "../fixtures/inflateWindowWrap";
 import { xlsxWorkerExecutor } from "./workerExecutor";
 
 type JsonRecord = Record<string, unknown>;
@@ -308,6 +309,68 @@ describe("bound XLSX Worker engine", () => {
       },
     });
   });
+
+  it("imports the fixed wrapped-window JS corpus with all exported event content intact", async () => {
+    assertSemanticGolden(semanticGolden);
+    const output = await xlsxWorkerExecutor.exportWorkbook(
+      { ...semanticGolden.input, schemaVersion: 2 },
+      new AbortController().signal,
+      () => undefined,
+    );
+    const original = output.slice().buffer as ArrayBuffer;
+    const withRegressionPart = addInflateRegressionPart(output)
+      .buffer as ArrayBuffer;
+    vi.stubGlobal("navigator", {
+      userAgent:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 27_2 like Mac OS X) AppleWebKit/605.1.15 Version/27.2 Mobile Safari/604.1",
+      platform: "iPhone",
+    });
+    const run = (input: ArrayBuffer) =>
+      xlsxWorkerExecutor.importWorkbook(
+        { kind: "event-import", input, fileName: "synthetic-window-wrap.xlsx" },
+        new AbortController().signal,
+        () => undefined,
+      );
+    try {
+      expect(await run(withRegressionPart)).toEqual(await run(original));
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it.each(["crc", "payload"] as const)(
+    "rejects fixed JS corpus %s corruption before parsing or returning content",
+    async (corruption) => {
+      const workbook = new ExcelJS.Workbook();
+      workbook.addWorksheet("1日目").getCell("A1").value = "ブロックなし";
+      const output = new Uint8Array(await workbook.xlsx.writeBuffer());
+      const input = addInflateRegressionPart(output, corruption)
+        .buffer as ArrayBuffer;
+      const progress: string[] = [];
+      vi.stubGlobal("navigator", {
+        userAgent:
+          "Mozilla/5.0 (iPhone; CPU iPhone OS 27_2 like Mac OS X) AppleWebKit/605.1.15 Version/27.2 Mobile Safari/604.1",
+        platform: "iPhone",
+      });
+      try {
+        await expect(
+          xlsxWorkerExecutor.importWorkbook(
+            {
+              kind: "map-preview",
+              input,
+              fileName: "corrupt-window-wrap.xlsx",
+              settings: DEFAULT_BLOCK_DETECTION_SETTINGS,
+            },
+            new AbortController().signal,
+            ({ phase }) => progress.push(phase),
+          ),
+        ).rejects.toMatchObject({ code: "SECURITY_REJECTED" });
+        expect(progress).not.toContain("parse");
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    },
+  );
 
   it.each(["map-preview", "map-import"] as const)(
     "binds the %s engine after ZIP/XML preflight",

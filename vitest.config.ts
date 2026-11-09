@@ -1,5 +1,8 @@
 import { readFileSync } from "node:fs";
 import { defineConfig } from "vitest/config";
+import { verifyZipjsInflatePatch } from "./scripts/patch-zipjs-inflate.mjs";
+
+verifyZipjsInflatePatch();
 
 interface CoverageThresholds {
   readonly branches: number;

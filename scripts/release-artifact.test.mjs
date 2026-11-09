@@ -79,7 +79,7 @@ const fixtureApplicationStylesheet = Buffer.from(
   "utf8",
 );
 
-test("build input closure binds stylesheet configuration and committed bytes", async (t) => {
+test("build input closure binds stylesheet, inflate patch and committed bytes", async (t) => {
   const temporaryRoot = await mkdtemp(
     path.join(os.tmpdir(), "foundation-build-input-closure-"),
   );
@@ -110,19 +110,23 @@ test("build input closure binds stylesheet configuration and committed bytes", a
       );
       return git("rev-parse", "HEAD");
     };
-    const stylesheetInputs = [
+    const buildInputs = [
       "postcss.config.cjs",
       "postcss.config.mjs",
       "tailwind.config.cjs",
       "tailwind.config.mjs",
       "tailwind-legacy-theme.json",
+      "scripts/patch-zipjs-inflate.mjs",
     ];
     const includedFiles = new Map([
       ["index.html", "<html><body></body></html>\n"],
-      ...stylesheetInputs.map((file) => [file, `fixture: ${file}\n`]),
+      ...buildInputs.map((file) => [file, `fixture: ${file}\n`]),
     ]);
     git("init", "--quiet");
     for (const [file, content] of includedFiles) {
+      await mkdir(path.dirname(path.join(temporaryRoot, file)), {
+        recursive: true,
+      });
       await writeFile(path.join(temporaryRoot, file), content, "utf8");
     }
     await writeFile(
@@ -145,7 +149,7 @@ test("build input closure binds stylesheet configuration and committed bytes", a
     assert.equal(originalClosure.fileCount, includedFiles.size);
     assert.equal(originalClosure.sha256, sha256Json(expectedEntries));
     let previousClosure = originalClosure;
-    for (const file of stylesheetInputs) {
+    for (const file of buildInputs) {
       await t.test(
         `committed ${file} changes the artifact binding`,
         async () => {

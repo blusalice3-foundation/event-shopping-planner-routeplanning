@@ -635,6 +635,10 @@ npm ci
 npm run dev
 ```
 
+`npm ci`のpostinstallで、固定版zip.jsのJS解凍補正をハッシュ検証付きで適用します。開発起動・製品ビルド・Vitest開始時には適用済みかを検査し、未適用や未知の依存内容では停止します。`npm ci --ignore-scripts`を使う場合は、先に`npm run patch:zipjs-inflate`と`npm run verify:zipjs-inflate`を実行してください。
+
+既存の依存へ補正を適用する場合は、開発サーバーを停止してから上記2コマンドを実行し、`npm run dev -- --force`で依存を再最適化してください。保存データやPWAキャッシュの削除は不要です。対象バージョン・ハッシュ・上流修正・撤去条件は[JS解凍補正の管理](docs/adr/zipjs-inflate-patch.md)を参照してください。
+
 開発サーバーは既定で `http://localhost:3000` を開きます。
 
 ローカルファイルとブラウザ内保存だけを使う機能にバックエンドは不要です。Googleスプレッドシート取込、CSP report、Release A metricsのproduction運用には、runbookで定めた同一オリジンAPI、server-only環境変数、DB権限が必要です。Vite開発サーバーではService Workerを有効にしていないため、Release AのPWAを確認する場合は `npm run build:release-a` の後に `npm run preview` を実行してください。

@@ -1,11 +1,21 @@
+import { createHash } from "node:crypto";
 import {
   configure,
   TextReader,
+  Uint8ArrayReader,
   Uint8ArrayWriter,
+  ZipReader,
   ZipWriter,
 } from "@zip.js/zip.js/lib/zip-core-native.js";
 import { describe, expect, it, vi } from "vitest";
 import { XlsxPreflightError, preflightXlsx } from "./zipPreflight";
+import {
+  addInflateRegressionPart,
+  expectedInflateRegressionXml,
+  inflateRegressionCompressedBytes,
+  inflateRegressionFixture,
+  INFLATE_REGRESSION_ENTRY,
+} from "../fixtures/inflateWindowWrap";
 
 type FixtureEntry = {
   name: string;
@@ -334,6 +344,81 @@ describe("XLSX ZIP preflight worker gate", () => {
       } finally {
         vi.unstubAllGlobals();
         configure({ DecompressionStream: originalInflater });
+      }
+    },
+  );
+
+  it("decodes the fixed wrapped-window corpus byte for byte through the product JS inflater", async () => {
+    const expected = expectedInflateRegressionXml();
+    const compressed = inflateRegressionCompressedBytes();
+    expect(compressed.byteLength).toBe(
+      inflateRegressionFixture.compressedBytes,
+    );
+    expect(createHash("sha256").update(compressed).digest("hex")).toBe(
+      inflateRegressionFixture.compressedSha256,
+    );
+    expect(expected.byteLength).toBe(
+      inflateRegressionFixture.uncompressedBytes,
+    );
+    expect(crc32(expected).toString(16).padStart(8, "0")).toBe(
+      inflateRegressionFixture.uncompressedCrc32,
+    );
+    expect(createHash("sha256").update(expected).digest("hex")).toBe(
+      inflateRegressionFixture.uncompressedSha256,
+    );
+
+    const input = addInflateRegressionPart(
+      new Uint8Array(createStoredZip(validEntries())),
+    );
+    const reader = new ZipReader(new Uint8ArrayReader(input), {
+      useWebWorkers: false,
+      useCompressionStream: false,
+    });
+    try {
+      const entries = await reader.getEntries();
+      const entry = entries.find(
+        ({ filename }) => filename === INFLATE_REGRESSION_ENTRY,
+      );
+      if (!entry || entry.directory)
+        throw new Error("Missing regression part.");
+      const actual = await entry.getData(new Uint8ArrayWriter(), {
+        checkSignature: true,
+        useWebWorkers: false,
+        useCompressionStream: false,
+      });
+      expect(actual.byteLength).toBe(expected.byteLength);
+      expect(Buffer.from(actual).equals(Buffer.from(expected))).toBe(true);
+    } finally {
+      await reader.close();
+    }
+  });
+
+  it.each([undefined, "crc", "payload"] as const)(
+    "keeps the fixed wrapped-window JS preflight closed (corruption: %s)",
+    async (corruption) => {
+      const input = addInflateRegressionPart(
+        new Uint8Array(createStoredZip(validEntries())),
+        corruption,
+      ).buffer as ArrayBuffer;
+      vi.stubGlobal("navigator", {
+        userAgent:
+          "Mozilla/5.0 (iPhone; CPU iPhone OS 27_2 like Mac OS X) AppleWebKit/605.1.15 Version/27.2 Mobile Safari/604.1",
+        platform: "iPhone",
+      });
+      try {
+        if (corruption) {
+          await expect(preflightXlsx(input)).rejects.toBeInstanceOf(
+            XlsxPreflightError,
+          );
+        } else {
+          await expect(preflightXlsx(input)).resolves.toMatchObject({
+            entryCount: 7,
+            worksheetCount: 1,
+            cellCount: 1,
+          });
+        }
+      } finally {
+        vi.unstubAllGlobals();
       }
     },
   );

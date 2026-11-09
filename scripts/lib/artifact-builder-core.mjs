@@ -373,6 +373,7 @@ export const calculateBuildInputClosure = ({ repositoryRoot, sourceSha }) => {
         file === "contracts/release-identity-v1.schema.json" ||
         file === "scripts/build-pwa-recovery-agent.mjs" ||
         file === "scripts/build-release-vite.mjs" ||
+        file === "scripts/patch-zipjs-inflate.mjs" ||
         file === "scripts/lib/canonical-json.mjs" ||
         file === "scripts/lib/csp-delivery.d.mts" ||
         file === "scripts/lib/csp-delivery.mjs" ||
