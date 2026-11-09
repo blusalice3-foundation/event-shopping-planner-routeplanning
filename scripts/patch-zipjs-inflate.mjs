@@ -7,7 +7,10 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
+const repositoryRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+);
 const productSpecifier = "@zip.js/zip.js/lib/zip-core-native.js";
 const decoderRelativePath = "lib/core/streams/zlib-js/zlib-streams.min.js";
 

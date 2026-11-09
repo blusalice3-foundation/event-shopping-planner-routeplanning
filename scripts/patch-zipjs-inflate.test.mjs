@@ -64,16 +64,16 @@ function fixture(t) {
   write(path.join(root, "package.json"), '{"type":"module"}\n');
   write(
     sourcePath,
-    'import { ZipReader } from "@zip.js/zip.js/lib/zip-core-native.js";\n',
+    `import { ZipReader } from ${JSON.stringify("@zip.js/zip.js/lib/zip-core-native.js")};\n`,
   );
   write(manifestPath, JSON.stringify(manifest));
   write(
     path.join(packageRoot, "lib/zip-core-native.js"),
-    'export * from "./zip-module-native.js";\n',
+    `export * from ${JSON.stringify("./zip-module-native.js")};\n`,
   );
   write(
     path.join(packageRoot, "lib/zip-module-native.js"),
-    'import { CompressionStreamZlib, DecompressionStreamZlib } from "./core/streams/zlib-js/zlib-streams.min.js";\n',
+    `import { CompressionStreamZlib, DecompressionStreamZlib } from ${JSON.stringify("./core/streams/zlib-js/zlib-streams.min.js")};\n`,
   );
   write(decoderPath, originalText);
   return {
@@ -196,16 +196,16 @@ test("changed product import, package export and native module graph are rejecte
   f.write(f.manifestPath, JSON.stringify(f.manifest));
   f.write(
     path.join(f.packageRoot, "lib/zip-core-native.js"),
-    'export * from "./other.js";',
+    `export * from ${JSON.stringify("./other.js")};`,
   );
   assert.throws(() => applyZipjsInflatePatch({ root: f.root }), /native entry/);
   f.write(
     path.join(f.packageRoot, "lib/zip-core-native.js"),
-    'export * from "./zip-module-native.js";',
+    `export * from ${JSON.stringify("./zip-module-native.js")};`,
   );
   f.write(
     path.join(f.packageRoot, "lib/zip-module-native.js"),
-    'import "./other.js";',
+    `import ${JSON.stringify("./other.js")};`,
   );
   assert.throws(
     () => applyZipjsInflatePatch({ root: f.root }),

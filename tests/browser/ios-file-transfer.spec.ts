@@ -5,6 +5,7 @@ import {
   allStores,
   backup,
   confirmRestore,
+  contentDigest,
   eventName,
   exportBackup,
   item,
@@ -136,14 +137,24 @@ for (const forceJs of [false, true])
     const saved = await exportBackup(page);
     expect(saved.kind).toBe(backup.kind);
     expect(saved.data.eventLists[eventName]).toHaveLength(fixtureItems.length);
-    expect(saved.data.eventLists[eventName]).toMatchObject(fixtureItems);
-    expect(saved.data.mapData[eventName]["1日目マップ"]).toMatchObject({
-      maxRow: 250,
-      maxCol: 200,
-      cells,
-      mergedCells: [],
-      blocks: [],
-    });
+    expect(contentDigest(saved.data.eventLists[eventName])).toBe(
+      contentDigest(fixtureItems.map((value) => ({ ...value, source: "app" }))),
+    );
+    expect(contentDigest(saved.data.mapData[eventName]["1日目マップ"])).toBe(
+      contentDigest({
+        maxRow: 250,
+        maxCol: 200,
+        cells: cells.map((cell) => ({
+          ...cell,
+          fontColor: null,
+          isMerged: false,
+          isVerticalText: false,
+        })),
+        mergedCells: [],
+        blocks: [],
+      }),
+    );
+    const savedStoresDigest = contentDigest(await allStores(page));
     const traces = await trace.verify(1, testInfo);
     expect(traces.flatMap((worker) => worker.responses)).toEqual([
       { type: "XLSX_IMPORT_RESULT", kind: "event-import" },
@@ -151,8 +162,9 @@ for (const forceJs of [false, true])
     await page.reload();
     await expect(page.locator("#loading-screen")).toBeHidden();
     const reloaded = await exportBackup(page);
-    expect(reloaded.data).toEqual(saved.data);
+    expect(contentDigest(reloaded.data)).toBe(contentDigest(saved.data));
     expect(reloaded.eventSettings).toEqual(saved.eventSettings);
+    expect(contentDigest(await allStores(page))).toBe(savedStoresDigest);
   });
 
 test("@ios-compat XLSX export and reimport preserve Japanese event data in a downloaded JSON backup", async ({
@@ -210,7 +222,7 @@ test("@ios-compat XLSX export and reimport preserve Japanese event data in a dow
   await page.reload();
   await expect(page.locator("#loading-screen")).toBeHidden();
   const reloaded = await exportBackup(page);
-  expect(reloaded.data).toEqual(saved.data);
+  expect(contentDigest(reloaded.data)).toBe(contentDigest(saved.data));
   expect(reloaded.eventSettings).toEqual(saved.eventSettings);
 });
 
@@ -365,6 +377,6 @@ test("@ios-compat map import through the JS Worker persists every parsed cell af
   await page.reload();
   await expect(page.locator("#loading-screen")).toBeHidden();
   const reloaded = await exportBackup(page);
-  expect(reloaded.data).toEqual(saved.data);
+  expect(contentDigest(reloaded.data)).toBe(contentDigest(saved.data));
   expect(reloaded.eventSettings).toEqual(saved.eventSettings);
 });

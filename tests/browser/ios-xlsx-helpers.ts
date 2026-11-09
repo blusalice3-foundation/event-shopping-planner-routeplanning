@@ -282,7 +282,8 @@ export async function confirmRestore(page: Page, name: string, rename = false) {
 }
 
 export async function exportBackup(page: Page) {
-  await page.getByRole("button", { name: "イベント一覧", exact: true }).click();
+  const back = page.getByRole("button", { name: "イベント一覧", exact: true });
+  if (await back.isVisible()) await back.click();
   const downloading = page.waitForEvent("download");
   await page
     .getByRole("button", { name: "JSONバックアップ保存", exact: true })
@@ -301,4 +302,22 @@ export async function exportBackup(page: Page) {
       [key: string]: unknown;
     };
   };
+}
+
+// Hash canonical complete data so failure output stays bounded for 50,000-cell
+// maps. No sampling or omission of intermediate records is involved.
+export function contentDigest(value: unknown): string {
+  const canonical = (entry: unknown): unknown => {
+    if (Array.isArray(entry)) return entry.map(canonical);
+    if (entry && typeof entry === "object")
+      return Object.fromEntries(
+        Object.entries(entry)
+          .sort(([a], [b]) => a.localeCompare(b, "en"))
+          .map(([key, child]) => [key, canonical(child)]),
+      );
+    return entry;
+  };
+  return createHash("sha256")
+    .update(JSON.stringify(canonical(value)))
+    .digest("hex");
 }
