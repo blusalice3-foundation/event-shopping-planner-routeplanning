@@ -21,16 +21,25 @@ test.describe.configure({ timeout: 60_000 });
 
 test("@ios-compat controlled offline PWA imports the fixed inflate corpus through the cached product Worker", async ({
   page,
+  browserName,
 }, testInfo) => {
   // Closing network connections exercises the browser's real offline fallback.
   // Playwright WebKit's protocol-level setOffline can fail navigation before
   // its Service Worker gets a chance to respond on Windows.
   let networkUnavailable = false;
+  const deniedUrls: string[] = [];
+  const offlineErrors: string[] = [];
+  page.on("pageerror", (error) => {
+    if (networkUnavailable) offlineErrors.push(error.message);
+  });
   const upstream = new URL(
     process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:4173",
   );
   const server = createServer((incoming, outgoing) => {
     if (networkUnavailable) {
+      deniedUrls.push(
+        new URL(incoming.url ?? "/", `http://${incoming.headers.host}`).href,
+      );
       incoming.socket.destroy();
       return;
     }
@@ -51,6 +60,26 @@ test("@ios-compat controlled offline PWA imports the fixed inflate corpus throug
   const address = server.address();
   if (!address || typeof address === "string")
     throw new Error("Offline test server address is missing.");
+  const gateOrigin = `http://127.0.0.1:${address.port}`;
+  const auditExpectedNetworkErrors = () => {
+    // WebKit emits two pageerror events for a refused metrics request. Admit
+    // exactly those adjacent pairs and require the gate's actual denied URL;
+    // arbitrary TypeErrors, uncached asset errors and crashes still fail.
+    if (browserName !== "webkit") expect(offlineErrors).toEqual([]);
+    expect(offlineErrors.length % 2).toBe(0);
+    const metricsUrl = `${gateOrigin}/api/persistence-release-a-metrics`;
+    for (let index = 0; index < offlineErrors.length; index += 2) {
+      expect(offlineErrors[index]).toBe("TypeError: Load failed");
+      expect(offlineErrors[index + 1]).toBe(
+        `/${new URL(metricsUrl).host}${new URL(metricsUrl).pathname}.`,
+      );
+      expect(deniedUrls).toContain(metricsUrl);
+    }
+    expect(
+      deniedUrls.filter((url) => url === metricsUrl).length,
+    ).toBeGreaterThanOrEqual(offlineErrors.length / 2);
+    return [...offlineErrors];
+  };
   try {
     const trace = await launch(
       page,
@@ -120,7 +149,12 @@ test("@ios-compat controlled offline PWA imports the fixed inflate corpus throug
     expect(saved.data.eventLists[eventName]).toEqual([
       expect.objectContaining(item),
     ]);
-    const traces = await trace.verify(1, testInfo, 2);
+    const traces = await trace.verify(
+      1,
+      testInfo,
+      2,
+      auditExpectedNetworkErrors(),
+    );
     expect(traces.flatMap((worker) => worker.responses)).toEqual([
       { type: "XLSX_IMPORT_RESULT", kind: "event-import" },
     ]);
@@ -153,6 +187,17 @@ test("@ios-compat controlled offline PWA imports the fixed inflate corpus throug
     expect(contentDigest(reloaded.data)).toBe(contentDigest(saved.data));
     expect(reloaded.eventSettings).toEqual(saved.eventSettings);
     expect(await readRuntimeIdentity(page)).toEqual(identity);
+    await trace.verify(1, testInfo, 3, auditExpectedNetworkErrors());
+    await testInfo.attach("offline-network-error-audit", {
+      contentType: "application/json",
+      body: Buffer.from(
+        JSON.stringify({
+          deniedUrls,
+          offlineErrors,
+          admittedOnlyExactMetricsPairs: true,
+        }),
+      ),
+    });
   } finally {
     networkUnavailable = false;
     server.closeAllConnections();

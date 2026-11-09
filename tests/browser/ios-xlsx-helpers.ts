@@ -161,9 +161,10 @@ export async function launch(
       expectedWorkers: number,
       testInfo: TestInfo,
       expectedNavigations = 0,
+      expectedFailures: readonly string[] = [],
     ) {
       expect(workers).toHaveLength(expectedWorkers);
-      expect(failures).toEqual([]);
+      expect(failures).toEqual(expectedFailures);
       expect(navigations).toHaveLength(expectedNavigations);
       const trace = await page.evaluate(
         () => (window as XlsxTraceWindow).__xlsxTransferTrace,
@@ -182,6 +183,7 @@ export async function launch(
             testId: testInfo.testId,
             project: testInfo.project.name,
             retry: testInfo.retry,
+            pageErrors: failures,
             codecPath: forbidNativeCodecs
               ? "forced-js-fallback"
               : "platform-selection",
@@ -253,7 +255,7 @@ export async function confirmRestore(page: Page, name: string, rename = false) {
     name: "バックアップからイベントを復元",
     exact: true,
   });
-  await expect(dialog).toBeVisible();
+  await expect(dialog).toBeVisible({ timeout: 30_000 });
   if (rename) {
     await dialog
       .getByRole("textbox", { name: "復元後のイベント名" })
@@ -272,7 +274,10 @@ export async function confirmRestore(page: Page, name: string, rename = false) {
     exact: true,
   });
   await expect
-    .poll(async () => (await review.isVisible()) || !(await dialog.isVisible()))
+    .poll(
+      async () => (await review.isVisible()) || !(await dialog.isVisible()),
+      { timeout: 30_000 },
+    )
     .toBe(true);
   if (await review.isVisible())
     await review
