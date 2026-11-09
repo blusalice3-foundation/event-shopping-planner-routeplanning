@@ -20,7 +20,7 @@ Windows・Androidのネイティブ優先と、Apple WebKitのJS解凍選択を�
 
 ## ライセンス
 
-zip.jsパッケージはBSD-3-Clauseで配布され、元のLICENSEと通知を保持する。追加した上流分岐はzlib-streams-tsのMITライセンスに基づく。以下は上流コミットの [LICENSE.md](https://github.com/gildas-lormeau/zlib-streams-ts/blob/6c859810aadd52b7036f7e34bf2dbd411f9b12fb/LICENSE.md) の通知である。
+zip.jsパッケージはBSD-3-Clauseで配布され、元のLICENSEと通知を保持する。追加した上流分岐と、`src/xlsx/fixtures/inflateWindowWrap.ts`・`inflate-window-wrap-tail.v1.json` の合成コーパス（同じ上流コミットの `CODE_FRAGMENTS` と決定的な生成方法を利用）はzlib-streams-tsのMITライセンスに基づく。固定した圧縮データは合成データであり、利用者の原本は含まない。以下は上流コミットの [LICENSE.md](https://github.com/gildas-lormeau/zlib-streams-ts/blob/6c859810aadd52b7036f7e34bf2dbd411f9b12fb/LICENSE.md) の通知である。
 
 Copyright (C) 2025 - Gildas Lormeau
 Copyright (C) 1995-2024 Jean-loup Gailly and Mark Adler (zlib)

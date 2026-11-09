@@ -1,4 +1,4 @@
-import fixture from "./inflate-window-wrap-tail.v1.json";
+import fixture from "./inflate-window-wrap-tail.v1.json" with { type: "json" };
 
 export const INFLATE_REGRESSION_ENTRY = "xl/inflate-window-wrap-regression.xml";
 export const inflateRegressionFixture = fixture;
