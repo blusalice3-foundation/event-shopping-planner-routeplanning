@@ -1404,8 +1404,11 @@ const App: React.FC = () => {
       navigation: navigationCommands,
       startCellSelection: overlayCommands.mapEditor.startCellSelection,
       toggleCellSelection: overlayCommands.mapEditor.toggleCellSelection,
-      finishCellSelection: (pending) =>
-        overlayCommands.mapEditor.finishCellSelection(pending ?? null),
+      finishCellSelection: (pending, expectedSelectionRequestKey) =>
+        overlayCommands.mapEditor.finishCellSelection(
+          pending ?? null,
+          expectedSelectionRequestKey,
+        ),
       startVertexSelection: overlayCommands.mapEditor.startVertexSelection,
       toggleVertexSelection: overlayCommands.mapEditor.toggleVertexSelection,
       finishVertexSelection: (pending) =>

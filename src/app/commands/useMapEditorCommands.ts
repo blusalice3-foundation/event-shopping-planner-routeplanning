@@ -1,3 +1,4 @@
+import type { EditingBlockData } from "../../features/map/domain/blockDefinitionEditing";
 import { recordEntry } from "../../utils/ownRecord";
 import {
   useCallback,
@@ -109,7 +110,10 @@ export interface MapEditorActionPort {
   readonly navigation: Pick<AppNavigationCommands, "showImport">;
   startCellSelection(selection: NonNullable<CellSelectionMode>): void;
   toggleCellSelection(cell: { row: number; col: number }): void;
-  finishCellSelection(pending: PendingCellSelection): void;
+  finishCellSelection(
+    pending: PendingCellSelection,
+    expectedSelectionRequestKey: string,
+  ): void;
   startVertexSelection(selection: NonNullable<VertexSelectionMode>): void;
   toggleVertexSelection(vertex: { row: number; col: number }): void;
   finishVertexSelection(pending: PendingVertexSelection): void;
@@ -215,7 +219,7 @@ export interface MapEditorCommands {
   handleCancelVertexSelection(): void;
   handleStartCellSelection(
     type: CellSelectionType,
-    editingData?: unknown,
+    editingData: EditingBlockData,
   ): void;
   handleConfirmCellSelection(): void;
   handleCancelCellSelection(): void;
@@ -1224,52 +1228,58 @@ export const useMapEditorCommands = ({
   ]);
 
   const handleStartCellSelection = useCallback(
-    (type: CellSelectionType, editingData?: unknown): void => {
+    (type: CellSelectionType, editingData: EditingBlockData): void => {
       const session = state.editorSession ?? undefined;
-      if (!sessionIsCurrent(session)) return;
+      if (
+        !sessionIsCurrent(session) ||
+        (session && editingData.sessionId !== session.sessionId)
+      )
+        return;
       startCellSelection({
         ...(session ? { session } : {}),
         type,
         clickedCells: [],
         editingBlockData: editingData,
+        selectionRequestKey: editingData.selectionRequestKey,
       });
     },
     [sessionIsCurrent, startCellSelection, state.editorSession],
   );
 
   const handleConfirmCellSelection = useCallback((): void => {
-    if (cellSelectionMode && sessionIsCurrent(cellSelectionMode.session)) {
-      finishCellSelection({
+    if (!cellSelectionMode || !sessionIsCurrent(cellSelectionMode.session))
+      return;
+    finishCellSelection(
+      {
         type: cellSelectionMode.type,
         cells: cellSelectionMode.clickedCells,
         editingData: cellSelectionMode.editingBlockData,
+        selectionRequestKey: cellSelectionMode.selectionRequestKey,
         ...(cellSelectionMode.session
           ? { session: cellSelectionMode.session }
           : {}),
-      });
-      return;
-    }
-    if (!cellSelectionMode || sessionIsCurrent(cellSelectionMode.session))
-      finishCellSelection(null);
+      },
+      cellSelectionMode.selectionRequestKey,
+    );
   }, [cellSelectionMode, finishCellSelection, sessionIsCurrent]);
 
   const handleCancelCellSelection = useCallback((): void => {
-    if (
-      cellSelectionMode?.editingBlockData &&
-      sessionIsCurrent(cellSelectionMode.session)
-    ) {
-      finishCellSelection({
-        type: "cancelled",
-        cells: [],
-        editingData: cellSelectionMode.editingBlockData,
-        ...(cellSelectionMode.session
-          ? { session: cellSelectionMode.session }
-          : {}),
-      });
+    if (!cellSelectionMode || !sessionIsCurrent(cellSelectionMode.session))
       return;
-    }
-    if (!cellSelectionMode || sessionIsCurrent(cellSelectionMode.session))
-      finishCellSelection(null);
+    finishCellSelection(
+      cellSelectionMode.editingBlockData
+        ? {
+            type: "cancelled",
+            cells: [],
+            editingData: cellSelectionMode.editingBlockData,
+            selectionRequestKey: cellSelectionMode.selectionRequestKey,
+            ...(cellSelectionMode.session
+              ? { session: cellSelectionMode.session }
+              : {}),
+          }
+        : null,
+      cellSelectionMode.selectionRequestKey,
+    );
   }, [cellSelectionMode, finishCellSelection, sessionIsCurrent]);
 
   useEffect(() => {

@@ -116,12 +116,13 @@ export interface AppOverlayMapEditorCommands {
     session?: MapEditorSession,
   ): string;
   startCellSelection(selection: CellSelectionOverlay["selection"]): void;
-  clearPendingCellSelection(): void;
+  clearPendingCellSelection(expectedSelectionRequestKey: string): void;
   toggleCellSelection(
     cell: CellSelectionOverlay["selection"]["clickedCells"][number],
   ): void;
   finishCellSelection(
     pendingSelection: BlockDefinitionOverlay["pendingSelection"],
+    expectedSelectionRequestKey: string,
   ): void;
   startVertexSelection(selection: VertexSelectionOverlay["selection"]): void;
   clearPendingVertexSelection(): void;
@@ -550,11 +551,12 @@ export const useAppOverlayController = (
           selection,
         });
       },
-      clearPendingCellSelection: () => {
+      clearPendingCellSelection: (expectedSelectionRequestKey) => {
         if (state.mapEditor.kind !== "block-definition") return;
         dispatch({
           type: "map-editor/clear-pending-cell-selection",
           requestId: state.mapEditor.requestId,
+          expectedSelectionRequestKey,
         });
       },
       toggleCellSelection: (cell) => {
@@ -565,11 +567,12 @@ export const useAppOverlayController = (
           cell,
         });
       },
-      finishCellSelection: (pendingSelection) => {
+      finishCellSelection: (pendingSelection, expectedSelectionRequestKey) => {
         if (state.mapEditor.kind !== "cell-selection") return;
         dispatch({
           type: "map-editor/finish-cell-selection",
           requestId: state.mapEditor.requestId,
+          expectedSelectionRequestKey,
           pendingSelection,
         });
       },

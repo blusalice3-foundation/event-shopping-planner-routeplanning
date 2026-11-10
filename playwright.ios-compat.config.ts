@@ -10,6 +10,8 @@ export default defineConfig({
     "ios-xlsx-pwa.spec.ts",
     "map-import-layout.spec.ts",
     "map-workspace-continuity.spec.ts",
+    "integrated-block-remediation.spec.ts",
+    "single-item-circle-required.spec.ts",
   ],
   outputDir: "./artifacts/ios-compatibility",
   retries: 0,

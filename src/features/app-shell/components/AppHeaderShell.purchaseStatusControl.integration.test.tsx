@@ -479,3 +479,69 @@ it("includes the recovery slot in the measured header even when ordinary header 
     bounds.mockRestore();
   }
 });
+describe("AppHeaderShell block sort visibility", () => {
+  it.each([null, "asc", "desc"] as const)(
+    "omits the execute block sort control for direction %s and retains candidate sorting",
+    (direction) => {
+      const props = minimalAppHeaderShellProps();
+      props.model.ui.uiSettingsPanelOpen = false;
+      props.model.list.blockSortDirection = direction;
+      props.model.list.items = [
+        {
+          id: "a",
+          circle: "A",
+          eventDate: "Day1",
+          block: "A",
+          number: "01",
+          title: "",
+          price: 500,
+          purchaseStatus: "None",
+          quantity: 2,
+          remarks: "",
+        },
+      ];
+      const { rerender } = render(<AppHeaderShell {...props} />);
+
+      expect(
+        screen.queryByRole("button", {
+          name: /^ブロック(?:番号で|を昇順で|を降順で)並べ替え$/,
+        }),
+      ).not.toBeInTheDocument();
+      expect(props.actions.list.handleBlockSortToggle).not.toHaveBeenCalled();
+      expect(props.actions.list.handleSortToggle).not.toHaveBeenCalled();
+
+      props.model.navigation.currentMode = "edit";
+      rerender(<AppHeaderShell {...props} />);
+      const candidateSort = screen.getByRole("button", {
+        name:
+          direction === "desc"
+            ? "候補ブロックを降順で並べ替え"
+            : direction === "asc"
+              ? "候補ブロックを昇順で並べ替え"
+              : "候補ブロックを番号で並べ替え",
+      });
+      fireEvent.click(candidateSort);
+      expect(
+        props.actions.list.handleBlockSortToggleCandidate,
+      ).toHaveBeenCalledOnce();
+      expect(props.actions.list.handleBlockSortToggle).not.toHaveBeenCalled();
+
+      props.model.navigation.currentMode = "execute";
+      props.model.ui.layoutMode = "smartphone";
+      props.model.ui.showHeaderBar = false;
+      rerender(<AppHeaderShell {...props} />);
+      props.model.ui.showHeaderBar = true;
+      rerender(<AppHeaderShell {...props} />);
+      expect(
+        screen.queryByRole("button", {
+          name: /^ブロック(?:番号で|を昇順で|を降順で)並べ替え$/,
+        }),
+      ).not.toBeInTheDocument();
+      expect(props.model.list.items[0]).toMatchObject({
+        price: 500,
+        quantity: 2,
+        purchaseStatus: "None",
+      });
+    },
+  );
+});

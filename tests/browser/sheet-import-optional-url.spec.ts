@@ -340,10 +340,14 @@ for (const storage of ["direct", "worker"])
           await page
             .getByRole("button", { name: "アイテム追加", exact: true })
             .click();
-          await page
-            .getByLabel("サークル名", { exact: true })
+          const form = page
+            .locator("form")
+            .filter({ has: page.locator("#singleCircle") });
+          await expect(form).toHaveCount(1);
+          await form
+            .getByRole("textbox", { name: "サークル名（必須）", exact: true })
             .fill("URLなし手動追加");
-          await page
+          await form
             .getByRole("button", { name: "リストに追加", exact: true })
             .click();
         } else {

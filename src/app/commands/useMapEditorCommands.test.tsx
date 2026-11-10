@@ -2,6 +2,7 @@
 
 import { act, renderHook } from "@testing-library/react";
 import type { SetStateAction } from "react";
+import type { EditingBlockData } from "../../features/map/domain/blockDefinitionEditing";
 import { describe, expect, it, vi } from "vitest";
 import type {
   CellSelectionMode,
@@ -44,6 +45,24 @@ const block = (name: string): BlockDefinition => ({
   endRow: 2,
   endCol: 2,
   numberCells: [],
+});
+
+const editingSnapshot = (sessionId = "test-session"): EditingBlockData => ({
+  block: block("保持"),
+  target: null,
+  isAddingNew: true,
+  editMode: "normal",
+  wallCellGroups: [],
+  multiRanges: [],
+  currentBlocks: [],
+  sessionId,
+  editId: 1,
+  draftRevision: 0,
+  blocksRevision: 0,
+  selectionRequestKey: `${sessionId}:2`,
+  reservedResumeEditId: 3,
+  nextSequence: 4,
+  consumedSelectionKey: null,
 });
 
 const mapData = (blocks: BlockDefinition[] = [block("A")]): DayMapData => ({
@@ -865,7 +884,7 @@ describe("useMapEditorCommands", () => {
 
   it("emits explicit rollback payloads when editing selections are cancelled", () => {
     const vertexEditingData = { hallId: "existing" };
-    const cellEditingData = { blockId: "existing" };
+    const cellEditingData = editingSnapshot();
     const harness = createHarness({
       vertexSelectionMode: {
         clickedVertices: [{ row: 1, col: 1 }],
@@ -875,6 +894,7 @@ describe("useMapEditorCommands", () => {
         type: "individual",
         clickedCells: [{ row: 2, col: 2 }],
         editingBlockData: cellEditingData,
+        selectionRequestKey: cellEditingData.selectionRequestKey,
       },
     });
     const { result } = renderHarness(harness);
@@ -892,20 +912,33 @@ describe("useMapEditorCommands", () => {
       type: "cancelled",
       cells: [],
       editingData: cellEditingData,
+      selectionRequestKey: cellEditingData.selectionRequestKey,
     });
     expect(harness.stores.vertexSelectionMode).toBeNull();
     expect(harness.stores.cellSelectionMode).toBeNull();
+    expect(harness.spies.finishCellSelection).toHaveBeenCalledWith(
+      expect.objectContaining({
+        selectionRequestKey: cellEditingData.selectionRequestKey,
+      }),
+      cellEditingData.selectionRequestKey,
+    );
     expect(harness.stores.hallDefinitionMode).toBe(true);
     expect(harness.stores.blockDefinitionMode).toBe(true);
   });
 
   it("commits cell selections and removes both event listeners on unmount", () => {
-    const editingData = { blockId: "block" };
+    const editingData = editingSnapshot();
     const harness = createHarness();
     const { result, rerender, unmount } = renderHarness(harness);
 
     act(() =>
       result.current.handleStartCellSelection("individual", editingData),
+    );
+    expect(harness.spies.startCellSelection).toHaveBeenCalledWith(
+      expect.objectContaining({
+        selectionRequestKey: editingData.selectionRequestKey,
+        editingBlockData: editingData,
+      }),
     );
     rerender({ ports: harness.createPorts() });
     act(() => {
@@ -921,9 +954,17 @@ describe("useMapEditorCommands", () => {
     act(() => result.current.handleConfirmCellSelection());
     expect(harness.stores.pendingCellSelection).toEqual({
       type: "individual",
+      selectionRequestKey: editingData.selectionRequestKey,
       cells: [{ row: 5, col: 6 }],
       editingData,
     });
+
+    expect(harness.spies.finishCellSelection).toHaveBeenCalledWith(
+      expect.objectContaining({
+        selectionRequestKey: editingData.selectionRequestKey,
+      }),
+      editingData.selectionRequestKey,
+    );
 
     const cellCallsBeforeUnmount =
       harness.spies.toggleCellSelection.mock.calls.length;
@@ -1001,7 +1042,8 @@ it("rejects stale block, cell and vertex results even after the same map key is 
       cellSelectionMode: {
         type: "corner",
         clickedCells: [],
-        editingBlockData: { name: "保持" },
+        editingBlockData: editingSnapshot(session.sessionId),
+        selectionRequestKey: `${session.sessionId}:2`,
         session,
       },
       vertexSelectionMode: {
@@ -1097,3 +1139,29 @@ it.each([
     });
   },
 );
+
+it("forwards the captured key when cancelling a cell selection without a snapshot", () => {
+  const harness = createHarness({
+    cellSelectionMode: {
+      type: "corner",
+      clickedCells: [],
+      selectionRequestKey: "captured:1",
+    },
+  });
+  const { result } = renderHarness(harness);
+  act(() => result.current.handleCancelCellSelection());
+  expect(harness.spies.finishCellSelection).toHaveBeenCalledWith(
+    null,
+    "captured:1",
+  );
+});
+
+it("does not manufacture a selection key when there is no active selection", () => {
+  const harness = createHarness();
+  const { result } = renderHarness(harness);
+  act(() => {
+    result.current.handleConfirmCellSelection();
+    result.current.handleCancelCellSelection();
+  });
+  expect(harness.spies.finishCellSelection).not.toHaveBeenCalled();
+});

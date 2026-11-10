@@ -2946,6 +2946,13 @@ try {
     await waitForReleaseAStartupMetric(secondary.client);
     const secondaryProbe = await collectOnlineProbe(secondary.client);
     assertOnlineProbe(secondaryProbe);
+    await waitForExpression(
+      secondary.client,
+      `Boolean(document.querySelector(
+        '[aria-label="保存済み・旧データ保全中"]',
+      ))`,
+      "second tab legacy source protection status",
+    );
     const secondaryFixture = await collectFixtureEvidence(secondary.client);
     assertFixtureUnchanged(fixture, secondaryFixture, "second tab");
 
@@ -2964,6 +2971,13 @@ try {
       'matchMedia("(display-mode: standalone)").matches',
     );
     assert(standaloneMedia, "Standalone display-mode preflight failed.");
+    await waitForExpression(
+      standaloneTarget.client,
+      `Boolean(document.querySelector(
+        '[aria-label="保存済み・旧データ保全中"]',
+      ))`,
+      "standalone app-window legacy source protection status",
+    );
     const standaloneFixture = await collectFixtureEvidence(
       standaloneTarget.client,
     );

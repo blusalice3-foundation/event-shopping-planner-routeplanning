@@ -284,24 +284,28 @@ for (const origin of [
       page.getByRole("button", { name: "リストに追加", exact: true }),
     ).toBeVisible();
     expect(await physicalSettings(page)).toEqual(beforeSelection);
-    await page
-      .getByLabel("サークル名", { exact: true })
+    const form = page
+      .locator("form")
+      .filter({ has: page.locator("#singleCircle") });
+    await expect(form).toHaveCount(1);
+    await form
+      .getByRole("textbox", { name: "サークル名（必須）", exact: true })
       .fill("追加後のサークル");
-    await page.getByLabel("タイトル", { exact: true }).fill("再開した新刊");
-    await page.getByLabel("備考", { exact: true }).fill("保持するメモ");
-    await page.getByLabel("参加日", { exact: true }).selectOption("__custom__");
-    await page.getByLabel("参加日", { exact: true }).fill("　 ");
-    await page
+    await form.getByLabel("タイトル", { exact: true }).fill("再開した新刊");
+    await form.getByLabel("備考", { exact: true }).fill("保持するメモ");
+    await form.getByLabel("参加日", { exact: true }).selectOption("__custom__");
+    await form.getByLabel("参加日", { exact: true }).fill("　 ");
+    await form
       .getByRole("button", { name: "リストに追加", exact: true })
       .click();
-    await expect(page.getByRole("alert")).toHaveText(
+    await expect(form.getByRole("alert")).toHaveText(
       "参加日を入力してください。",
     );
-    await expect(page.getByLabel("参加日", { exact: true })).toBeFocused();
-    await expect(page.getByLabel("タイトル", { exact: true })).toHaveValue(
+    await expect(form.getByLabel("参加日", { exact: true })).toBeFocused();
+    await expect(form.getByLabel("タイトル", { exact: true })).toHaveValue(
       "再開した新刊",
     );
-    await expect(page.getByLabel("備考", { exact: true })).toHaveValue(
+    await expect(form.getByLabel("備考", { exact: true })).toHaveValue(
       "保持するメモ",
     );
     const methods = await page.evaluate(
@@ -322,8 +326,8 @@ for (const origin of [
       ),
     ).toEqual([]);
     expect(await physicalSettings(page)).toEqual(beforeSelection);
-    await page.getByLabel("参加日", { exact: true }).fill("前夜祭");
-    await page
+    await form.getByLabel("参加日", { exact: true }).fill("前夜祭");
+    await form
       .getByRole("button", { name: "リストに追加", exact: true })
       .click();
     await acceptExistingSaveReview(page);
