@@ -9,7 +9,12 @@ import React, {
   useReducer,
   useRef,
 } from "react";
-import { DayMapData, BlockDefinition, CellData } from "../../types/map";
+import {
+  DayMapData,
+  BlockDefinition,
+  CellData,
+  NumberCellInfo,
+} from "../../types/map";
 import {
   blockEditingReducer,
   detectBlockNumberCells,
@@ -167,16 +172,29 @@ const BlockDefinitionPanel: React.FC<BlockDefinitionPanelProps> = ({
         : [],
     [editMode, wallCellGroups, cellsMap],
   );
-  const multiRangeNumberCells = useMemo(
-    () =>
-      editMode === "multi"
-        ? detectGroupedNumberCells(
-            cellsMap,
-            multiRanges.map((r) => ({ type: "range", ...r })),
-          )
-        : [],
-    [editMode, multiRanges, cellsMap],
-  );
+  const multiRangeNumberCells = useMemo(() => {
+    if (editMode !== "multi") return [];
+    const all: NumberCellInfo[] = [];
+    multiRanges.forEach((range) =>
+      all.push(
+        ...detectNumberCells(
+          range.startRow,
+          range.startCol,
+          range.endRow,
+          range.endCol,
+        ),
+      ),
+    );
+    return all
+      .filter(
+        (c, i, source) =>
+          i ===
+          source.findIndex(
+            (other) => other.row === c.row && other.col === c.col,
+          ),
+      )
+      .sort((a, b) => a.value - b.value);
+  }, [editMode, multiRanges, detectNumberCells]);
   const startRow = editingBlock?.startRow,
     startCol = editingBlock?.startCol,
     endRow = editingBlock?.endRow,

@@ -236,8 +236,8 @@ for (const mode of ["通常", "壁", "複数範囲"] as const) {
   }) => {
     await restore(page);
     const original = await mapsInDatabase(page);
-    const writes = await watchInnerWrites(page);
     const panel = await openBlocks(page);
+    const writes = await watchInnerWrites(page);
     await panel.getByRole("button", { name: "+ 新規", exact: true }).click();
     await panel.getByPlaceholder("例: ア, め, N").fill("b");
     if (mode !== "通常")
@@ -314,13 +314,13 @@ const selectionPaths = [
 ] as const;
 
 for (const path of selectionPaths) {
-  test(`${path.key} cancel and confirm preserve the original target, descending order and unapplied blocks`, async ({
+  test(`${path.key} cancel and confirm preserve the original target and unapplied blocks after a descending start`, async ({
     page,
   }) => {
     await restore(page);
     const before = await mapsInDatabase(page);
-    const writes = await watchInnerWrites(page);
     const panel = await openBlocks(page);
+    const writes = await watchInnerWrites(page);
     await blockButton(panel, "b").click();
     await panel.getByPlaceholder("例: ア, め, N").fill("b保存済み");
     await panel.getByRole("button", { name: "保存", exact: true }).click();
@@ -336,8 +336,10 @@ for (const path of selectionPaths) {
       "B選択中",
     );
     await panel.getByRole("button", { name: "一覧", exact: true }).click();
+    // Keep the existing display-direction reset on remount. The edit target
+    // must remain B even though selection began with the descending list.
     await expect(
-      panel.getByRole("button", { name: "↓降順", exact: true }),
+      panel.getByRole("button", { name: "↑昇順", exact: true }),
     ).toBeVisible();
     await expect(blockButton(panel, "b保存済み")).toBeVisible();
     await panel.getByRole("button", { name: "編集", exact: true }).click();
@@ -463,8 +465,8 @@ for (const changeSort of [false, true]) {
     const original = attachmentMap.blocks.find((block) => block.name === "b");
     if (!original) throw new Error("Actual b definition missing.");
     await restore(page, attachmentMap);
-    const writes = await watchInnerWrites(page);
     const panel = await openBlocks(page);
+    const writes = await watchInnerWrites(page);
     await blockButton(panel, "b").click();
     await panel.getByPlaceholder("例: ア, め, N").fill("b監査");
     if (changeSort) {

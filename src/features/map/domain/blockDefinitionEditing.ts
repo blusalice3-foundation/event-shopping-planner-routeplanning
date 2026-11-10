@@ -304,16 +304,12 @@ export function detectBlockNumberCells(
   endCol: number,
 ): NumberCellInfo[] {
   const cells: NumberCellInfo[] = [];
-  for (
-    let row = Math.min(startRow, endRow);
-    row <= Math.max(startRow, endRow);
-    row++
-  )
-    for (
-      let col = Math.min(startCol, endCol);
-      col <= Math.max(startCol, endCol);
-      col++
-    ) {
+  const minRow = Math.min(startRow, endRow),
+    maxRow = Math.max(startRow, endRow);
+  const minCol = Math.min(startCol, endCol),
+    maxCol = Math.max(startCol, endCol);
+  for (let row = minRow; row <= maxRow; row++)
+    for (let col = minCol; col <= maxCol; col++) {
       const cell = cellsMap.get(`${row}-${col}`);
       if (cell && !cell.isMerged && cell.value !== null) {
         const value =
@@ -343,19 +339,24 @@ export function detectGroupedNumberCells(
         ),
       );
     else if (g.type === "individual")
-      for (const c of g.cells || [])
-        all.push(
-          ...detectBlockNumberCells(cellsMap, c.row, c.col, c.row, c.col),
-        );
+      for (const c of g.cells || []) {
+        const cell = cellsMap.get(`${c.row}-${c.col}`);
+        if (cell && !cell.isMerged && cell.value !== null) {
+          const value =
+            typeof cell.value === "number"
+              ? cell.value
+              : Number(String(cell.value).trim());
+          if (!isNaN(value) && value > 0 && value <= 100)
+            all.push({ row: c.row, col: c.col, value });
+        }
+      }
   }
-  const seen = new Set<string>();
   return all
-    .filter((c) => {
-      const key = `${c.row}-${c.col}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
+    .filter(
+      (c, i, source) =>
+        i ===
+        source.findIndex((other) => other.row === c.row && other.col === c.col),
+    )
     .sort((a, b) => a.value - b.value);
 }
 export interface BlockSavePlan {
