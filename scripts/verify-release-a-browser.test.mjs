@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { runInNewContext } from "node:vm";
 import test from "node:test";
 import { ServiceWorkerActivationTracker } from "./lib/service-worker-activation-tracker.mjs";
 
@@ -520,3 +521,167 @@ test("preflight and transition JSON contracts remain present", () => {
     /assets\\\\\/\(\?:index-\[\^\/\]\+\|release-role\)/,
   );
 });
+
+const assertProtectedFixtureWaitOrder = (source) => {
+  const normalStart = source.indexOf(
+    "const fixture = await installSyntheticLegacyFixture(primary.client);",
+  );
+  assert.ok(normalStart >= 0, "Normal preflight fixture setup is missing.");
+  const normalPreflight = source.slice(normalStart);
+  return [
+    [
+      "secondary.client",
+      "secondaryFixture",
+      "second tab legacy source protection status",
+    ],
+    [
+      "standaloneTarget.client",
+      "standaloneFixture",
+      "standalone app-window legacy source protection status",
+    ],
+  ].map(([client, fixture, label]) => {
+    const collection = normalPreflight.indexOf(
+      `const ${fixture} = await collectFixtureEvidence(`,
+    );
+    assert.ok(
+      collection >= 0,
+      `${label}: fixture evidence collection is missing.`,
+    );
+    const precedingSource = normalPreflight.slice(0, collection);
+    const escapedClient = client.replaceAll(".", "\\.");
+    const wait = new RegExp(
+      "await waitForExpression\\(\\s*" +
+        escapedClient +
+        ",\\s*`([\\s\\S]*?)`,\\s*" +
+        JSON.stringify(label) +
+        ",?\\s*\\);",
+    ).exec(precedingSource);
+    assert.ok(
+      wait,
+      `${label}: protection status must be awaited before collection.`,
+    );
+    const startup = precedingSource.lastIndexOf(
+      `await waitForReleaseAStartupMetric(${client})`,
+    );
+    assert.ok(
+      startup >= 0 && wait.index > startup,
+      `${label}: protection readiness must follow startup readiness.`,
+    );
+    assert.match(
+      wait[1],
+      /document\.querySelector\(\s*'\[aria-label="保存済み・旧データ保全中"\]',?\s*\)/,
+    );
+    return { client, label, expression: wait[1] };
+  });
+};
+
+// Run the actual verifier poller and the exact expression wired into each
+// surface. A fake clock and DOM make the React-commit gap deterministic.
+const createProtectedStatusHarness = (visibleAt) => {
+  const start = verifierSource.indexOf("const waitForExpression = async (");
+  const end = verifierSource.indexOf("const armPwaUpdateProbe = async", start);
+  assert.ok(
+    start >= 0 && end > start,
+    "Verifier poller declaration is missing.",
+  );
+  let elapsed = 0;
+  const observations = [];
+  const client = {};
+  const document = {
+    querySelector(selector) {
+      if (selector === "#root") return { childElementCount: 1 };
+      assert.equal(selector, '[aria-label="保存済み・旧データ保全中"]');
+      return elapsed >= visibleAt ? {} : null;
+    },
+  };
+  const sessionStorage = {
+    getItem() {
+      return JSON.stringify({ counters: { startup: { ready: 1 } } });
+    },
+  };
+  const browserContext = { document, sessionStorage };
+  const prerequisitesReady = () =>
+    Boolean(
+      document.querySelector("#root").childElementCount &&
+      JSON.parse(sessionStorage.getItem("startup-metrics")).counters.startup
+        .ready,
+    );
+  const wait = runInNewContext(
+    `${verifierSource.slice(start, end)}\nwaitForExpression;`,
+    {
+      Date: { now: () => elapsed },
+      evaluate: async (actualClient, expression) => {
+        assert.equal(actualClient, client);
+        observations.push({
+          elapsed,
+          prerequisitesReady: prerequisitesReady(),
+        });
+        return runInNewContext(expression, browserContext);
+      },
+      delay: async (milliseconds) => {
+        elapsed += milliseconds;
+      },
+    },
+  );
+  return {
+    wait,
+    client,
+    observations,
+    prerequisitesReady,
+    elapsed: () => elapsed,
+  };
+};
+
+test("normal preflight awaits retained-legacy UI on both additional surfaces", () => {
+  assert.equal(assertProtectedFixtureWaitOrder(verifierSource).length, 2);
+});
+
+for (const { label, expression } of assertProtectedFixtureWaitOrder(
+  verifierSource,
+)) {
+  test(`${label} waits through a delayed protected-status render after startup`, async () => {
+    const harness = createProtectedStatusHarness(200);
+    assert.equal(harness.prerequisitesReady(), true);
+    let collected = false;
+    const finished = harness
+      .wait(harness.client, expression, label)
+      .then(() => {
+        collected = true;
+      });
+    assert.equal(
+      collected,
+      false,
+      "Startup readiness must not release the UI gate.",
+    );
+    await finished;
+    assert.equal(collected, true);
+    assert.equal(harness.elapsed(), 200);
+    assert.deepEqual(
+      harness.observations.map(({ elapsed }) => elapsed),
+      [0, 100, 200],
+    );
+    assert.ok(
+      harness.observations.every(
+        ({ prerequisitesReady }) => prerequisitesReady,
+      ),
+    );
+  });
+
+  test(`${label} remains a failure when protected status never appears`, async () => {
+    const harness = createProtectedStatusHarness(Infinity);
+    let collected = false;
+    await assert.rejects(
+      harness.wait(harness.client, expression, label).then(() => {
+        collected = true;
+      }),
+      (error) => error.message === `${label} was not observed.`,
+    );
+    assert.equal(harness.prerequisitesReady(), true);
+    assert.equal(
+      collected,
+      false,
+      "Missing protection cannot produce fixture evidence.",
+    );
+    assert.equal(harness.elapsed(), 20_000);
+  });
+}
