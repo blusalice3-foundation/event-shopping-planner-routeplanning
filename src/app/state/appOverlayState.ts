@@ -310,6 +310,7 @@ export type AppOverlayAction =
   | Readonly<{
       type: "map-editor/clear-pending-cell-selection";
       requestId: string;
+      expectedSelectionRequestKey: string;
     }>
   | Readonly<{
       type: "map-editor/toggle-cell";
@@ -319,6 +320,7 @@ export type AppOverlayAction =
   | Readonly<{
       type: "map-editor/finish-cell-selection";
       requestId: string;
+      expectedSelectionRequestKey: string;
       pendingSelection: PendingCellSelection;
     }>
   | Readonly<{
@@ -578,6 +580,22 @@ const assertMapImportOverlayState = (value: unknown): void => {
   }
   fail("overlay.mapImport.kind", "Unknown map import overlay kind.");
 };
+
+const sameEditorSession = (
+  left: MapEditorSession | undefined,
+  right: MapEditorSession | undefined,
+): boolean =>
+  left === right ||
+  Boolean(
+    left &&
+    right &&
+    left.sessionId === right.sessionId &&
+    left.eventName === right.eventName &&
+    left.eventGeneration === right.eventGeneration &&
+    left.day === right.day &&
+    left.mapKey === right.mapKey &&
+    left.editorKind === right.editorKind,
+  );
 
 const assertMapEditorOverlayState = (value: unknown): void => {
   const record = assertRecord(value, "overlay.mapEditor");
@@ -1011,6 +1029,19 @@ export const reduceAppOverlayState = (
         },
       });
     case "map-editor/clear-pending-cell-selection":
+      // Check ownership before requireCurrent: late block selection effects are inert.
+      if (
+        state.mapEditor.kind !== "block-definition" ||
+        state.mapEditor.requestId !== action.requestId ||
+        !action.expectedSelectionRequestKey ||
+        state.mapEditor.pendingSelection?.selectionRequestKey !==
+          action.expectedSelectionRequestKey ||
+        !sameEditorSession(
+          state.mapEditor.session,
+          state.mapEditor.pendingSelection.session,
+        )
+      )
+        return state;
       requireCurrent(
         state.mapEditor,
         action.requestId,
@@ -1022,7 +1053,7 @@ export const reduceAppOverlayState = (
         mapEditor: {
           kind: "block-definition",
           requestId: action.requestId,
-          ...(state.mapEditor.kind !== "inactive" && state.mapEditor.session
+          ...(state.mapEditor.session
             ? { session: state.mapEditor.session }
             : {}),
           pendingSelection: null,
@@ -1060,6 +1091,25 @@ export const reduceAppOverlayState = (
       });
     }
     case "map-editor/finish-cell-selection":
+      if (
+        state.mapEditor.kind !== "cell-selection" ||
+        state.mapEditor.requestId !== action.requestId ||
+        !action.expectedSelectionRequestKey ||
+        state.mapEditor.selection.selectionRequestKey !==
+          action.expectedSelectionRequestKey ||
+        !sameEditorSession(
+          state.mapEditor.session,
+          state.mapEditor.selection.session,
+        ) ||
+        (action.pendingSelection !== null &&
+          (action.pendingSelection.selectionRequestKey !==
+            action.expectedSelectionRequestKey ||
+            !sameEditorSession(
+              state.mapEditor.session,
+              action.pendingSelection.session,
+            )))
+      )
+        return state;
       requireCurrent(
         state.mapEditor,
         action.requestId,
@@ -1071,7 +1121,7 @@ export const reduceAppOverlayState = (
         mapEditor: {
           kind: "block-definition",
           requestId: action.requestId,
-          ...(state.mapEditor.kind !== "inactive" && state.mapEditor.session
+          ...(state.mapEditor.session
             ? { session: state.mapEditor.session }
             : {}),
           pendingSelection: action.pendingSelection,

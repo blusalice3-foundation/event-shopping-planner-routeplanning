@@ -179,9 +179,12 @@ async function setup(kind: "add" | "edit" | "detail", seedItem = original) {
     ),
   );
   if (kind === "add") {
-    fireEvent.change(screen.getByLabelText("サークル名"), {
-      target: { value: "追加サークル" },
-    });
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "サークル名（必須）" }),
+      {
+        target: { value: "追加サークル" },
+      },
+    );
     fireEvent.change(screen.getByLabelText("タイトル"), {
       target: { value: "追加タイトル" },
     });

@@ -169,6 +169,7 @@ describe("useAppOverlayController", () => {
     act(() =>
       result.current.commands.mapEditor.startCellSelection({
         type: "rangeStart",
+        selectionRequestKey: "s:1",
         clickedCells: [],
       }),
     );
@@ -183,13 +184,19 @@ describe("useAppOverlayController", () => {
     ]);
 
     act(() =>
-      result.current.commands.mapEditor.finishCellSelection({
-        type: "rangeStart",
-        cells: [{ row: 1, col: 2 }],
-      }),
+      result.current.commands.mapEditor.finishCellSelection(
+        {
+          type: "rangeStart",
+          selectionRequestKey: "s:1",
+          cells: [{ row: 1, col: 2 }],
+        },
+        "s:1",
+      ),
     );
     expect(result.current.readModel.pendingCellSelection).not.toBeNull();
-    act(() => result.current.commands.mapEditor.clearPendingCellSelection());
+    act(() =>
+      result.current.commands.mapEditor.clearPendingCellSelection("s:1"),
+    );
     expect(result.current.readModel.pendingCellSelection).toBeNull();
     act(() => activeCellCommands.toggleCellSelection({ row: 9, col: 9 }));
     expect(result.current.state.mapEditor.kind).toBe("block-definition");
@@ -526,4 +533,64 @@ describe("event display request receipts", () => {
       requestId: secondId,
     });
   });
+});
+
+it("forwards captured selection keys through finish and clear without cancelling a newer selection", () => {
+  const { result } = renderHook(() => useAppOverlayController());
+  act(() => result.current.commands.mapEditor.openBlockDefinition(null));
+  act(() =>
+    result.current.commands.mapEditor.startCellSelection({
+      type: "corner",
+      clickedCells: [],
+      selectionRequestKey: "s:1",
+    }),
+  );
+  const oldSelectionCommands = result.current.commands.mapEditor;
+  act(() =>
+    oldSelectionCommands.finishCellSelection(
+      { type: "cancelled", cells: [], selectionRequestKey: "s:1" },
+      "s:1",
+    ),
+  );
+  const oldPendingCommands = result.current.commands.mapEditor;
+  act(() => oldPendingCommands.clearPendingCellSelection("s:1"));
+  act(() =>
+    result.current.commands.mapEditor.startCellSelection({
+      type: "individual",
+      clickedCells: [],
+      selectionRequestKey: "s:4",
+    }),
+  );
+  const active = result.current.state;
+  act(() => {
+    oldSelectionCommands.finishCellSelection(null, "s:1");
+    oldSelectionCommands.finishCellSelection(
+      { type: "corner", cells: [], selectionRequestKey: "s:1" },
+      "s:1",
+    );
+    oldPendingCommands.clearPendingCellSelection("s:1");
+  });
+  expect(result.current.state).toBe(active);
+  act(() =>
+    result.current.commands.mapEditor.finishCellSelection(
+      {
+        type: "individual",
+        cells: [{ row: 2, col: 3 }],
+        selectionRequestKey: "s:4",
+      },
+      "s:4",
+    ),
+  );
+  const resumed = result.current.state;
+  act(() => {
+    oldSelectionCommands.finishCellSelection(null, "s:1");
+    oldPendingCommands.clearPendingCellSelection("s:1");
+    result.current.commands.mapEditor.clearPendingCellSelection("s:1");
+  });
+  expect(result.current.state).toBe(resumed);
+  expect(
+    result.current.readModel.pendingCellSelection?.selectionRequestKey,
+  ).toBe("s:4");
+  act(() => result.current.commands.mapEditor.clearPendingCellSelection("s:4"));
+  expect(result.current.readModel.pendingCellSelection).toBeNull();
 });

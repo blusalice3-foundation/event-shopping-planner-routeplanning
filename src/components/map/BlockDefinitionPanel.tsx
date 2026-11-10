@@ -1,14 +1,27 @@
 import { useModalDialogBehavior } from "../../hooks/useModalDialogBehavior";
 import type { MapEditorSession } from "../../features/map/domain/mapEditorSession";
-import { minimum, maximum } from "../../utils/numericExtrema";
-import React, { useState, useCallback, useMemo, useEffect, useId } from "react";
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+  useId,
+  useReducer,
+  useRef,
+} from "react";
+import { DayMapData, BlockDefinition, CellData } from "../../types/map";
 import {
-  DayMapData,
-  BlockDefinition,
-  CellData,
-  NumberCellInfo,
-  CellGroup,
-} from "../../types/map";
+  blockEditingReducer,
+  detectBlockNumberCells,
+  detectGroupedNumberCells,
+  initializeBlockEditingState,
+  prepareBlockSave,
+  selectionSnapshot,
+  type BlockEditMode,
+  type BlockSelectionResult,
+  type BlockSelectionType,
+  type EditingBlockData,
+} from "../../features/map/domain/blockDefinitionEditing";
 
 interface BlockDefinitionPanelProps {
   isOpen: boolean;
@@ -20,18 +33,12 @@ interface BlockDefinitionPanelProps {
     session?: MapEditorSession,
   ) => void;
   onStartCellSelection: (
-    type: "corner" | "multiCorner" | "rangeStart" | "individual",
-    editingData?: unknown,
+    type: BlockSelectionType,
+    editingData: EditingBlockData,
   ) => void;
-  pendingCellSelection?: {
-    session?: MapEditorSession;
-    type: string;
-    cells: { row: number; col: number }[];
-    editingData?: unknown;
-  } | null;
-  onClearPendingCellSelection?: () => void;
+  pendingCellSelection?: BlockSelectionResult | null;
+  onClearPendingCellSelection?: (selectionRequestKey: string) => void;
 }
-
 const BLOCK_COLORS = [
   "#E3F2FD",
   "#E8F5E9",
@@ -46,27 +53,7 @@ const BLOCK_COLORS = [
   "#EFEBE9",
   "#ECEFF1",
 ];
-
 type SortDirection = "asc" | "desc";
-type EditMode = "normal" | "multi" | "wall";
-
-interface MultiRange {
-  startRow: number;
-  startCol: number;
-  endRow: number;
-  endCol: number;
-}
-
-interface EditingBlockData {
-  block: Partial<BlockDefinition>;
-  isAddingNew: boolean;
-  selectedIndex: number | null;
-  editMode: EditMode;
-  wallCellGroups: CellGroup[];
-  multiRanges: MultiRange[];
-  currentBlocks: BlockDefinition[];
-}
-
 const BlockDefinitionPanel: React.FC<BlockDefinitionPanelProps> = ({
   isOpen,
   session,
@@ -77,489 +64,174 @@ const BlockDefinitionPanel: React.FC<BlockDefinitionPanelProps> = ({
   pendingCellSelection,
   onClearPendingCellSelection,
 }) => {
-  const [blocks, setBlocks] = useState<BlockDefinition[]>(mapData.blocks);
-  const [selectedBlockIndex, setSelectedBlockIndex] = useState<number | null>(
-    null,
+  const localSessionId = useId();
+  const sessionId =
+    session?.sessionId ||
+    pendingCellSelection?.editingData?.sessionId ||
+    localSessionId;
+  const [state, dispatch] = useReducer(blockEditingReducer, undefined, () =>
+    initializeBlockEditingState(
+      mapData.blocks,
+      sessionId,
+      pendingCellSelection,
+    ),
   );
-  const [editingBlock, setEditingBlock] =
-    useState<Partial<BlockDefinition> | null>(null);
-  const [isAddingNew, setIsAddingNew] = useState(false);
+  const {
+    blocks,
+    block: editingBlock,
+    isAddingNew,
+    editMode,
+    wallCellGroups,
+    multiRanges,
+    activeTab,
+  } = state;
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  const [editMode, setEditMode] = useState<EditMode>("normal");
-  const [wallCellGroups, setWallCellGroups] = useState<CellGroup[]>([]);
-  const [multiRanges, setMultiRanges] = useState<MultiRange[]>([]);
-  const [activeTab, setActiveTab] = useState<"list" | "edit">("list");
-
+  const nextSequence = useRef(state.nextSequence);
+  const selectionInFlight = useRef<string | null>(null);
+  const saving = useRef(false);
+  const submitted = useRef<string | null>(null);
+  const reserveEdit = () => {
+    const editId = nextSequence.current++;
+    return { editId, nextSequence: nextSequence.current };
+  };
+  const setActiveTab = (tab: "list" | "edit") => dispatch({ type: "tab", tab });
   const cellsMap = useMemo(() => {
     const map = new Map<string, CellData>();
     mapData.cells.forEach((cell) => map.set(`${cell.row}-${cell.col}`, cell));
     return map;
   }, [mapData.cells]);
-
-  const sortedBlocks = useMemo(() => {
-    return [...blocks].sort((a, b) => {
-      const cmp = a.name.localeCompare(b.name, "ja");
-      return sortDirection === "asc" ? cmp : -cmp;
-    });
-  }, [blocks, sortDirection]);
-
+  const sortedBlocks = useMemo(
+    () =>
+      [...blocks].sort((a, b) => {
+        const cmp = a.name.localeCompare(b.name, "ja");
+        return sortDirection === "asc" ? cmp : -cmp;
+      }),
+    [blocks, sortDirection],
+  );
+  const selectedBlock = useMemo(() => {
+    const matches = state.target
+      ? blocks.filter((b) => b.name === state.target?.originalName)
+      : [];
+    return matches.length === 1 ? matches[0] : null;
+  }, [blocks, state.target]);
   const detectNumberCells = useCallback(
-    (startRow: number, startCol: number, endRow: number, endCol: number) => {
-      const cells: NumberCellInfo[] = [];
-      const minR = Math.min(startRow, endRow),
-        maxR = Math.max(startRow, endRow);
-      const minC = Math.min(startCol, endCol),
-        maxC = Math.max(startCol, endCol);
-      for (let r = minR; r <= maxR; r++) {
-        for (let c = minC; c <= maxC; c++) {
-          const cell = cellsMap.get(`${r}-${c}`);
-          if (cell && !cell.isMerged && cell.value !== null) {
-            const num =
-              typeof cell.value === "number"
-                ? cell.value
-                : Number(String(cell.value).trim());
-            if (!isNaN(num) && num > 0 && num <= 100)
-              cells.push({ row: r, col: c, value: num });
-          }
-        }
-      }
-      return cells.sort((a, b) => a.value - b.value);
-    },
+    (startRow: number, startCol: number, endRow: number, endCol: number) =>
+      detectBlockNumberCells(cellsMap, startRow, startCol, endRow, endCol),
     [cellsMap],
   );
 
-  // セル選択結果を受け取った時の処理
+  // 復帰は初期化と同じ純粋な遷移を使い、消費済みの要求だけ解除する。
   useEffect(() => {
-    if (
-      !pendingCellSelection ||
-      !isOpen ||
-      (session && pendingCellSelection.session?.sessionId !== session.sessionId)
-    )
-      return;
-
-    const { type, cells, editingData } = pendingCellSelection;
-    const data = editingData as EditingBlockData | undefined;
-
-    if (data) {
-      // 編集中のデータを復元
-      if (data.currentBlocks) setBlocks(data.currentBlocks);
-      setEditingBlock(data.block);
-      setIsAddingNew(data.isAddingNew);
-      setSelectedBlockIndex(data.selectedIndex);
-      setEditMode(data.editMode);
-      setWallCellGroups(data.wallCellGroups);
-      setMultiRanges(data.multiRanges || []);
-      setActiveTab("edit");
-    }
-
-    // キャンセルの場合はデータ復元のみで終了
-    if (type === "cancelled") {
-      if (onClearPendingCellSelection) {
-        onClearPendingCellSelection();
-      }
-      return;
-    }
-
-    if (type === "corner" && cells.length >= 4) {
-      // 通常モードの4角選択
-      const rows = cells.map((c) => c.row),
-        cols = cells.map((c) => c.col);
-      const range = {
-        startRow: minimum(rows),
-        startCol: minimum(cols),
-        endRow: maximum(rows),
-        endCol: maximum(cols),
-      };
-      const numCells = detectNumberCells(
-        range.startRow,
-        range.startCol,
-        range.endRow,
-        range.endCol,
-      );
-      setEditingBlock((prev) => ({ ...prev, ...range, numberCells: numCells }));
-    } else if (type === "multiCorner" && cells.length >= 4) {
-      // 複数範囲モードの4角選択（1つの範囲を追加）
-      const rows = cells.map((c) => c.row),
-        cols = cells.map((c) => c.col);
-      const newRange: MultiRange = {
-        startRow: minimum(rows),
-        startCol: minimum(cols),
-        endRow: maximum(rows),
-        endCol: maximum(cols),
-      };
-      setMultiRanges((prev) => [...prev, newRange]);
-    } else if (type === "rangeStart" && cells.length >= 2) {
-      // 壁ブロックの範囲選択
-      const [start, end] = cells;
-      const g: CellGroup = {
-        type: "range",
-        startRow: Math.min(start.row, end.row),
-        startCol: Math.min(start.col, end.col),
-        endRow: Math.max(start.row, end.row),
-        endCol: Math.max(start.col, end.col),
-      };
-      setWallCellGroups((prev) => (prev.length >= 6 ? prev : [...prev, g]));
-    } else if (type === "individual" && cells.length > 0) {
-      // 個別セル選択
-      const g: CellGroup = { type: "individual", cells: [...cells] };
-      setWallCellGroups((prev) => (prev.length >= 6 ? prev : [...prev, g]));
-    }
-
-    if (onClearPendingCellSelection) {
-      onClearPendingCellSelection();
-    }
+    if (!pendingCellSelection || !isOpen) return;
+    if (state.consumedSelectionKey === pendingCellSelection.selectionRequestKey)
+      onClearPendingCellSelection?.(state.consumedSelectionKey);
   }, [
     pendingCellSelection,
-    session,
     isOpen,
-    detectNumberCells,
+    state.consumedSelectionKey,
     onClearPendingCellSelection,
   ]);
 
-  // 通常モード：4角選択を開始
-  const handleStartCornerSelection = useCallback(() => {
-    const editingData: EditingBlockData = {
-      block: editingBlock || {},
-      isAddingNew,
-      selectedIndex: selectedBlockIndex,
-      editMode,
-      wallCellGroups,
-      multiRanges,
-      currentBlocks: blocks,
-    };
-    onStartCellSelection("corner", editingData);
-  }, [
-    editingBlock,
-    isAddingNew,
-    selectedBlockIndex,
-    editMode,
-    wallCellGroups,
-    multiRanges,
-    blocks,
-    onStartCellSelection,
-  ]);
-
-  // 複数範囲モード：4角選択を開始（1つの範囲を追加）
-  const handleStartMultiCornerSelection = useCallback(() => {
-    const editingData: EditingBlockData = {
-      block: editingBlock || {},
-      isAddingNew,
-      selectedIndex: selectedBlockIndex,
-      editMode: "multi",
-      wallCellGroups,
-      multiRanges,
-      currentBlocks: blocks,
-    };
-    onStartCellSelection("multiCorner", editingData);
-  }, [
-    editingBlock,
-    isAddingNew,
-    selectedBlockIndex,
-    wallCellGroups,
-    multiRanges,
-    blocks,
-    onStartCellSelection,
-  ]);
-
-  // 壁ブロック：範囲選択を開始
-  const handleStartRangeSelection = useCallback(() => {
-    const editingData: EditingBlockData = {
-      block: editingBlock || {},
-      isAddingNew,
-      selectedIndex: selectedBlockIndex,
-      editMode,
-      wallCellGroups,
-      multiRanges,
-      currentBlocks: blocks,
-    };
-    onStartCellSelection("rangeStart", editingData);
-  }, [
-    editingBlock,
-    isAddingNew,
-    selectedBlockIndex,
-    editMode,
-    wallCellGroups,
-    multiRanges,
-    blocks,
-    onStartCellSelection,
-  ]);
-
-  // 壁ブロック：個別セル選択を開始
-  const handleStartIndividualSelection = useCallback(() => {
-    const editingData: EditingBlockData = {
-      block: editingBlock || {},
-      isAddingNew,
-      selectedIndex: selectedBlockIndex,
-      editMode,
-      wallCellGroups,
-      multiRanges,
-      currentBlocks: blocks,
-    };
-    onStartCellSelection("individual", editingData);
-  }, [
-    editingBlock,
-    isAddingNew,
-    selectedBlockIndex,
-    editMode,
-    wallCellGroups,
-    multiRanges,
-    blocks,
-    onStartCellSelection,
-  ]);
-
-  // 壁ブロックの数値セル
-  const wallBlockNumberCells = useMemo(() => {
-    if (editMode !== "wall") return [];
-    const all: NumberCellInfo[] = [];
-    wallCellGroups.forEach((g) => {
+  const handleStartSelection = useCallback(
+    (type: BlockSelectionType) => {
       if (
-        g.type === "range" &&
-        g.startRow &&
-        g.startCol &&
-        g.endRow &&
-        g.endCol
-      ) {
-        all.push(
-          ...detectNumberCells(g.startRow, g.startCol, g.endRow, g.endCol),
-        );
-      } else if (g.type === "individual" && g.cells) {
-        g.cells.forEach((c) => {
-          const cell = cellsMap.get(`${c.row}-${c.col}`);
-          if (cell && !cell.isMerged && cell.value !== null) {
-            const num =
-              typeof cell.value === "number"
-                ? cell.value
-                : Number(String(cell.value).trim());
-            if (!isNaN(num) && num > 0 && num <= 100)
-              all.push({ row: c.row, col: c.col, value: num });
-          }
-        });
-      }
-    });
-    return all
-      .filter(
-        (c, i, s) =>
-          i === s.findIndex((x) => x.row === c.row && x.col === c.col),
+        !state.block ||
+        state.selectionRequestKey ||
+        selectionInFlight.current
       )
-      .sort((a, b) => a.value - b.value);
-  }, [editMode, wallCellGroups, detectNumberCells, cellsMap]);
-
-  // 複数範囲モードの数値セル
-  const multiRangeNumberCells = useMemo(() => {
-    if (editMode !== "multi") return [];
-    const all: NumberCellInfo[] = [];
-    multiRanges.forEach((range) => {
-      all.push(
-        ...detectNumberCells(
-          range.startRow,
-          range.startCol,
-          range.endRow,
-          range.endCol,
-        ),
+        return;
+      const key = `${state.sessionId}:${nextSequence.current++}`;
+      const reservedResumeEditId = nextSequence.current++;
+      const editingData = selectionSnapshot(
+        state,
+        key,
+        reservedResumeEditId,
+        nextSequence.current,
       );
-    });
-    return all
-      .filter(
-        (c, i, s) =>
-          i === s.findIndex((x) => x.row === c.row && x.col === c.col),
-      )
-      .sort((a, b) => a.value - b.value);
-  }, [editMode, multiRanges, detectNumberCells]);
-
-  // プレビュー用の数値セル
+      selectionInFlight.current = key;
+      dispatch({ type: "start-selection", data: editingData });
+      onStartCellSelection(type, editingData);
+    },
+    [state, onStartCellSelection],
+  );
+  const handleStartCornerSelection = () => handleStartSelection("corner");
+  const handleStartMultiCornerSelection = () =>
+    handleStartSelection("multiCorner");
+  const handleStartRangeSelection = () => handleStartSelection("rangeStart");
+  const handleStartIndividualSelection = () =>
+    handleStartSelection("individual");
+  const wallBlockNumberCells = useMemo(
+    () =>
+      editMode === "wall"
+        ? detectGroupedNumberCells(cellsMap, wallCellGroups)
+        : [],
+    [editMode, wallCellGroups, cellsMap],
+  );
+  const multiRangeNumberCells = useMemo(
+    () =>
+      editMode === "multi"
+        ? detectGroupedNumberCells(
+            cellsMap,
+            multiRanges.map((r) => ({ type: "range", ...r })),
+          )
+        : [],
+    [editMode, multiRanges, cellsMap],
+  );
+  const startRow = editingBlock?.startRow,
+    startCol = editingBlock?.startCol,
+    endRow = editingBlock?.endRow,
+    endCol = editingBlock?.endCol;
   const previewNumberCells = useMemo(() => {
     if (editMode === "wall") return wallBlockNumberCells;
     if (editMode === "multi") return multiRangeNumberCells;
-    if (!editingBlock?.startRow || !editingBlock?.endRow) return [];
-    return detectNumberCells(
-      editingBlock.startRow,
-      editingBlock.startCol || 1,
-      editingBlock.endRow,
-      editingBlock.endCol || 1,
-    );
+    if (!startRow || !endRow) return [];
+    return detectNumberCells(startRow, startCol || 1, endRow, endCol || 1);
   }, [
-    editingBlock,
+    startRow,
+    startCol,
+    endRow,
+    endCol,
     editMode,
     wallBlockNumberCells,
     multiRangeNumberCells,
     detectNumberCells,
   ]);
-
   const handleSaveBlock = useCallback(() => {
-    if (!editingBlock?.name?.trim()) {
-      alert("ブロック名を入力してください");
-      return;
-    }
-    const name = editingBlock.name.trim();
-    if (isAddingNew && blocks.find((b) => b.name === name)) {
-      if (!confirm(`「${name}」は既に存在します。置き換えますか？`)) return;
-      setBlocks((prev) => prev.filter((b) => b.name !== name));
-    }
-
-    let saved: BlockDefinition;
-
-    if (editMode === "wall") {
-      // 壁ブロック
-      if (!wallCellGroups.length) {
-        alert("セル群を定義してください");
-        return;
-      }
-      let minR = Infinity,
-        minC = Infinity,
-        maxR = 0,
-        maxC = 0;
-      wallCellGroups.forEach((g) => {
-        if (g.type === "range") {
-          minR = Math.min(minR, g.startRow || Infinity);
-          minC = Math.min(minC, g.startCol || Infinity);
-          maxR = Math.max(maxR, g.endRow || 0);
-          maxC = Math.max(maxC, g.endCol || 0);
-        } else if (g.cells)
-          g.cells.forEach((c) => {
-            minR = Math.min(minR, c.row);
-            minC = Math.min(minC, c.col);
-            maxR = Math.max(maxR, c.row);
-            maxC = Math.max(maxC, c.col);
-          });
-      });
-      saved = {
-        name,
-        startRow: minR,
-        startCol: minC,
-        endRow: maxR,
-        endCol: maxC,
-        numberCells: wallBlockNumberCells,
-        color: editingBlock.color || BLOCK_COLORS[0],
-        isAutoDetected: false,
-        isWallBlock: true,
-        cellGroups: [...wallCellGroups],
-      };
-    } else if (editMode === "multi") {
-      // 複数範囲ブロック
-      if (multiRanges.length === 0) {
-        alert("少なくとも1つの範囲を定義してください");
-        return;
-      }
-      let minR = Infinity,
-        minC = Infinity,
-        maxR = 0,
-        maxC = 0;
-      multiRanges.forEach((r) => {
-        minR = Math.min(minR, r.startRow);
-        minC = Math.min(minC, r.startCol);
-        maxR = Math.max(maxR, r.endRow);
-        maxC = Math.max(maxC, r.endCol);
-      });
-      // cellGroupsとして保存
-      const cellGroups: CellGroup[] = multiRanges.map((r) => ({
-        type: "range" as const,
-        startRow: r.startRow,
-        startCol: r.startCol,
-        endRow: r.endRow,
-        endCol: r.endCol,
-      }));
-      saved = {
-        name,
-        startRow: minR,
-        startCol: minC,
-        endRow: maxR,
-        endCol: maxC,
-        numberCells: multiRangeNumberCells,
-        color: editingBlock.color || BLOCK_COLORS[0],
-        isAutoDetected: false,
-        isWallBlock: false,
-        cellGroups,
-      };
-    } else {
-      // 通常ブロック
-      if (!editingBlock.startRow || !editingBlock.endRow) {
-        alert("マップ上で4つの角をクリックして範囲を指定してください");
-        return;
-      }
-      saved = {
-        name,
-        startRow: editingBlock.startRow,
-        startCol: editingBlock.startCol || 1,
-        endRow: editingBlock.endRow,
-        endCol: editingBlock.endCol || 1,
-        numberCells: previewNumberCells,
-        color: editingBlock.color || BLOCK_COLORS[0],
-        isAutoDetected: false,
-        isWallBlock: false,
-      };
-    }
-
-    // ブロック名と一致するセルをnameCellsとして検出
-    const nameCells: { row: number; col: number }[] = [];
-    for (let r = saved.startRow; r <= saved.endRow; r++) {
-      for (let c = saved.startCol; c <= saved.endCol; c++) {
-        const cell = cellsMap.get(`${r}-${c}`);
-        if (cell && cell.value !== null) {
-          const cellValue = String(cell.value).trim();
-          if (cellValue === name) {
-            nameCells.push({ row: r, col: c });
-          }
-        }
-      }
-    }
-    if (nameCells.length > 0) {
-      saved.nameCells = nameCells;
-    }
-
-    if (isAddingNew) setBlocks((prev) => [...prev, saved]);
-    else if (selectedBlockIndex !== null) {
-      const orig = sortedBlocks[selectedBlockIndex];
-      setBlocks((prev) => prev.map((b) => (b.name === orig.name ? saved : b)));
-    }
-    setEditingBlock(null);
-    setSelectedBlockIndex(null);
-    setIsAddingNew(false);
-    setWallCellGroups([]);
-    setMultiRanges([]);
-    setActiveTab("list");
-  }, [
-    editingBlock,
-    isAddingNew,
-    selectedBlockIndex,
-    editMode,
-    wallCellGroups,
-    multiRanges,
-    wallBlockNumberCells,
-    multiRangeNumberCells,
-    previewNumberCells,
-    blocks,
-    cellsMap,
-    sortedBlocks,
-  ]);
-
-  const handleCancelEdit = useCallback(() => {
-    setEditingBlock(null);
-    setSelectedBlockIndex(null);
-    setIsAddingNew(false);
-    setWallCellGroups([]);
-    setMultiRanges([]);
-    setEditMode("normal");
-    setActiveTab("list");
-  }, []);
-
-  // モード切り替え
-  const handleSwitchMode = useCallback((newMode: EditMode) => {
-    setEditMode(newMode);
-    setWallCellGroups([]);
-    setMultiRanges([]);
-    // 範囲情報をリセット
-    if (newMode !== "normal") {
-      setEditingBlock((prev) =>
-        prev
-          ? { ...prev, startRow: 0, startCol: 0, endRow: 0, endCol: 0 }
-          : prev,
+    const signature = `${state.editId}:${state.draftRevision}:${state.blocksRevision}`;
+    if (saving.current || submitted.current === signature) return;
+    saving.current = true;
+    try {
+      const result = prepareBlockSave(
+        state,
+        cellsMap,
+        mapData,
+        BLOCK_COLORS[0],
       );
+      if (!result.ok) {
+        alert(result.message);
+        return;
+      }
+      if (
+        result.plan.kind === "replace" &&
+        !confirm(
+          `「${result.plan.candidate.name}」は既に存在します。置き換えますか？`,
+        )
+      )
+        return;
+      submitted.current = signature;
+      dispatch({ type: "save", plan: result.plan });
+    } finally {
+      saving.current = false;
     }
-  }, []);
-
+  }, [state, cellsMap, mapData]);
+  const handleCancelEdit = () => {
+    selectionInFlight.current = null;
+    dispatch({ type: "cancel" });
+  };
+  const handleSwitchMode = (mode: BlockEditMode) =>
+    dispatch({ type: "mode", mode });
   const titleId = useId();
   const handleClose = () => {
-    setBlocks(mapData.blocks);
     onClose();
   };
   const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
@@ -637,29 +309,22 @@ const BlockDefinitionPanel: React.FC<BlockDefinitionPanelProps> = ({
                   </button>
                   <button
                     onClick={() => {
-                      setIsAddingNew(true);
-                      setSelectedBlockIndex(null);
-                      setEditMode("normal");
-                      setEditingBlock({
-                        name: "",
-                        startRow: 0,
-                        startCol: 0,
-                        endRow: 0,
-                        endCol: 0,
-                        numberCells: [],
+                      selectionInFlight.current = null;
+                      dispatch({
+                        type: "new",
                         color:
                           BLOCK_COLORS[blocks.length % BLOCK_COLORS.length],
+                        ...reserveEdit(),
                       });
-                      setWallCellGroups([]);
-                      setMultiRanges([]);
-                      setActiveTab("edit");
                     }}
                     className="px-3 py-1.5 text-xs rounded bg-blue-600 text-white hover:bg-blue-700"
                   >
                     + 新規
                   </button>
                   <button
-                    onClick={() => confirm("全て削除？") && setBlocks([])}
+                    onClick={() =>
+                      confirm("全て削除？") && dispatch({ type: "delete-all" })
+                    }
                     className="px-3 py-1.5 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400"
                   >
                     全削除
@@ -677,7 +342,7 @@ const BlockDefinitionPanel: React.FC<BlockDefinitionPanelProps> = ({
                     <div
                       key={`${b.name}-${i}`}
                       className={`p-3 rounded-lg border transition-colors ${
-                        selectedBlockIndex === i
+                        selectedBlock === b
                           ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
                           : "border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-700/50"
                       }`}
@@ -685,37 +350,12 @@ const BlockDefinitionPanel: React.FC<BlockDefinitionPanelProps> = ({
                       <div className="flex items-center justify-between">
                         <button
                           onClick={() => {
-                            setSelectedBlockIndex(i);
-                            setEditingBlock({ ...b });
-                            setIsAddingNew(false);
-                            if (b.isWallBlock) {
-                              setEditMode("wall");
-                              setWallCellGroups(
-                                b.cellGroups ? [...b.cellGroups] : [],
-                              );
-                              setMultiRanges([]);
-                            } else if (
-                              b.cellGroups &&
-                              b.cellGroups.length > 0
-                            ) {
-                              setEditMode("multi");
-                              setWallCellGroups([]);
-                              setMultiRanges(
-                                b.cellGroups
-                                  .filter((g) => g.type === "range")
-                                  .map((g) => ({
-                                    startRow: g.startRow || 0,
-                                    startCol: g.startCol || 0,
-                                    endRow: g.endRow || 0,
-                                    endCol: g.endCol || 0,
-                                  })),
-                              );
-                            } else {
-                              setEditMode("normal");
-                              setWallCellGroups([]);
-                              setMultiRanges([]);
-                            }
-                            setActiveTab("edit");
+                            selectionInFlight.current = null;
+                            dispatch({
+                              type: "begin",
+                              block: b,
+                              ...reserveEdit(),
+                            });
                           }}
                           className="flex flex-1 items-center gap-2 text-left"
                         >
@@ -762,15 +402,7 @@ const BlockDefinitionPanel: React.FC<BlockDefinitionPanelProps> = ({
                         <button
                           onClick={() => {
                             if (confirm(`「${b.name}」を削除？`)) {
-                              setBlocks((prev) =>
-                                prev.filter((x) => x.name !== b.name),
-                              );
-                              if (selectedBlockIndex === i) {
-                                setSelectedBlockIndex(null);
-                                setEditingBlock(null);
-                                setIsAddingNew(false);
-                                setActiveTab("list");
-                              }
+                              dispatch({ type: "delete", block: b });
                             }
                           }}
                           className="p-1 text-red-500 hover:text-red-700"
@@ -823,10 +455,10 @@ const BlockDefinitionPanel: React.FC<BlockDefinitionPanelProps> = ({
                       type="text"
                       value={editingBlock.name || ""}
                       onChange={(e) =>
-                        setEditingBlock((eb) => ({
-                          ...eb,
-                          name: e.target.value,
-                        }))
+                        dispatch({
+                          type: "patch",
+                          patch: { name: e.target.value },
+                        })
                       }
                       placeholder="例: ア, め, N"
                       className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
@@ -877,9 +509,7 @@ const BlockDefinitionPanel: React.FC<BlockDefinitionPanelProps> = ({
                               </span>
                               <button
                                 onClick={() =>
-                                  setMultiRanges((prev) =>
-                                    prev.filter((_, j) => j !== i),
-                                  )
+                                  dispatch({ type: "remove-range", index: i })
                                 }
                                 className="text-sm text-red-500"
                               >
@@ -917,9 +547,7 @@ const BlockDefinitionPanel: React.FC<BlockDefinitionPanelProps> = ({
                               </span>
                               <button
                                 onClick={() =>
-                                  setWallCellGroups((prev) =>
-                                    prev.filter((_, j) => j !== i),
-                                  )
+                                  dispatch({ type: "remove-group", index: i })
                                 }
                                 className="text-sm text-red-500"
                               >
@@ -957,7 +585,7 @@ const BlockDefinitionPanel: React.FC<BlockDefinitionPanelProps> = ({
                         <button
                           key={c}
                           onClick={() =>
-                            setEditingBlock((eb) => ({ ...eb, color: c }))
+                            dispatch({ type: "patch", patch: { color: c } })
                           }
                           className={`relative h-8 w-8 overflow-hidden rounded border-2 ${editingBlock.color === c ? "border-blue-500" : "border-transparent"}`}
                         >

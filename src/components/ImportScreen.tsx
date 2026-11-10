@@ -138,6 +138,8 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
 
   // State for single item add/edit
   const [singleCircle, setSingleCircle] = useState("");
+  const [singleCircleError, setSingleCircleError] = useState(false);
+  const singleCircleInputRef = useRef<HTMLInputElement>(null);
   const [singleEventDate, setSingleEventDate] = useState("1日目");
   const [singleBlock, setSingleBlock] = useState("");
   const [singleNumber, setSingleNumber] = useState("");
@@ -152,10 +154,17 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
 
   const isEditing = itemToEdit !== null;
   const isCreatingNew = activeEventName === null;
+  const isSingleItemAdd = !isCreatingNew && !isEditing;
 
   useEffect(() => {
     setSingleEventDateError(false);
-  }, [activeEventName, itemToEdit?.id, newItemDefaults]);
+    setSingleCircleError(false);
+  }, [activeEventName, itemToEdit?.id, isSingleItemAdd, newItemDefaults]);
+
+  const showSingleCircleError = () => {
+    setSingleCircleError(true);
+    singleCircleInputRef.current?.focus();
+  };
 
   const validateSingleEventDate = () => {
     if (normalizeExecutionVisitDay(singleEventDate)) return true;
@@ -421,6 +430,7 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
 
   const resetSingleForm = () => {
     setSingleEventDateError(false);
+    setSingleCircleError(false);
     setSingleCircle("");
     setSingleEventDate("1日目");
     setSingleBlock("");
@@ -674,8 +684,8 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
     } else {
       // Adding single item to existing list
       if (!validateSingleEventDate()) return;
-      if (!singleCircle.trim() && !singleTitle.trim()) {
-        alert("サークル名かタイトルを入力してください。");
+      if (isSingleItemAdd && !singleCircle.trim()) {
+        showSingleCircleError();
         return;
       }
       // 空欄の場合はnull、0と入力されている場合は0を設定
@@ -974,16 +984,47 @@ const ImportScreen: React.FC<ImportScreenProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="singleCircle" className={labelClass}>
-                  サークル名
+                  {isSingleItemAdd ? "サークル名（必須）" : "サークル名"}
                 </label>
                 <input
                   type="text"
                   id="singleCircle"
+                  ref={singleCircleInputRef}
                   value={singleCircle}
-                  onChange={(e) => setSingleCircle(e.target.value)}
+                  onChange={(e) => {
+                    setSingleCircle(e.target.value);
+                    setSingleCircleError(false);
+                  }}
+                  required={isSingleItemAdd}
+                  aria-invalid={
+                    (isSingleItemAdd && singleCircleError) || undefined
+                  }
+                  aria-describedby={
+                    isSingleItemAdd && singleCircleError
+                      ? "singleCircleError"
+                      : undefined
+                  }
+                  onInvalid={(e) => {
+                    if (
+                      isSingleItemAdd &&
+                      e.currentTarget.validity.valueMissing
+                    ) {
+                      e.preventDefault();
+                      showSingleCircleError();
+                    }
+                  }}
                   className={formInputClass}
                   placeholder="サークル名"
                 />
+                {isSingleItemAdd && singleCircleError && (
+                  <p
+                    id="singleCircleError"
+                    role="alert"
+                    className="mt-1 text-sm text-red-600 dark:text-red-400"
+                  >
+                    サークル名を入力してください。
+                  </p>
+                )}
               </div>
               <div>
                 <label htmlFor="singleTitle" className={labelClass}>

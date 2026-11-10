@@ -300,7 +300,11 @@ describe("appOverlayState", () => {
     state = reduceAppOverlayState(state, {
       type: "map-editor/start-cell-selection",
       requestId: "map-editor-1",
-      selection: { type: "rangeStart", clickedCells: [] },
+      selection: {
+        type: "rangeStart",
+        clickedCells: [],
+        selectionRequestKey: "s:1",
+      },
     });
     state = reduceAppOverlayState(state, {
       type: "map-editor/toggle-cell",
@@ -321,10 +325,15 @@ describe("appOverlayState", () => {
         }),
       "overlay.mapEditor.stale-close",
     );
-    const pendingSelection = { type: "range", cells: [{ row: 1, col: 2 }] };
+    const pendingSelection = {
+      type: "rangeStart" as const,
+      cells: [{ row: 1, col: 2 }],
+      selectionRequestKey: "s:1",
+    };
     state = reduceAppOverlayState(state, {
       type: "map-editor/finish-cell-selection",
       requestId: "map-editor-1",
+      expectedSelectionRequestKey: "s:1",
       pendingSelection,
     });
     expect(state.mapEditor).toEqual({
@@ -340,19 +349,19 @@ describe("appOverlayState", () => {
     state = reduceAppOverlayState(state, {
       type: "map-editor/clear-pending-cell-selection",
       requestId: "map-editor-1",
+      expectedSelectionRequestKey: "s:1",
     });
     expect(state.mapEditor).toMatchObject({
       kind: "block-definition",
       pendingSelection: null,
     });
-    expectInvariant(
-      () =>
-        reduceAppOverlayState(state, {
-          type: "map-editor/clear-pending-cell-selection",
-          requestId: "map-editor-old",
-        }),
-      "overlay.mapEditor.stale-block-action",
-    );
+    expect(
+      reduceAppOverlayState(state, {
+        type: "map-editor/clear-pending-cell-selection",
+        requestId: "map-editor-old",
+        expectedSelectionRequestKey: "s:1",
+      }),
+    ).toBe(state);
     expectInvariant(
       () =>
         reduceAppOverlayState(state, {
@@ -499,5 +508,201 @@ describe("appOverlayState", () => {
       requestId: "visit-1",
     });
     expect(closed.visitList).toEqual({ kind: "inactive" });
+  });
+});
+
+describe("block cell-selection request ownership", () => {
+  const session = {
+    sessionId: "owner",
+    eventName: "イベント",
+    eventGeneration: 7,
+    day: "1日目",
+    mapKey: "地図",
+    editorKind: "block-definition" as const,
+  };
+  const open = () =>
+    reduceAppOverlayState(createInitialAppOverlayState(), {
+      type: "map-editor/open-block-definition",
+      requestId: "panel",
+      session,
+      pendingSelection: null,
+    });
+  const start = (
+    state: ReturnType<typeof open>,
+    selectionRequestKey: string,
+    type: "corner" | "multiCorner" | "rangeStart" | "individual" = "corner",
+  ) =>
+    reduceAppOverlayState(state, {
+      type: "map-editor/start-cell-selection",
+      requestId: "panel",
+      selection: { session, type, selectionRequestKey, clickedCells: [] },
+    });
+  const finish = (
+    state: ReturnType<typeof open>,
+    key: string,
+    cancelled: boolean,
+  ) =>
+    reduceAppOverlayState(state, {
+      type: "map-editor/finish-cell-selection",
+      requestId: "panel",
+      expectedSelectionRequestKey: key,
+      pendingSelection: {
+        session,
+        selectionRequestKey: key,
+        type: cancelled ? "cancelled" : "corner",
+        cells: [],
+      },
+    });
+  const clear = (state: ReturnType<typeof open>, key: string) =>
+    reduceAppOverlayState(state, {
+      type: "map-editor/clear-pending-cell-selection",
+      requestId: "panel",
+      expectedSelectionRequestKey: key,
+    });
+
+  for (const type of [
+    "corner",
+    "multiCorner",
+    "rangeStart",
+    "individual",
+  ] as const) {
+    for (const [first, second] of [
+      [false, false],
+      [false, true],
+      [true, false],
+    ]) {
+      it(`${type} consumes only the first terminal result (${first}/${second})`, () => {
+        const selecting = start(open(), "owner:1", type);
+        const terminal = (state: typeof selecting, cancelled: boolean) =>
+          reduceAppOverlayState(state, {
+            type: "map-editor/finish-cell-selection",
+            requestId: "panel",
+            expectedSelectionRequestKey: "owner:1",
+            pendingSelection: {
+              session,
+              selectionRequestKey: "owner:1",
+              type: cancelled ? "cancelled" : type,
+              cells: [{ row: 1, col: 2 }],
+            },
+          });
+        const resumed = terminal(selecting, first);
+        expect(terminal(resumed, second)).toBe(resumed);
+        const cleared = clear(resumed, "owner:1");
+        expect(clear(cleared, "owner:1")).toBe(cleared);
+        const secondSelection = start(cleared, "owner:4", type);
+        expect(terminal(secondSelection, second)).toBe(secondSelection);
+        expect(clear(secondSelection, "owner:1")).toBe(secondSelection);
+        const secondResume = finish(secondSelection, "owner:4", false);
+        expect(terminal(secondResume, second)).toBe(secondResume);
+        expect(clear(secondResume, "owner:1")).toBe(secondResume);
+      });
+    }
+  }
+
+  it("rejects missing keys, wrong payload keys, wrong owners and session drift before invariant checks", () => {
+    const selecting = start(open(), "owner:1");
+    const valid: AppOverlayAction = {
+      type: "map-editor/finish-cell-selection",
+      requestId: "panel",
+      expectedSelectionRequestKey: "owner:1",
+      pendingSelection: null,
+    };
+    expect(
+      reduceAppOverlayState(selecting, { ...valid, requestId: "old" }),
+    ).toBe(selecting);
+    expect(
+      reduceAppOverlayState(selecting, {
+        ...valid,
+        expectedSelectionRequestKey: "",
+      }),
+    ).toBe(selecting);
+    expect(
+      // @ts-expect-error Runtime callers with a missing key must also be inert.
+      reduceAppOverlayState(selecting, {
+        type: "map-editor/finish-cell-selection",
+        requestId: "panel",
+        pendingSelection: null,
+      }),
+    ).toBe(selecting);
+    expect(
+      reduceAppOverlayState(selecting, {
+        ...valid,
+        pendingSelection: {
+          session,
+          type: "corner",
+          cells: [],
+          selectionRequestKey: "owner:old",
+        },
+      }),
+    ).toBe(selecting);
+    expect(
+      reduceAppOverlayState(selecting, {
+        ...valid,
+        pendingSelection: {
+          session: { ...session, eventGeneration: 8 },
+          type: "corner",
+          cells: [],
+          selectionRequestKey: "owner:1",
+        },
+      }),
+    ).toBe(selecting);
+    const mismatched = {
+      ...selecting,
+      mapEditor:
+        selecting.mapEditor.kind === "cell-selection"
+          ? {
+              ...selecting.mapEditor,
+              selection: {
+                ...selecting.mapEditor.selection,
+                session: { ...session, mapKey: "別地図" },
+              },
+            }
+          : selecting.mapEditor,
+    };
+    expect(reduceAppOverlayState(mismatched, valid)).toBe(mismatched);
+    const resumed = finish(selecting, "owner:1", false);
+    expect(
+      // @ts-expect-error Missing clear keys cannot clear the current pending result.
+      reduceAppOverlayState(resumed, {
+        type: "map-editor/clear-pending-cell-selection",
+        requestId: "panel",
+      }),
+    ).toBe(resumed);
+    expect(
+      reduceAppOverlayState(resumed, {
+        type: "map-editor/clear-pending-cell-selection",
+        requestId: "other",
+        expectedSelectionRequestKey: "owner:1",
+      }),
+    ).toBe(resumed);
+    const closed = reduceAppOverlayState(resumed, {
+      type: "map-editor/close",
+      requestId: "panel",
+      expectedKind: "block-definition",
+    });
+    expect(reduceAppOverlayState(closed, valid)).toBe(closed);
+    expect(clear(closed, "owner:1")).toBe(closed);
+  });
+
+  it("requires the expected key even when finish has no pending body", () => {
+    const selecting = start(open(), "owner:1");
+    const action: AppOverlayAction = {
+      type: "map-editor/finish-cell-selection",
+      requestId: "panel",
+      expectedSelectionRequestKey: "old",
+      pendingSelection: null,
+    };
+    expect(reduceAppOverlayState(selecting, action)).toBe(selecting);
+    const resumed = reduceAppOverlayState(selecting, {
+      ...action,
+      expectedSelectionRequestKey: "owner:1",
+    });
+    expect(resumed.mapEditor).toEqual({
+      kind: "block-definition",
+      requestId: "panel",
+      session,
+      pendingSelection: null,
+    });
+    expect(reduceAppOverlayState(resumed, action)).toBe(resumed);
   });
 });

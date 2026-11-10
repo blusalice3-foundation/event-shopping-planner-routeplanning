@@ -1,3 +1,7 @@
+import type {
+  EditingBlockData,
+  BlockSelectionResult,
+} from "../map/domain/blockDefinitionEditing";
 import type { MapEditorSession } from "../map/domain/mapEditorSession";
 import type { ViewMode } from "../../types/item";
 import type { RangeEndpoint } from "../lists/domain/rangeSelection";
@@ -29,15 +33,11 @@ export type CellSelectionMode = {
   session?: MapEditorSession;
   type: CellSelectionType;
   clickedCells: CellPosition[];
-  editingBlockData?: unknown;
+  selectionRequestKey: string;
+  editingBlockData?: EditingBlockData;
 } | null;
 
-export type PendingCellSelection = {
-  session?: MapEditorSession;
-  type: string;
-  cells: CellPosition[];
-  editingData?: unknown;
-} | null;
+export type PendingCellSelection = BlockSelectionResult | null;
 
 export type VertexSelectionMode = {
   session?: MapEditorSession;

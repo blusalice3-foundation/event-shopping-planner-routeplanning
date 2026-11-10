@@ -457,7 +457,6 @@ const AppHeaderShell: React.FC<AppHeaderShellProps> = ({
       showSmartInsertToast,
     },
     list: {
-      handleBlockSortToggle,
       handleBlockSortToggleCandidate,
       handleBulkSort,
       handleClearRangeSelection,
@@ -550,32 +549,7 @@ const AppHeaderShell: React.FC<AppHeaderShellProps> = ({
                   <h1 className="text-lg font-bold text-slate-900 dark:text-white truncate max-w-[200px]">
                     {activeEventName || "即売会購入巡回表"}
                   </h1>
-                  {activeEventName &&
-                    mainContentVisible &&
-                    items.length > 0 &&
-                    currentMode === "execute" && (
-                      <button
-                        onClick={handleBlockSortToggle}
-                        className={`p-2 rounded-md transition-colors duration-200 ${
-                          blockSortDirection
-                            ? "bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300"
-                            : "bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-500 dark:text-slate-400"
-                        }`}
-                        title={
-                          blockSortDirection === "desc"
-                            ? "ブロックを降順で並べ替え"
-                            : blockSortDirection === "asc"
-                              ? "ブロックを昇順で並べ替え"
-                              : "ブロック番号で並べ替え"
-                        }
-                      >
-                        {blockSortDirection === "desc" ? (
-                          <SortDescendingIcon className="w-5 h-5" />
-                        ) : (
-                          <SortAscendingIcon className="w-5 h-5" />
-                        )}
-                      </button>
-                    )}
+
                   {activeEventName &&
                     mainContentVisible &&
                     items.length > 0 &&
