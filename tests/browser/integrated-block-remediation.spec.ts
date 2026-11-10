@@ -493,7 +493,7 @@ for (const changeSort of [false, true]) {
     };
     delete expectedTarget.nameCells;
     // The new name has no matching map cell. Numeric cells and geometry are
-    // unchanged, while every non-target definition must be byte-for-byte equal.
+    // unchanged, while every non-target definition must pass complete deep equality.
     const expectedBlocks = attachmentMap.blocks.map((block) =>
       block.name === "b" ? expectedTarget : block,
     );
