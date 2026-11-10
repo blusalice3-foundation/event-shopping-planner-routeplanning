@@ -11,6 +11,7 @@ export default defineConfig({
     "map-import-layout.spec.ts",
     "map-workspace-continuity.spec.ts",
     "integrated-block-remediation.spec.ts",
+    "map-selection-popup.spec.ts",
     "single-item-circle-required.spec.ts",
   ],
   outputDir: "./artifacts/ios-compatibility",

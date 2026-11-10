@@ -5,6 +5,11 @@ const mapName = "1日目マップ";
 type Cell = { row: number; col: number };
 type ObservedWindow = Window & { __selectionPopupClicks: Cell[] };
 
+async function activate(button: Locator, touch: boolean) {
+  if (touch) await button.tap();
+  else await button.click();
+}
+
 function backup() {
   return {
     kind: "event-shopping-planner-backup",
@@ -172,12 +177,8 @@ async function verifyCoveredCellSelection(
     if (touch) await page.touchscreen.tap(position.x, position.y);
     else await page.mouse.click(position.x, position.y);
   };
-  const activate = async (button: Locator) => {
-    if (touch) await button.tap();
-    else await button.click();
-  };
   const minimizeAndCheck = async () => {
-    await activate(minimize);
+    await activate(minimize, touch);
     await expect(restore).toHaveText("□");
     await expect(popup.getByRole("button")).toHaveCount(1);
     const small = await popup.boundingBox();
@@ -195,6 +196,16 @@ async function verifyCoveredCellSelection(
       ),
     ).toBe("CANVAS");
   };
+  if (!touch) {
+    await minimize.focus();
+    await minimize.press("Enter");
+    await expect(restore).toBeFocused();
+    await expect(restore).toHaveAttribute("aria-expanded", "false");
+    await restore.press("Space");
+    await expect(minimize).toBeFocused();
+    await expect(minimize).toHaveAttribute("aria-expanded", "true");
+    expect(await clicks()).toEqual([]);
+  }
   await minimizeAndCheck();
   await test.info().attach("minimized", {
     body: await page.screenshot({
@@ -206,7 +217,7 @@ async function verifyCoveredCellSelection(
   await press(point);
   await expect.poll(async () => (await clicks()).length).toBe(1);
   await expect(restore).toBeVisible();
-  await activate(restore);
+  await activate(restore, touch);
   const first = (await clicks())[0];
   await expect(popup).toContainText(`(${first.row},${first.col})`);
   expect(await clicks()).toHaveLength(1);
@@ -226,7 +237,7 @@ async function verifyCoveredCellSelection(
   // Reaching a confirmable count must not automatically expand the popup.
   await expect(restore).toBeVisible();
   await expect(popup.getByRole("button")).toHaveCount(1);
-  await activate(restore);
+  await activate(restore, touch);
   await test.info().attach("restored", {
     body: await page.screenshot({
       path: test.info().outputPath("restored.png"),
@@ -247,20 +258,31 @@ async function verifyNewSelectionAndCancel(
   label: string,
   draft: Locator,
   name: string,
+  touch: boolean,
 ) {
-  await panel.getByRole("button", { name: start, exact: true }).click();
+  await activate(
+    panel.getByRole("button", { name: start, exact: true }),
+    touch,
+  );
   const popup = panel.page().getByRole("region", { name: label, exact: true });
-  await expect(
-    popup.getByRole("button", { name: `${label}を最小化`, exact: true }),
-  ).toBeVisible();
+  const minimize = popup.getByRole("button", {
+    name: `${label}を最小化`,
+    exact: true,
+  });
+  await expect(minimize).toBeVisible();
   await expect(popup.getByText(/^選択:/)).toHaveCount(0);
-  await popup
-    .getByRole("button", { name: `${label}を最小化`, exact: true })
-    .click();
-  await popup
-    .getByRole("button", { name: `${label}を元の表示に戻す`, exact: true })
-    .click();
-  await popup.getByRole("button", { name: "キャンセル", exact: true }).click();
+  await activate(minimize, touch);
+  await activate(
+    popup.getByRole("button", {
+      name: `${label}を元の表示に戻す`,
+      exact: true,
+    }),
+    touch,
+  );
+  await activate(
+    popup.getByRole("button", { name: "キャンセル", exact: true }),
+    touch,
+  );
   await expect(draft).toHaveValue(name);
 }
 
@@ -281,108 +303,114 @@ const blockPaths = [
   { key: "individual", mode: "壁", start: "+ 個別追加", count: 2 },
 ];
 
-for (const surface of [
-  { name: "desktop", viewport: { width: 1280, height: 900 }, touch: false },
-  { name: "phone", viewport: { width: 390, height: 844 }, touch: true },
-]) {
-  test.describe(`map selection popup ${surface.name}`, () => {
-    test.use({
-      viewport: surface.viewport,
-      hasTouch: surface.touch,
-      isMobile: surface.touch,
-      serviceWorkers: "block",
-    });
-    test.describe.configure({ timeout: 60_000 });
+test.use({ serviceWorkers: "block" });
+test.describe.configure({ timeout: 60_000 });
 
-    for (const path of surface.touch ? blockPaths.slice(0, 1) : blockPaths) {
-      test(`${path.key}: select through the covered map, restore and restart`, async ({
-        page,
-      }) => {
-        const panel = await openEditor(page, false);
-        const draft = panel.getByPlaceholder("例: ア, め, N");
-        await draft.fill("編集中のブロック");
-        if (path.mode !== "通常") {
-          await panel
-            .getByRole("button", { name: path.mode, exact: true })
-            .click();
-        }
-        await panel
-          .getByRole("button", { name: path.start, exact: true })
-          .click();
-        const popup = await verifyCoveredCellSelection(
-          page,
-          "ブロック範囲選択",
-          surface.touch,
-          path.count,
-        );
-        const confirm = popup.getByRole("button", {
-          name: "選択を確定",
-          exact: true,
-        });
-        await expect(confirm).toBeEnabled();
-        await confirm.click();
-        await expect(draft).toHaveValue("編集中のブロック");
-        if (path.key === "corner")
-          await expect(panel.getByText(/^範囲: 行/)).toBeVisible();
-        if (path.key === "multiCorner")
-          await expect(panel.getByText(/^範囲1:/)).toBeVisible();
-        if (path.key === "rangeStart")
-          await expect(panel.getByText(/^範囲\(/)).toBeVisible();
-        if (path.key === "individual")
-          await expect(
-            panel.getByText("個別2セル", { exact: true }),
-          ).toBeVisible();
-        await verifyNewSelectionAndCancel(
-          panel,
-          path.start,
-          "ブロック範囲選択",
-          draft,
-          "編集中のブロック",
-        );
-      });
-    }
-
-    test("hall: retain vertices, draft and guide settings while minimized", async ({
+// Device presets come from the selected project: desktop Chromium, Android
+// Chromium or mobile WebKit. Keep the same five paths on every engine.
+test.describe("map selection popup", () => {
+  for (const path of blockPaths) {
+    test(`${path.key}: select through the covered map, restore and restart`, async ({
       page,
+      hasTouch,
     }) => {
-      const panel = await openEditor(page, true);
-      const draft = panel.getByPlaceholder("例: 東1ホール");
-      await draft.fill("編集中のホール");
-      const start = "マップ上で頂点を選択";
-      await panel.getByRole("button", { name: start, exact: true }).click();
-      await page
-        .getByRole("button", { name: "補助グリッド ON", exact: true })
-        .click();
-      await page
-        .getByRole("button", { name: "座標尺 ON", exact: true })
-        .click();
+      const panel = await openEditor(page, false);
+      const draft = panel.getByPlaceholder("例: ア, め, N");
+      await draft.fill("編集中のブロック");
+      if (path.mode !== "通常") {
+        await activate(
+          panel.getByRole("button", { name: path.mode, exact: true }),
+          hasTouch,
+        );
+      }
+      await activate(
+        panel.getByRole("button", { name: path.start, exact: true }),
+        hasTouch,
+      );
       const popup = await verifyCoveredCellSelection(
         page,
-        "ホール頂点選択",
-        surface.touch,
-        4,
+        "ブロック範囲選択",
+        hasTouch,
+        path.count,
       );
-      await expect(
-        popup.getByRole("button", { name: "補助グリッド OFF", exact: true }),
-      ).toBeVisible();
-      await expect(
-        popup.getByRole("button", { name: "座標尺 OFF", exact: true }),
-      ).toBeVisible();
-      await popup.getByRole("button", { name: "確定", exact: true }).click();
-      await expect(draft).toHaveValue("編集中のホール");
-      await expect(
-        panel.getByText("選択済み: 4頂点", { exact: true }),
-      ).toBeVisible();
+      const confirm = popup.getByRole("button", {
+        name: "選択を確定",
+        exact: true,
+      });
+      await expect(confirm).toBeEnabled();
+      await activate(confirm, hasTouch);
+      await expect(draft).toHaveValue("編集中のブロック");
+      if (path.key === "corner")
+        await expect(panel.getByText(/^範囲: 行/)).toBeVisible();
+      if (path.key === "multiCorner")
+        await expect(panel.getByText(/^範囲1:/)).toBeVisible();
+      if (path.key === "rangeStart")
+        await expect(panel.getByText(/^範囲\(/)).toBeVisible();
+      if (path.key === "individual")
+        await expect(
+          panel.getByText("個別2セル", { exact: true }),
+        ).toBeVisible();
       await verifyNewSelectionAndCancel(
         panel,
-        start,
-        "ホール頂点選択",
+        path.start,
+        "ブロック範囲選択",
         draft,
-        "編集中のホール",
+        "編集中のブロック",
+        hasTouch,
       );
-      await expect(
-        panel.getByText("選択済み: 4頂点", { exact: true }),
-      ).toBeVisible();
     });
+  }
+
+  test("hall: retain vertices, draft and guide settings while minimized", async ({
+    page,
+    hasTouch,
+  }) => {
+    const panel = await openEditor(page, true);
+    const draft = panel.getByPlaceholder("例: 東1ホール");
+    await draft.fill("編集中のホール");
+    const start = "マップ上で頂点を選択";
+    await activate(
+      panel.getByRole("button", { name: start, exact: true }),
+      hasTouch,
+    );
+    await activate(
+      page.getByRole("button", { name: "補助グリッド ON", exact: true }),
+      hasTouch,
+    );
+    await activate(
+      page.getByRole("button", { name: "座標尺 ON", exact: true }),
+      hasTouch,
+    );
+    const popup = await verifyCoveredCellSelection(
+      page,
+      "ホール頂点選択",
+      hasTouch,
+      4,
+    );
+    await expect(
+      popup.getByRole("button", { name: "補助グリッド OFF", exact: true }),
+    ).toBeVisible();
+    await expect(
+      popup.getByRole("button", { name: "座標尺 OFF", exact: true }),
+    ).toBeVisible();
+    await activate(
+      popup.getByRole("button", { name: "確定", exact: true }),
+      hasTouch,
+    );
+    await expect(draft).toHaveValue("編集中のホール");
+    await expect(
+      panel.getByText("選択済み: 4頂点", { exact: true }),
+    ).toBeVisible();
+    await verifyNewSelectionAndCancel(
+      panel,
+      start,
+      "ホール頂点選択",
+      draft,
+      "編集中のホール",
+      hasTouch,
+    );
+    await expect(
+      panel.getByText("選択済み: 4頂点", { exact: true }),
+    ).toBeVisible();
   });
-}
+});
