@@ -5,6 +5,7 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { build } from "vite";
+import { verifyZipjsInflatePatch } from "./patch-zipjs-inflate.mjs";
 import {
   buildIndependentOuterAgent,
   buildPwaRecoveryIdentity,
@@ -22,6 +23,8 @@ import {
   OUTER_AGENT_GRAPH_ENV,
   parseIndependentOuterAgentGraph,
 } from "./lib/outer-agent-contract.mjs";
+
+verifyZipjsInflatePatch();
 
 const repositoryRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),

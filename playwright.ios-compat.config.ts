@@ -7,6 +7,7 @@ export default defineConfig({
   testMatch: [
     "ios-compatibility.spec.ts",
     "ios-file-transfer.spec.ts",
+    "ios-xlsx-pwa.spec.ts",
     "map-import-layout.spec.ts",
     "map-workspace-continuity.spec.ts",
   ],

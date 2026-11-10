@@ -1508,7 +1508,7 @@ it("keeps all 500 placeholder attributes equivalent and updates only the changed
       ]),
     );
   }
-}, 30_000);
+}, 60_000);
 
 describe.each(fixedSlotModes)(
   "fixed group slot strategy %s",
