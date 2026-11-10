@@ -201,7 +201,11 @@ async function watchInnerWrites(page: Page) {
     );
 }
 
-async function applyAndSave(page: Page, panel: Locator) {
+async function applyAndSave(
+  page: Page,
+  panel: Locator,
+  saveCompletionTimeout = 5_000,
+) {
   await panel.getByRole("button", { name: "適用", exact: true }).click();
   await expect(panel).toBeHidden();
   const confirmation = page.getByRole("button", {
@@ -210,8 +214,10 @@ async function applyAndSave(page: Page, panel: Locator) {
   });
   await expect(confirmation).toBeVisible();
   await confirmation.click();
-  await expect(confirmation).toBeHidden();
-  await expect(page.getByRole("status", { name: /^保存済み/ })).toBeVisible();
+  await expect(confirmation).toBeHidden({ timeout: saveCompletionTimeout });
+  await expect(page.getByRole("status", { name: /^保存済み/ })).toBeVisible({
+    timeout: saveCompletionTimeout,
+  });
 }
 
 async function exportBackup(page: Page): Promise<Backup> {
@@ -413,7 +419,8 @@ test("execution mode omits block sorting while edit candidate sorting and header
   page,
 }) => {
   await restore(page);
-  const before = createBackup();
+  const before = await exportBackup(page);
+  await page.getByText(eventName, { exact: true }).click();
   for (let direction = 0; direction < 3; direction += 1) {
     if (direction > 0) {
       await page.getByTitle("編集モード", { exact: true }).click();
@@ -482,7 +489,9 @@ for (const changeSort of [false, true]) {
     await expect(blockButton(panel, "B")).toBeVisible();
     await expect(blockButton(panel, "ヤ")).toBeVisible();
     expect(await writes()).toBe(0);
-    await applyAndSave(page, panel);
+    // This large-map fixture waits for the real persistence completion. This
+    // functional deadline is independent of operation-response measurements.
+    await applyAndSave(page, panel, 60_000);
     const saved = await exportBackup(page);
     const map = saved.data.mapData[eventName][mapName];
     const expectedTarget: BlockDefinition = {
