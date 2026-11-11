@@ -295,26 +295,38 @@ describe("FocusModeMapCanvas zoom center", () => {
     expect(latestSnapshot()).toEqual(pendingSnapshot);
   });
   it("ignores both finger releases after a pinch and accepts the next independent tap", () => {
-    const { canvas, touch, center, onCellClick } = renderMap(100);
-    pointer(canvas, "pointerdown", touch(1, -50));
-    fireEvent.touchStart(canvas, { changedTouches: [touch(1, -50)] });
-    pointer(canvas, "pointerdown", touch(2, 50));
-    fireEvent.touchStart(canvas, { changedTouches: [touch(2, 50)] });
-    fireEvent.touchMove(canvas, {
-      changedTouches: [touch(1, -100), touch(2, 100)],
-    });
-    pointer(canvas, "pointerup", touch(1, -100));
-    fireEvent.touchEnd(canvas, { changedTouches: [touch(1, -100)] });
-    pointer(canvas, "pointerup", touch(2, 100));
-    fireEvent.touchEnd(canvas, { changedTouches: [touch(2, 100)] });
-    fireEvent.click(canvas, center);
-    expect(onCellClick).not.toHaveBeenCalled();
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      const { canvas, touch, center, onCellClick } = renderMap(100);
+      pointer(canvas, "pointerdown", touch(1, -50));
+      fireEvent.touchStart(canvas, { changedTouches: [touch(1, -50)] });
+      pointer(canvas, "pointerdown", touch(2, 50));
+      fireEvent.touchStart(canvas, { changedTouches: [touch(2, 50)] });
+      fireEvent.touchMove(canvas, {
+        changedTouches: [touch(1, -100), touch(2, 100)],
+      });
+      pointer(canvas, "pointerup", touch(1, -100));
+      fireEvent.touchEnd(canvas, { changedTouches: [touch(1, -100)] });
+      pointer(canvas, "pointerup", touch(2, 100));
+      fireEvent.touchEnd(canvas, { changedTouches: [touch(2, 100)] });
+      fireEvent.click(canvas, center);
+      expect(onCellClick).not.toHaveBeenCalled();
 
-    pointer(canvas, "pointerdown", touch(3, 0));
-    fireEvent.touchStart(canvas, { changedTouches: [touch(3, 0)] });
-    pointer(canvas, "pointerup", touch(3, 0));
-    fireEvent.touchEnd(canvas, { changedTouches: [touch(3, 0)] });
-    expect(onCellClick).toHaveBeenCalledExactlyOnceWith("A", 11, []);
+      pointer(canvas, "pointerdown", touch(3, 0));
+      fireEvent.touchStart(canvas, { changedTouches: [touch(3, 0)] });
+      pointer(canvas, "pointerup", touch(3, 0));
+      fireEvent.touchEnd(canvas, { changedTouches: [touch(3, 0)] });
+      expect(onCellClick).toHaveBeenCalledExactlyOnceWith("A", 11, []);
+    } finally {
+      try {
+        // Finish delayed pointer cleanup before jsdom removes this test's window.
+        act(() => {
+          vi.runOnlyPendingTimers();
+        });
+      } finally {
+        vi.useRealTimers();
+      }
+    }
   });
 });
 

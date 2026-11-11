@@ -4,6 +4,7 @@ import type { HallSelectionIntent } from "../../../types/consistency";
 import type { ItemMembershipPreview } from "../../consistency/domain/itemEdit";
 import { applyChangedFields } from "../../consistency/domain/mutations";
 import React, { useId } from "react";
+import MapSelectionPopup from "./MapSelectionPopup";
 import DeleteConfirmationModal from "../../../components/DeleteConfirmationModal";
 import { ItemEditDialog } from "../../../components/ItemEditDialog";
 import UpdateConfirmationModal from "../../../components/UpdateConfirmationModal";
@@ -635,8 +636,8 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
       )}
 
       {cellSelectionMode && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 p-4 min-w-80">
-          <div className="text-center mb-3">
+        <MapSelectionPopup label="ブロック範囲選択">
+          <div className="text-center mb-3 px-6">
             <div className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">
               {(() => {
                 const data = cellSelectionMode.editingBlockData as
@@ -693,7 +694,7 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
               キャンセル
             </button>
           </div>
-        </div>
+        </MapSelectionPopup>
       )}
 
       {simpleHallDefinitionMode && (
@@ -816,8 +817,8 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
       )}
 
       {vertexSelectionMode && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 p-4 min-w-80">
-          <div className="text-center mb-3">
+        <MapSelectionPopup label="ホール頂点選択">
+          <div className="text-center mb-3 px-6">
             <div className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">
               {(() => {
                 const data = vertexSelectionMode.editingData as
@@ -891,7 +892,7 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
               キャンセル
             </button>
           </div>
-        </div>
+        </MapSelectionPopup>
       )}
 
       <input

@@ -8,6 +8,7 @@ import type {
 import { duplicateEventDays } from "./dayMerge";
 import { planWithDayMerges } from "./dayMergeMutation";
 import { buildEventRestoreData } from "../../events/backupRestore";
+import { formatEventRestoreSection } from "./eventRestoreConfirmation";
 export function eventSnapshot(
   snapshot: PersistenceSnapshot,
   name: string,
@@ -56,9 +57,8 @@ export function planEventRestore(
                         JSON.stringify(before[key]) !==
                         JSON.stringify(after[key]),
                     )
-                    .map(
-                      (key) =>
-                        `${key}\n現在: ${JSON.stringify(before[key], null, 2)}\n復元後: ${JSON.stringify(after[key], null, 2)}`,
+                    .map((key) =>
+                      formatEventRestoreSection(key, before[key], after[key]),
                     ),
                 ],
                 comparison: { before, after },
