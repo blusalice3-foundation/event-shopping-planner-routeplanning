@@ -18,17 +18,9 @@ export default function MapSelectionPopup({
       aria-label={label}
       className={`fixed z-50 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 ${
         isMinimized
-          ? "bottom-4 left-4 h-11 w-11"
+          ? "bottom-[max(1rem,env(safe-area-inset-bottom,0px))] left-[max(1rem,env(safe-area-inset-left,0px))] h-11 w-11"
           : "bottom-4 left-1/2 -translate-x-1/2 p-4 min-w-80"
       }`}
-      style={
-        isMinimized
-          ? {
-              left: "max(1rem, env(safe-area-inset-left, 0px))",
-              bottom: "max(1rem, env(safe-area-inset-bottom, 0px))",
-            }
-          : undefined
-      }
     >
       <button
         type="button"
