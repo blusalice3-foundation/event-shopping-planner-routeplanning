@@ -545,3 +545,27 @@ describe("AppHeaderShell block sort visibility", () => {
     },
   );
 });
+
+it("describes and toggles the distribution check for sold-out and limited purchases", () => {
+  const props = minimalAppHeaderShellProps();
+  const { rerender } = render(<AppHeaderShell {...props} />);
+  const checkbox = screen.getByRole("checkbox", {
+    name: /事後通販･頒布可否確認を有効化/,
+  });
+  expect(checkbox).toBeChecked();
+  expect(checkbox).toHaveAccessibleName(
+    "事後通販･頒布可否確認を有効化ON にすると、売切･限数へ変更した時に確認結果を備考へ記録できます",
+  );
+  fireEvent.click(checkbox);
+  expect(
+    props.actions.preferences.setPostEventDistributionCheckEnabled,
+  ).toHaveBeenLastCalledWith(false);
+
+  props.model.preferences.postEventDistributionCheckEnabled = false;
+  rerender(<AppHeaderShell {...props} />);
+  expect(checkbox).not.toBeChecked();
+  fireEvent.click(checkbox);
+  expect(
+    props.actions.preferences.setPostEventDistributionCheckEnabled,
+  ).toHaveBeenLastCalledWith(true);
+});

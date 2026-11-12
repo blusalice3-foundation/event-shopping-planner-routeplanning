@@ -1,3 +1,4 @@
+import { acquireBodyScrollLock } from "../utils/bodyScrollLock";
 import { useModalFocusBoundary } from "../hooks/useModalFocusBoundary";
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
@@ -33,6 +34,11 @@ const PostEventDistributionCheckDialog: React.FC<
 > = ({ open, mode, targets, onCancel, onApply }) => {
   const dialogRef = React.useRef<HTMLDivElement>(null);
   useModalFocusBoundary({ isOpen: open && targets.length > 0, dialogRef });
+  const isVisible = open && targets.length > 0;
+  useEffect(() => {
+    if (!isVisible) return;
+    return acquireBodyScrollLock({ lockOverscroll: true });
+  }, [isVisible]);
   const targetIds = useMemo(() => targets.map((item) => item.id), [targets]);
   const [selectedAnswer, setSelectedAnswer] = useState("");
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(
@@ -103,13 +109,13 @@ const PostEventDistributionCheckDialog: React.FC<
   };
 
   const dialog = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div className="esp-dialog-viewport fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="post-event-distribution-check-title"
-        className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl dark:bg-slate-800"
+        className="esp-dialog-panel w-full max-w-md rounded-lg bg-white p-5 shadow-xl dark:bg-slate-800"
       >
         <h2
           id="post-event-distribution-check-title"
@@ -203,7 +209,7 @@ const PostEventDistributionCheckDialog: React.FC<
           )}
         </div>
 
-        <div className="mt-5 flex justify-end gap-2">
+        <div className="esp-dialog-actions mt-5 flex justify-end gap-2">
           <button
             type="button"
             onClick={onCancel}

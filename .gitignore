@@ -31,3 +31,6 @@ Thumbs.db
 /artifacts/performance-quick-check/
 
 /artifacts/ios-compatibility/
+
+# Local dialog viewport acceptance evidence.
+/artifacts/dialog-viewport-implementation-20261112/

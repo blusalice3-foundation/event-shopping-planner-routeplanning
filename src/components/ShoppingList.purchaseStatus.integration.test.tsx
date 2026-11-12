@@ -385,6 +385,260 @@ describe("ShoppingList purchase status control mode", () => {
     );
   });
 
+  it.each(["save", "defer"] as const)(
+    "records a post-event answer after a single limited purchase is accepted with %s",
+    async (action) => {
+      render(
+        <StateFulShoppingListHarness
+          initialItems={[
+            {
+              ...baseItem,
+              quantity: 3,
+              purchaseStatus: "Late",
+              remarks: "既存メモ",
+            },
+          ]}
+        />,
+      );
+
+      clickStatusButtonForTitle("Title");
+      const quantityDialog = screen.getByRole("dialog", {
+        name: "限数購入の数量",
+      });
+      expect(
+        screen.queryByRole("dialog", { name: "事後通販･頒布可否確認" }),
+      ).not.toBeInTheDocument();
+      if (action === "save") {
+        fireEvent.change(
+          within(quantityDialog).getByRole("textbox", { name: "実購入数" }),
+          { target: { value: "1" } },
+        );
+        fireEvent.click(
+          within(quantityDialog).getByRole("button", { name: "保存" }),
+        );
+      } else {
+        fireEvent.click(
+          within(quantityDialog).getByRole("button", {
+            name: "この商品を後で入力",
+          }),
+        );
+      }
+
+      const checkDialog = await screen.findByRole("dialog", {
+        name: "事後通販･頒布可否確認",
+      });
+      await waitFor(() =>
+        expect(checkDialog).toContainElement(
+          document.activeElement as HTMLElement,
+        ),
+      );
+      expect(
+        screen.queryByRole("dialog", { name: "限数購入の数量" }),
+      ).not.toBeInTheDocument();
+      fireEvent.change(
+        within(checkDialog).getByRole("combobox", { name: "回答内容" }),
+        { target: { value: "BOOTH有" } },
+      );
+      fireEvent.click(
+        within(checkDialog).getByRole("button", { name: "記録" }),
+      );
+
+      expect(getRemarksInputForTitle("Title")).toHaveValue(
+        "既存メモ 通販･頒布確認: BOOTH有",
+      );
+      expect(
+        screen.getByRole("button", { name: action === "save" ? "1/3" : "-/3" }),
+      ).toBeInTheDocument();
+    },
+  );
+
+  it("keeps the accepted limited quantity when the check is canceled and does not reopen it for quantity correction", async () => {
+    render(
+      <StateFulShoppingListHarness
+        initialItems={[
+          {
+            ...baseItem,
+            quantity: 3,
+            purchaseStatus: "Late",
+            remarks: "既存メモ",
+          },
+        ]}
+      />,
+    );
+    clickStatusButtonForTitle("Title");
+    fireEvent.change(screen.getByRole("textbox", { name: "実購入数" }), {
+      target: { value: "1" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    const checkDialog = await screen.findByRole("dialog", {
+      name: "事後通販･頒布可否確認",
+    });
+    fireEvent.click(
+      within(checkDialog).getByRole("button", { name: "キャンセル" }),
+    );
+
+    expect(getRemarksInputForTitle("Title")).toHaveValue("既存メモ");
+    fireEvent.click(screen.getByRole("button", { name: "1/3" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "実購入数" }), {
+      target: { value: "2" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    expect(
+      screen.queryByRole("dialog", { name: "事後通販･頒布可否確認" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "2/3" })).toBeInTheDocument();
+    expect(getRemarksInputForTitle("Title")).toHaveValue("既存メモ");
+  });
+
+  it.each([
+    ["single", "SoldOut"],
+    ["single", "LimitedPurchase"],
+    ["bulk", "SoldOut"],
+    ["bulk", "LimitedPurchase"],
+  ] as const)(
+    "skips check and new remarks with the setting off for %s %s",
+    (scope, status) => {
+      render(
+        <StatefulBulkShoppingListHarness
+          initialItems={[
+            {
+              ...baseItem,
+              quantity: 3,
+              purchaseStatus: status === "SoldOut" ? "Purchased" : "Late",
+              remarks: "既存 通販･頒布確認: BOOTH有",
+            },
+          ]}
+          postEventDistributionCheckEnabled={false}
+        />,
+      );
+      if (scope === "single") {
+        clickStatusButtonForTitle("Title");
+      } else {
+        fireEvent.click(
+          screen.getByRole("button", {
+            name: status === "SoldOut" ? "全売切" : "全限数",
+          }),
+        );
+      }
+      if (status === "LimitedPurchase") {
+        fireEvent.change(screen.getByRole("textbox", { name: "実購入数" }), {
+          target: { value: "1" },
+        });
+        fireEvent.click(screen.getByRole("button", { name: "保存" }));
+        expect(screen.getByRole("button", { name: "1/3" })).toBeInTheDocument();
+      }
+      expect(
+        screen.queryByRole("dialog", { name: "事後通販･頒布可否確認" }),
+      ).not.toBeInTheDocument();
+      expect(getRemarksInputForTitle("Title")).toHaveValue(
+        "既存 通販･頒布確認: BOOTH有",
+      );
+    },
+  );
+
+  it("collects only new limited purchases after all bulk quantity inputs finish", async () => {
+    render(
+      <StatefulBulkShoppingListHarness
+        initialItems={[
+          { ...baseItem, id: "partial", title: "一部購入", quantity: 3 },
+          { ...baseItem, id: "deferred", title: "数量延期", quantity: 3 },
+          { ...baseItem, id: "full", title: "全数購入", quantity: 3 },
+          {
+            ...baseItem,
+            id: "existing",
+            title: "既存限数",
+            quantity: 3,
+            purchaseStatus: "LimitedPurchase",
+            remarks: "既存の確認",
+          },
+          { ...baseItem, id: "skipped", title: "数量1除外", quantity: 1 },
+        ]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "全限数" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "実購入数" }), {
+      target: { value: "1" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    expect(
+      screen.queryByRole("dialog", { name: "事後通販･頒布可否確認" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "この商品を後で入力" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "実購入数" }), {
+      target: { value: "3" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    fireEvent.click(
+      within(
+        screen.getByRole("dialog", { name: "購入済として保存しますか？" }),
+      ).getByRole("button", { name: "購入済にする" }),
+    );
+    fireEvent.change(screen.getByRole("textbox", { name: "実購入数" }), {
+      target: { value: "2" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+
+    const checkDialog = await screen.findByRole("dialog", {
+      name: "事後通販･頒布可否確認",
+    });
+    expect(within(checkDialog).getByText("一部購入")).toBeInTheDocument();
+    expect(within(checkDialog).getByText("数量延期")).toBeInTheDocument();
+    expect(within(checkDialog).queryByText("全数購入")).not.toBeInTheDocument();
+    expect(within(checkDialog).queryByText("既存限数")).not.toBeInTheDocument();
+    expect(
+      within(checkDialog).queryByText("数量1除外"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("dialog", { name: "限数購入の数量" }),
+    ).not.toBeInTheDocument();
+    fireEvent.change(
+      within(checkDialog).getByRole("combobox", { name: "一括回答" }),
+      { target: { value: "別イベント頒布有" } },
+    );
+    fireEvent.click(within(checkDialog).getByRole("button", { name: "記録" }));
+    expect(getRemarksInputForTitle("一部購入")).toHaveValue(
+      "通販･頒布確認: 別イベント頒布有",
+    );
+    expect(getRemarksInputForTitle("数量延期")).toHaveValue(
+      "通販･頒布確認: 別イベント頒布有",
+    );
+    expect(getRemarksInputForTitle("全数購入")).toHaveValue("");
+    expect(getRemarksInputForTitle("既存限数")).toHaveValue("既存の確認");
+    expect(getRemarksInputForTitle("数量1除外")).toHaveValue("");
+    expect(screen.getByRole("button", { name: "1/3" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "-/3" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "2/3" })).toBeInTheDocument();
+  });
+
+  it("checks already accepted limited purchases when the remaining bulk input is canceled", async () => {
+    render(
+      <StatefulBulkShoppingListHarness
+        initialItems={[
+          { ...baseItem, id: "accepted", title: "保存済み", quantity: 3 },
+          { ...baseItem, id: "canceled", title: "中止対象", quantity: 3 },
+        ]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "全限数" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "実購入数" }), {
+      target: { value: "1" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    fireEvent.click(screen.getByRole("button", { name: "キャンセル" }));
+
+    const checkDialog = await screen.findByRole("dialog", {
+      name: "事後通販･頒布可否確認",
+    });
+    expect(within(checkDialog).getByText("保存済み")).toBeInTheDocument();
+    expect(within(checkDialog).queryByText("中止対象")).not.toBeInTheDocument();
+    fireEvent.click(
+      within(checkDialog).getByRole("button", { name: "キャンセル" }),
+    );
+    expect(screen.getByRole("button", { name: "1/3" })).toBeInTheDocument();
+    expect(getRemarksInputForTitle("保存済み")).toHaveValue("");
+    expect(getRemarksInputForTitle("中止対象")).toHaveValue("");
+  });
+
   it("passes radial purchase status control mode to item cards", () => {
     render(
       <ShoppingList
@@ -648,6 +902,11 @@ describe("ShoppingList purchase status control mode", () => {
     fireEvent.click(screen.getByRole("button", { name: "この商品を後で入力" }));
     fireEvent.click(
       await screen.findByRole("button", { name: "この商品を後で入力" }),
+    );
+    fireEvent.click(
+      within(
+        await screen.findByRole("dialog", { name: "事後通販･頒布可否確認" }),
+      ).getByRole("button", { name: "キャンセル" }),
     );
     await waitFor(() =>
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),

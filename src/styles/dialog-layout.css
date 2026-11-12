@@ -1,0 +1,56 @@
+/* Applied only to dialogs that need a viewport-bounded native scroll area. */
+.esp-dialog-viewport {
+  box-sizing: border-box;
+  height: 100vh;
+  padding: 1rem;
+  padding-top: max(1rem, env(safe-area-inset-top, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+}
+
+@supports (height: 100dvh) {
+  .esp-dialog-viewport {
+    height: 100dvh;
+  }
+}
+
+.esp-dialog-panel {
+  min-height: 0;
+  min-width: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  overflow-wrap: anywhere;
+}
+
+.esp-dialog-actions {
+  flex-wrap: wrap;
+}
+
+.esp-dialog-actions > button {
+  min-height: 44px;
+}
+
+/* Preserve the event menu's content-sized width and original zero gutter. */
+.esp-dialog-viewport.esp-event-menu-viewport,
+.esp-dialog-viewport.esp-dialog-viewport-flush {
+  padding: 0;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+}
+
+.esp-dialog-panel.esp-event-menu-panel {
+  min-width: min(280px, 90vw, 100%);
+  max-width: min(90vw, 100%);
+}
+
+.esp-event-menu-title,
+.esp-event-menu-action-text {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+}

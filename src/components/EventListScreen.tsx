@@ -245,7 +245,7 @@ const EventListScreen: React.FC<EventListScreenProps> = ({
       {/* リスト操作メニュー（オーバーレイ） */}
       {menuVisibleFor && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          className="esp-dialog-viewport esp-event-menu-viewport fixed inset-0 z-50 flex items-center justify-center bg-black/50"
           onClick={() => {
             setMenuVisibleFor(null);
           }}
@@ -257,11 +257,11 @@ const EventListScreen: React.FC<EventListScreenProps> = ({
             aria-label={`${menuVisibleFor}の操作`}
             tabIndex={-1}
             onKeyDown={onDialogKeyDown}
-            className="bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 min-w-[280px] max-w-[90vw] overflow-hidden"
+            className="esp-dialog-panel esp-event-menu-panel bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
-              <h3 className="text-sm font-semibold text-slate-800 dark:text-white truncate">
+              <h3 className="esp-event-menu-title text-sm font-semibold text-slate-800 dark:text-white">
                 {menuVisibleFor}
               </h3>
             </div>
@@ -275,8 +275,10 @@ const EventListScreen: React.FC<EventListScreenProps> = ({
                   }}
                   className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                 >
-                  <span className="text-lg">🔄</span>
-                  <span>アイテム更新</span>
+                  <span className="shrink-0 text-lg">🔄</span>
+                  <span className="esp-event-menu-action-text">
+                    アイテム更新
+                  </span>
                 </button>
               )}
               {onRename && (
@@ -288,8 +290,8 @@ const EventListScreen: React.FC<EventListScreenProps> = ({
                   }}
                   className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                 >
-                  <span className="text-lg">✏️</span>
-                  <span>名称変更</span>
+                  <span className="shrink-0 text-lg">✏️</span>
+                  <span className="esp-event-menu-action-text">名称変更</span>
                 </button>
               )}
               {onImportMap && (
@@ -301,8 +303,10 @@ const EventListScreen: React.FC<EventListScreenProps> = ({
                   }}
                   className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                 >
-                  <span className="text-lg">🗺️</span>
-                  <span>マップデータ取り込み</span>
+                  <span className="shrink-0 text-lg">🗺️</span>
+                  <span className="esp-event-menu-action-text">
+                    マップデータ取り込み
+                  </span>
                 </button>
               )}
               <div className="border-t border-slate-200 dark:border-slate-700 my-2" />
@@ -314,8 +318,10 @@ const EventListScreen: React.FC<EventListScreenProps> = ({
                 }}
                 className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
               >
-                <DocumentArrowDownIcon className="w-5 h-5 text-blue-500" />
-                <span>Excel形式で出力</span>
+                <DocumentArrowDownIcon className="w-5 h-5 shrink-0 text-blue-500" />
+                <span className="esp-event-menu-action-text">
+                  Excel形式で出力
+                </span>
               </button>
               <div className="border-t border-slate-200 dark:border-slate-700 my-2" />
               <button
@@ -325,8 +331,8 @@ const EventListScreen: React.FC<EventListScreenProps> = ({
                 }}
                 className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
               >
-                <TrashIcon className="w-5 h-5" />
-                <span>削除</span>
+                <TrashIcon className="w-5 h-5 shrink-0" />
+                <span className="esp-event-menu-action-text">削除</span>
               </button>
             </div>
             <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
@@ -334,7 +340,7 @@ const EventListScreen: React.FC<EventListScreenProps> = ({
                 onClick={() => {
                   setMenuVisibleFor(null);
                 }}
-                className="w-full py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+                className="min-h-11 w-full py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
               >
                 キャンセル
               </button>

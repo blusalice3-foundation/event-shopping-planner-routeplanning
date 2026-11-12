@@ -1,3 +1,4 @@
+import { acquireBodyScrollLock } from "../utils/bodyScrollLock";
 import { useModalFocusBoundary } from "../hooks/useModalFocusBoundary";
 import React from "react";
 import { ShoppingItem } from "../types/item";
@@ -15,16 +16,17 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
 }) => {
   const dialogRef = React.useRef<HTMLDivElement>(null);
   useModalFocusBoundary({ isOpen: true, dialogRef });
+  React.useEffect(() => acquireBodyScrollLock({ lockOverscroll: true }), []);
   return (
     <div
-      className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 animate-fade-in"
+      className="esp-dialog-viewport fixed inset-0 bg-black/60 flex items-center justify-center z-50 animate-fade-in"
       ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-labelledby="delete-modal-title"
     >
       <div
-        className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-md"
+        className="esp-dialog-panel bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-md"
         onClick={(e) => e.stopPropagation()}
       >
         <h3
@@ -62,7 +64,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
             )}
           </div>
         </div>
-        <div className="mt-6 flex justify-end space-x-4">
+        <div className="esp-dialog-actions mt-6 flex justify-end gap-4">
           <button
             onClick={onCancel}
             className="px-4 py-2 text-sm font-medium rounded-md text-slate-700 dark:text-slate-200 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 dark:focus:ring-offset-slate-800"

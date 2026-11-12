@@ -33,9 +33,9 @@ export function ResumeChoiceDialogView({
   const lastPhaseName = resumePhaseNameMap[dialog.lastPhase];
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
+    <div className="esp-dialog-viewport fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 backdrop-blur-sm">
       <div
-        className="w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-800"
+        className="esp-dialog-panel w-full max-w-md rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-800"
         ref={dialogRef}
         role="dialog"
         aria-modal="true"

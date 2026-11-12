@@ -771,7 +771,7 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
       )}
 
       {showVisitListConfirmDialog && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
+        <div className="esp-dialog-viewport fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
           <div
             ref={visitListConfirmRef}
             role="dialog"
@@ -779,7 +779,7 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
             aria-labelledby={visitListConfirmTitleId}
             tabIndex={-1}
             onKeyDown={onVisitListConfirmKeyDown}
-            className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4"
+            className="esp-dialog-panel bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 max-w-md w-full"
           >
             <h3
               id={visitListConfirmTitleId}
@@ -790,7 +790,7 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
               訪問リストに未保存の変更があります。保存して確定するか、キャンセルして破棄してください。
             </p>
-            <div className="flex justify-end gap-3">
+            <div className="esp-dialog-actions flex justify-end gap-3">
               <button
                 onClick={() => {
                   void Promise.resolve(handleVisitListDialogCancel()).catch(

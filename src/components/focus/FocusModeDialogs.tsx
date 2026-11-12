@@ -123,7 +123,7 @@ export function PhaseChangeDialogView({
     : "";
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="esp-dialog-viewport fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div
         ref={dialogRef}
         role="dialog"
@@ -131,7 +131,7 @@ export function PhaseChangeDialogView({
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
         onKeyDown={onDialogKeyDown}
-        className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-w-md w-full mx-4 overflow-hidden"
+        className="esp-dialog-panel bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-w-md w-full"
       >
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4">
           <h2 id={titleId} className="text-lg font-bold">
@@ -184,7 +184,7 @@ export function PhaseChangeDialogView({
           <button
             type="button"
             onClick={onCancel}
-            className="w-full py-2 px-4 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium transition-colors"
+            className="min-h-11 w-full py-2 px-4 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium transition-colors"
           >
             キャンセル
           </button>
@@ -290,7 +290,7 @@ export function CellItemPopup({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      className="esp-dialog-viewport fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-label={`${state.blockName}-${state.number}のアイテム`}
@@ -301,7 +301,7 @@ export function CellItemPopup({
       onTouchStart={handlePopupInteractionStart}
       onWheel={(event) => event.stopPropagation()}
     >
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-w-sm w-full mx-4 overflow-hidden">
+      <div className="esp-dialog-panel bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-w-sm w-full">
         <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-slate-200 dark:border-slate-700">
           <h3 className="font-semibold text-slate-900 dark:text-white">
             {state.blockName}-{state.number}{" "}
@@ -319,7 +319,7 @@ export function CellItemPopup({
                   event.stopPropagation();
                   void handleTemporaryMove(target);
                 }}
-                className="w-auto whitespace-nowrap rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:opacity-70"
+                className="min-h-11 min-w-0 max-w-full w-auto whitespace-normal rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:opacity-70"
               >
                 {busyVisitId === target.visitId
                   ? "移動中…"
@@ -329,7 +329,7 @@ export function CellItemPopup({
           </div>
           <button
             onClick={onClose}
-            className="ml-auto text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+            className="ml-auto flex min-h-11 min-w-11 items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
             aria-label="閉じる"
           >
             <svg
@@ -351,7 +351,7 @@ export function CellItemPopup({
           <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
             <button
               onClick={onAddItem}
-              className="w-full py-2 px-4 bg-green-700 hover:bg-green-800 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+              className="min-h-11 w-full py-2 px-4 bg-green-700 hover:bg-green-800 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
             >
               <svg
                 className="w-5 h-5"
@@ -399,7 +399,7 @@ export function CellItemPopup({
         <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-700">
           <button
             onClick={onClose}
-            className="w-full py-2 px-4 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium transition-colors"
+            className="min-h-11 w-full py-2 px-4 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium transition-colors"
           >
             閉じる
           </button>
@@ -434,7 +434,7 @@ export function TemporaryPhaseChoiceDialog({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
+      className="esp-dialog-viewport fixed inset-0 z-[80] flex items-center justify-center bg-black/55 backdrop-blur-sm"
       ref={dialogRef}
       onKeyDown={onDialogKeyDown}
       role="dialog"
@@ -444,7 +444,7 @@ export function TemporaryPhaseChoiceDialog({
       onTouchStart={(event) => event.stopPropagation()}
       onWheel={(event) => event.stopPropagation()}
     >
-      <div className="w-full max-w-lg overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-slate-800">
+      <div className="esp-dialog-panel w-full max-w-lg rounded-xl bg-white shadow-2xl dark:bg-slate-800">
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white">
           <h2 className="text-lg font-bold">{title}</h2>
           {description && <p className="mt-1 text-sm">{description}</p>}
@@ -469,7 +469,7 @@ export function TemporaryPhaseChoiceDialog({
           <button
             type="button"
             onClick={onCancel}
-            className="mt-2 w-full rounded-lg bg-slate-200 px-4 py-2 font-medium text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
+            className="mt-2 min-h-11 w-full rounded-lg bg-slate-200 px-4 py-2 font-medium text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
           >
             キャンセル
           </button>

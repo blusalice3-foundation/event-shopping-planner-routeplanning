@@ -1,3 +1,4 @@
+import { useDialogViewport } from "../hooks/useDialogViewport";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useModalDialogBehavior } from "../hooks/useModalDialogBehavior";
@@ -91,6 +92,8 @@ export default function LimitedPurchaseDialog({
     },
     initialFocusRef: actualInputRef,
   });
+
+  useDialogViewport(isOpen, dialogRef);
 
   useLayoutEffect(() => {
     const previous = focusContextRef.current;
@@ -267,7 +270,7 @@ export default function LimitedPurchaseDialog({
         role="dialog"
         aria-modal={!isConfirmOpen}
         aria-labelledby="limited-purchase-dialog-title"
-        className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4"
+        className="esp-dialog-viewport fixed inset-0 z-[80] flex items-center justify-center bg-black/50"
         onClick={stopDialogEvent}
         onMouseDown={stopDialogEvent}
         onPointerDown={stopDialogEvent}
@@ -277,7 +280,7 @@ export default function LimitedPurchaseDialog({
         onTouchCancel={stopDialogEvent}
         onKeyDown={onDialogKeyDown}
       >
-        <div className="w-full max-w-sm rounded-lg bg-white p-4 shadow-xl dark:bg-slate-800">
+        <div className="esp-dialog-panel w-full max-w-sm rounded-lg bg-white p-4 shadow-xl dark:bg-slate-800">
           <h3
             id="limited-purchase-dialog-title"
             className="text-base font-semibold text-slate-900 dark:text-slate-100"
@@ -324,7 +327,7 @@ export default function LimitedPurchaseDialog({
               {SINGLE_QUANTITY_LIMITED_MESSAGE}
             </p>
           ) : null}
-          <div className="mt-4 flex flex-wrap justify-end gap-2">
+          <div className="esp-dialog-actions mt-4 flex justify-end gap-2">
             {showDeferButton && (
               <button
                 type="button"

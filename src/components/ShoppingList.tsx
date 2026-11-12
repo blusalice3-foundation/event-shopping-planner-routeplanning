@@ -746,6 +746,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     setPostEventDistributionCheckContext,
   ] = useState<PostEventDistributionCheckContext | null>(null);
   const activeLimitedBulkFlowTokenRef = useRef<symbol | null>(null);
+  const limitedBulkPostEventTargetsRef = useRef<{
+    flowToken: symbol;
+    targets: ShoppingItem[];
+  } | null>(null);
   const limitedBulkNotificationOwnerRef =
     useRef<LimitedBulkNotificationOwner | null>(null);
 
@@ -1010,6 +1014,18 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     [skipLimitedPurchaseForSingleQuantity],
   );
 
+  const openPostEventDistributionCheck = useCallback(
+    (mode: PostEventDistributionCheckMode, targets: ShoppingItem[]) => {
+      if (
+        isInspecting ||
+        !postEventDistributionCheckEnabled ||
+        targets.length === 0
+      )
+        return;
+      setPostEventDistributionCheckContext({ mode, targets });
+    },
+    [isInspecting, postEventDistributionCheckEnabled],
+  );
   const isActiveLimitedBulkFlow = useCallback(
     (flowToken: symbol): boolean =>
       activeLimitedBulkFlowTokenRef.current === flowToken,
@@ -1021,6 +1037,17 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       skipped: number,
       options: { flowToken?: symbol; preserveStartNotification?: boolean } = {},
     ) => {
+      const activeFlowToken = activeLimitedBulkFlowTokenRef.current;
+      if (
+        options.flowToken !== undefined &&
+        options.flowToken !== activeFlowToken
+      )
+        return;
+      const pending = limitedBulkPostEventTargetsRef.current;
+      const postEventTargets =
+        pending?.flowToken === activeFlowToken
+          ? pending.targets.filter(isCurrentLimitedTarget)
+          : [];
       setLimitedBulkDialogContext((current) =>
         options.flowToken !== undefined &&
         current?.flowToken !== options.flowToken
@@ -1032,7 +1059,9 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         activeLimitedBulkFlowTokenRef.current === options.flowToken
       ) {
         activeLimitedBulkFlowTokenRef.current = null;
+        limitedBulkPostEventTargetsRef.current = null;
       }
+      openPostEventDistributionCheck("bulk", postEventTargets);
       if (skipped > 0) {
         showLimitedBulkMessage(
           `対象外になったアイテムを${skipped}件スキップしました`,
@@ -1044,7 +1073,12 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         clearLimitedBulkMessage(options.flowToken);
       }
     },
-    [clearLimitedBulkMessage, showLimitedBulkMessage],
+    [
+      clearLimitedBulkMessage,
+      isCurrentLimitedTarget,
+      openPostEventDistributionCheck,
+      showLimitedBulkMessage,
+    ],
   );
 
   const advanceLimitedBulkToNextTarget = useCallback(
@@ -1126,16 +1160,13 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       clearLimitedPurchaseQuantityDeferredForItem,
     ],
   );
-  const openPostEventDistributionCheck = useCallback(
-    (mode: PostEventDistributionCheckMode, targets: ShoppingItem[]) => {
-      if (!postEventDistributionCheckEnabled || targets.length === 0) return;
-      setPostEventDistributionCheckContext({ mode, targets });
-    },
-    [postEventDistributionCheckEnabled],
-  );
 
   const handlePostEventDistributionCheckApply = useCallback(
     (answers: { itemId: string; answer: PostEventDistributionAnswer }[]) => {
+      if (isInspecting || !postEventDistributionCheckEnabled) {
+        setPostEventDistributionCheckContext(null);
+        return;
+      }
       const updates = answers.flatMap(({ itemId, answer }) => {
         const latestItem = getLatestItemById(itemId);
         return latestItem
@@ -1153,8 +1184,19 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       updateItemsWithDeferredCleanup(updates, true);
       setPostEventDistributionCheckContext(null);
     },
-    [getLatestItemById, updateItemsWithDeferredCleanup],
+    [
+      getLatestItemById,
+      isInspecting,
+      postEventDistributionCheckEnabled,
+      updateItemsWithDeferredCleanup,
+    ],
   );
+
+  useEffect(() => {
+    if (postEventDistributionCheckEnabled) return;
+    limitedBulkPostEventTargetsRef.current = null;
+    setPostEventDistributionCheckContext(null);
+  }, [postEventDistributionCheckEnabled]);
 
   const handlePostEventDistributionCheckCancel = useCallback(() => {
     setPostEventDistributionCheckContext(null);
@@ -1175,6 +1217,15 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       const guard = limitedTargetsRef.current.get(baseItem.id)?.guard;
       if (guard) rememberItemUpdateGuard(updated, guard);
       updateItemWithDeferredCleanup(updated);
+      const pending = limitedBulkPostEventTargetsRef.current;
+      if (
+        postEventDistributionCheckEnabled &&
+        baseItem.purchaseStatus !== "LimitedPurchase" &&
+        updated.purchaseStatus === "LimitedPurchase" &&
+        pending?.flowToken === activeLimitedBulkFlowTokenRef.current
+      ) {
+        pending.targets.push(updated);
+      }
       return true;
     },
   );
@@ -1302,6 +1353,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         groupItems.every((item) => item.purchaseStatus === "LimitedPurchase");
       const flowToken = Symbol("limited-bulk-flow");
       activeLimitedBulkFlowTokenRef.current = flowToken;
+      limitedBulkPostEventTargetsRef.current = { flowToken, targets: [] };
 
       if (allAlreadyLimited) {
         setLimitedBulkDialogContext(null);
@@ -1309,6 +1361,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         if (missing.length === 0) {
           showLimitedBulkMessage("解除対象の限数未入力はありません", flowToken);
           activeLimitedBulkFlowTokenRef.current = null;
+          limitedBulkPostEventTargetsRef.current = null;
           return;
         }
         if (
@@ -1317,6 +1370,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           )
         ) {
           activeLimitedBulkFlowTokenRef.current = null;
+          limitedBulkPostEventTargetsRef.current = null;
           return;
         }
         clearLimitedBulkMessage();
@@ -1326,6 +1380,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
           );
         });
         activeLimitedBulkFlowTokenRef.current = null;
+        limitedBulkPostEventTargetsRef.current = null;
         return;
       }
 
@@ -1343,10 +1398,12 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
             flowToken,
           );
           activeLimitedBulkFlowTokenRef.current = null;
+          limitedBulkPostEventTargetsRef.current = null;
           return;
         }
         showLimitedBulkMessage("変更対象のアイテムはありません", flowToken);
         activeLimitedBulkFlowTokenRef.current = null;
+        limitedBulkPostEventTargetsRef.current = null;
         return;
       }
       if (singleQuantitySkippedCount > 0) {
@@ -1690,7 +1747,16 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   }, [addDialogOpen, currentDay, columnType, rangeScopeId, viewMode]);
 
   useEffect(() => {
+    activeLimitedBulkFlowTokenRef.current = null;
+    limitedBulkPostEventTargetsRef.current = null;
+    setLimitedBulkDialogContext(null);
+    setPostEventDistributionCheckContext(null);
+  }, [currentDay, columnType, rangeScopeId, viewMode]);
+
+  useEffect(() => {
     if (!isInspecting) return;
+    activeLimitedBulkFlowTokenRef.current = null;
+    limitedBulkPostEventTargetsRef.current = null;
     setAddDialogOpen(false);
     setLimitedBulkDialogContext(null);
     setPostEventDistributionCheckContext(null);
@@ -3400,7 +3466,11 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         onCancel={handleLimitedBulkCancel}
       />
       <PostEventDistributionCheckDialog
-        open={!isInspecting && postEventDistributionCheckContext !== null}
+        open={
+          !isInspecting &&
+          postEventDistributionCheckEnabled &&
+          postEventDistributionCheckContext !== null
+        }
         mode={postEventDistributionCheckContext?.mode ?? "single"}
         targets={postEventDistributionCheckContext?.targets ?? []}
         onCancel={handlePostEventDistributionCheckCancel}
