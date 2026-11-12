@@ -419,6 +419,25 @@ for (const count of [150, 500]) {
         await main
           .getByRole("button", { name: "キャンセル", exact: true })
           .click();
+        const distributionCheck = page.getByRole("dialog", {
+          name: "事後通販･頒布可否確認",
+          exact: true,
+        });
+        // Historical before builds do not show this follow-up.
+        if (phase !== "before") await expect(distributionCheck).toBeVisible();
+        if (await distributionCheck.isVisible()) {
+          await distributionCheck
+            .getByRole("button", { name: "キャンセル", exact: true })
+            .click();
+          await expect(distributionCheck).toBeHidden();
+        }
+        await expect
+          .poll(
+            async () =>
+              (await durableItem(page, "diagnostic-0"))
+                .limitedPurchasedQuantity,
+          )
+          .toBe(2);
       }
       await page.getByTitle("編集モード", { exact: true }).click();
       await page.getByTitle("マップ表示に切り替え", { exact: true }).click();
