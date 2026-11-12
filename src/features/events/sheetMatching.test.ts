@@ -1,3 +1,4 @@
+import { createSheetIdentityFingerprint } from "../../utils/sheetIdentity";
 import { describe, expect, it } from "vitest";
 import type { ShoppingItem } from "../../types/item";
 import { createEventUpdateDiff, type SheetItem } from "./updateDiff";
@@ -14,22 +15,23 @@ const items = (): ShoppingItem[] =>
     block: "A",
     number: "01a",
     title: "同名品目",
-    price: index === 0 ? 800 : 0,
-    catalogPrice: 500,
+    price: 500,
     quantity,
-    remarks: `ID ${index + 1} の記録`,
-    sheetRemarks: "エラーが発生しました",
+    remarks: "エラーが発生しました",
     url: urls[index],
     purchaseStatus: "None",
     source: "spreadsheet",
-    sheetIdentityVerified: true,
+    sheetIdentityFingerprint: createSheetIdentityFingerprint(
+      500,
+      "エラーが発生しました",
+    ),
     protectionLevel: "none",
   }));
 const rows = (): SheetItem[] =>
   items().map((item) => ({
     ...item,
-    price: item.catalogPrice!,
-    remarks: item.sheetRemarks!,
+    price: item.price,
+    remarks: item.remarks,
     rawQuantity: String(item.quantity),
   }));
 
@@ -49,7 +51,7 @@ describe("automatic sheet identity excludes editable URLs", () => {
     it.each(urlChanges)(
       `pairs duplicate rows in order with $name URLs, reversed=${reverse}`,
       ({ values }) => {
-        const before = items().map((item, index) => ({
+        const before: ShoppingItem[] = items().map((item, index) => ({
           ...item,
           url: values[index],
         }));
@@ -70,28 +72,33 @@ describe("automatic sheet identity excludes editable URLs", () => {
     );
   }
 
-  it.each(["catalogPrice", "sheetRemarks"] as const)(
-    "prefers unique verified %s over row order after manual URL swaps",
+  it.each(["price", "remarks"] as const)(
+    "prefers internal identity based on verified %s after manual edits and row reversal",
     (field) => {
       const original = items();
       original[1] = {
         ...original[1],
-        [field]: field === "catalogPrice" ? 700 : "別のシート備考",
+        [field]: field === "price" ? 700 : "別のシートの備考",
       };
+      original[1].sheetIdentityFingerprint = createSheetIdentityFingerprint(
+        original[1].price,
+        original[1].remarks,
+      );
       const before = original.map((item, index) => ({
         ...item,
+        price: 900 + index * 100,
+        remarks: `ID ${item.id} の現場メモ`,
         url: urls[1 - index],
       }));
-      const incoming = rows();
-      incoming[1] = { ...incoming[1], [field]: original[1][field] };
-      if (field === "catalogPrice") incoming[1].price = 700;
-      else incoming[1].remarks = original[1].sheetRemarks!;
-      const diff = createEventUpdateDiff(before, incoming.reverse());
+      const incoming = original.map((item) => ({ ...item })).reverse();
+      const diff = createEventUpdateDiff(before, incoming);
       expect(diff.unresolvedMatches).toEqual([]);
       expect(applyEventUpdateToItems(before, diff)).toEqual(original);
+      expect(before.map((item) => item.sheetIdentityFingerprint)).toEqual(
+        original.map((item) => item.sheetIdentityFingerprint),
+      );
     },
   );
-
   it("keeps each ID when all incoming effects are identical", () => {
     const before = items();
     const incoming = [rows()[0], rows()[0]];
@@ -106,8 +113,11 @@ describe("automatic sheet identity excludes editable URLs", () => {
   });
 
   it("does not require a choice when only the incoming URLs differ", () => {
-    const before = items().map((item) => ({ ...item, quantity: 2 }));
-    const incoming = rows().map((item) => ({
+    const before: ShoppingItem[] = items().map((item) => ({
+      ...item,
+      quantity: 2,
+    }));
+    const incoming: SheetItem[] = rows().map((item) => ({
       ...item,
       quantity: 2,
       rawQuantity: "2",
@@ -140,7 +150,7 @@ describe("automatic sheet identity excludes editable URLs", () => {
   it.each(["items-only", "same-source", "source-switch"] as const)(
     "applies %s updates without per-row choices through the shared flow",
     (kind) => {
-      const before = items().map((item, index) => ({
+      const before: ShoppingItem[] = items().map((item, index) => ({
         ...item,
         url: urls[1 - index],
       }));
@@ -204,7 +214,7 @@ describe("automatic matching prioritizes identity and never reuses an old ID", (
   });
 
   it("reserves unchanged titles before matching changed titles, regardless of incoming order", () => {
-    const before = items().map((item, index) => ({
+    const before: ShoppingItem[] = items().map((item, index) => ({
       ...item,
       title: index === 0 ? "改題前" : "既存タイトル",
     }));
@@ -220,10 +230,14 @@ describe("automatic matching prioritizes identity and never reuses an old ID", (
   });
 
   it("prefers unique verified signatures when several titles change and rows reverse", () => {
-    const before = items().map((item, index) => ({
+    const before: ShoppingItem[] = items().map((item, index) => ({
       ...item,
       title: `旧${index}`,
-      catalogPrice: 500 + index * 200,
+      price: 500 + index * 200,
+      sheetIdentityFingerprint: createSheetIdentityFingerprint(
+        500 + index * 200,
+        "エラーが発生しました",
+      ),
     }));
     const incoming = before
       .map((item, index) => ({
@@ -257,11 +271,11 @@ describe("automatic matching prioritizes identity and never reuses an old ID", (
   });
 
   it("pairs ambiguous title changes in old-item and incoming order, without reusing IDs", () => {
-    const before = items().map((item, index) => ({
+    const before: ShoppingItem[] = items().map((item, index) => ({
       ...item,
       title: `旧${index}`,
     }));
-    const incoming = rows().map((item, index) => ({
+    const incoming: SheetItem[] = rows().map((item, index) => ({
       ...item,
       title: `新${index}`,
     }));
@@ -278,7 +292,7 @@ describe("automatic matching prioritizes identity and never reuses an old ID", (
   });
 
   it("keeps extra incoming rows as new items after existing IDs are consumed", () => {
-    const before = items().map((item, index) => ({
+    const before: ShoppingItem[] = items().map((item, index) => ({
       ...item,
       title: `旧${index}`,
     }));
@@ -327,17 +341,24 @@ describe("automatic matching prioritizes identity and never reuses an old ID", (
   it.each(["current", "incoming"] as const)(
     "falls back to row order when one %s row has unknown provenance",
     (side) => {
-      const current = items().map((item, index) => ({
+      const current: ShoppingItem[] = items().map((item, index) => ({
         ...item,
-        catalogPrice: index === 0 ? 500 : 700,
-      }));
-      const incoming = rows().map((item, index) => ({
-        ...item,
-        catalogPrice: index === 0 ? 500 : 700,
         price: index === 0 ? 500 : 700,
+        sheetIdentityFingerprint: createSheetIdentityFingerprint(
+          index === 0 ? 500 : 700,
+          "エラーが発生しました",
+        ),
       }));
-      if (side === "current") current[1].sheetIdentityVerified = undefined;
-      else incoming[1].sheetIdentityVerified = undefined;
+      const incoming: SheetItem[] = rows().map((item, index) => ({
+        ...item,
+        price: index === 0 ? 500 : 700,
+        sheetIdentityFingerprint: createSheetIdentityFingerprint(
+          index === 0 ? 500 : 700,
+          "エラーが発生しました",
+        ),
+      }));
+      if (side === "current") current[1].sheetIdentityFingerprint = undefined;
+      else incoming[1].sheetIdentityFingerprint = undefined;
       const matched = matchSheetItems(current, incoming.reverse());
       expect([0, 1].map((row) => matched.matches.get(row)?.id)).toEqual([
         "1",
@@ -351,7 +372,11 @@ describe("automatic matching prioritizes identity and never reuses an old ID", (
       expect(
         after.map(({ id, remarks, price }) => ({ id, remarks, price })),
       ).toEqual(
-        current.map(({ id, remarks, price }) => ({ id, remarks, price })),
+        current.map(({ id }, index) => ({
+          id,
+          remarks: incoming[index].remarks,
+          price: incoming[index].price,
+        })),
       );
     },
   );
@@ -359,12 +384,16 @@ describe("automatic matching prioritizes identity and never reuses an old ID", (
 
 describe("update-only whitespace rescue preserves all raw correspondence first", () => {
   const collision = () => {
-    const before = items().map((item, index) => ({
+    const before: ShoppingItem[] = items().map((item, index) => ({
       ...item,
       id: index === 0 ? "A" : "B",
       circle: index === 0 ? "X " : "X",
       title: index === 0 ? "旧A" : "旧B",
-      catalogPrice: index === 0 ? 500 : 700,
+      price: index === 0 ? 500 : 700,
+      sheetIdentityFingerprint: createSheetIdentityFingerprint(
+        index === 0 ? 500 : 700,
+        "エラーが発生しました",
+      ),
       purchaseStatus:
         index === 0 ? ("Purchased" as const) : ("LimitedPurchase" as const),
       ...(index === 0 ? {} : { limitedPurchasedQuantity: 2 }),
@@ -375,7 +404,10 @@ describe("update-only whitespace rescue preserves all raw correspondence first",
         circle: "X",
         title: "旧A",
         price: 700,
-        catalogPrice: 700,
+        sheetIdentityFingerprint: createSheetIdentityFingerprint(
+          700,
+          "エラーが発生しました",
+        ),
         rawQuantity: "",
       },
       {
@@ -383,7 +415,6 @@ describe("update-only whitespace rescue preserves all raw correspondence first",
         circle: "X",
         title: "新A",
         price: 500,
-        catalogPrice: 500,
         rawQuantity: "",
       },
     ];
@@ -505,11 +536,15 @@ describe("update-only whitespace rescue preserves all raw correspondence first",
   });
 
   it("keeps raw group signature and fallback ordering when all rows already match", () => {
-    const before = items().map((item, index) => ({
+    const before: ShoppingItem[] = items().map((item, index) => ({
       ...item,
       title: `旧${index}`,
       circle: "X",
-      catalogPrice: 500 + index * 200,
+      price: 500 + index * 200,
+      sheetIdentityFingerprint: createSheetIdentityFingerprint(
+        500 + index * 200,
+        "エラーが発生しました",
+      ),
     }));
     const incoming = before
       .map((item, index) => ({ ...item, title: `新${index}` }))
@@ -519,7 +554,7 @@ describe("update-only whitespace rescue preserves all raw correspondence first",
         (row) => matchSheetItems(before, incoming).matches.get(row)?.id,
       ),
     ).toEqual(["2", "1"]);
-    before[0].sheetIdentityVerified = undefined;
+    before[0].sheetIdentityFingerprint = undefined;
     expect(
       [0, 1].map(
         (row) => matchSheetItems(before, incoming).matches.get(row)?.id,

@@ -3,17 +3,11 @@ import { recordEntry } from "../../utils/ownRecord";
 import type { SheetIdentityChoices } from "./sheetMatching";
 import type { ExecuteModeItems, ShoppingItem } from "../../types/item";
 import { insertItemSorted } from "../../utils/itemComparison";
-import type {
-  AppFieldSyncCandidate,
-  AppFieldSyncMode,
-  EventUpdateDiff,
-} from "./updateDiff";
-
-export type { AppFieldSyncMode };
+import type { EventUpdateDiff } from "./updateDiff";
 
 type EventUpdatePayload = Pick<
   EventUpdateDiff,
-  "itemsToDelete" | "itemsToUpdate" | "itemsToAdd" | "appFieldSyncCandidates"
+  "itemsToDelete" | "itemsToUpdate" | "itemsToAdd"
 > &
   Partial<
     Pick<
@@ -26,8 +20,6 @@ export type EventUpdateApplyOptions = {
   acceptCsvExclusions?: boolean;
   identityChoices?: SheetIdentityChoices;
   applyPurchasedQuantityChanges?: boolean;
-  priceSyncMode?: AppFieldSyncMode;
-  remarksSyncMode?: AppFieldSyncMode;
 };
 
 function getEffectiveProtectionLevel(
@@ -35,75 +27,6 @@ function getEffectiveProtectionLevel(
 ): "full" | "deletable" | "none" {
   if (item.protectionLevel) return item.protectionLevel;
   return item.source === "app" ? "full" : "none";
-}
-
-function getPreviousCatalogPrice(item: ShoppingItem): number | null {
-  return item.catalogPrice === undefined ? item.price : item.catalogPrice;
-}
-
-function getPreviousSheetRemarks(item: ShoppingItem): string {
-  return item.sheetRemarks === undefined ? item.remarks : item.sheetRemarks;
-}
-
-function isBlank(value: string): boolean {
-  return value.trim() === "";
-}
-
-function isCandidateStillEligible(
-  item: ShoppingItem,
-  candidate: AppFieldSyncCandidate,
-): boolean {
-  return (
-    item.source === "spreadsheet" &&
-    getEffectiveProtectionLevel(item) === "none" &&
-    item.purchaseStatus === candidate.purchaseStatus
-  );
-}
-
-function shouldApplyPriceCandidate(
-  item: ShoppingItem,
-  candidate: NonNullable<AppFieldSyncCandidate["price"]>,
-  mode: AppFieldSyncMode,
-): boolean {
-  if (
-    mode === "preserve" ||
-    item.price !== candidate.currentValue ||
-    getPreviousCatalogPrice(item) !== candidate.previousSheetValue
-  ) {
-    return false;
-  }
-
-  if (mode === "overwrite") return true;
-
-  return (
-    candidate.canFillEmpty &&
-    item.price === null &&
-    candidate.previousSheetValue === null &&
-    candidate.sheetValue !== null
-  );
-}
-
-function shouldApplyRemarksCandidate(
-  item: ShoppingItem,
-  candidate: NonNullable<AppFieldSyncCandidate["remarks"]>,
-  mode: AppFieldSyncMode,
-): boolean {
-  if (
-    mode === "preserve" ||
-    item.remarks !== candidate.currentValue ||
-    getPreviousSheetRemarks(item) !== candidate.previousSheetValue
-  ) {
-    return false;
-  }
-
-  if (mode === "overwrite") return true;
-
-  return (
-    candidate.canFillEmpty &&
-    isBlank(item.remarks) &&
-    isBlank(candidate.previousSheetValue) &&
-    !isBlank(candidate.sheetValue)
-  );
 }
 
 function createSpreadsheetItem(
@@ -117,13 +40,9 @@ function createSpreadsheetItem(
     number: itemData.number,
     title: itemData.title,
     price: itemData.price,
-    catalogPrice: itemData.catalogPrice,
     quantity: itemData.quantity ?? 1,
     remarks: itemData.remarks,
-    sheetRemarks: itemData.sheetRemarks,
-    ...(itemData.sheetIdentityVerified === true
-      ? { sheetIdentityVerified: true }
-      : {}),
+    sheetIdentityFingerprint: itemData.sheetIdentityFingerprint,
     purchaseStatus: "None",
     source: "spreadsheet",
     protectionLevel: "none",
@@ -143,14 +62,6 @@ export function applyEventUpdateToItems(
   const updateMap = new Map(
     updateData.itemsToUpdate.map((item) => [item.id, item]),
   );
-  const appFieldSyncCandidateMap = new Map(
-    updateData.appFieldSyncCandidates.map((candidate) => [
-      candidate.itemId,
-      candidate,
-    ]),
-  );
-  const priceSyncMode = options.priceSyncMode ?? "preserve";
-  const remarksSyncMode = options.remarksSyncMode ?? "preserve";
   const pendingQuantityMap = options.applyPurchasedQuantityChanges
     ? new Map(
         (updateData.pendingPurchasedQuantityChanges ?? []).map((change) => [
@@ -160,10 +71,12 @@ export function applyEventUpdateToItems(
       )
     : new Map();
 
-  let updatedItems = currentItems.filter((item) => !deleteIds.has(item.id));
+  let updatedItems = currentItems.filter(
+    (item) =>
+      !deleteIds.has(item.id) || getEffectiveProtectionLevel(item) === "full",
+  );
   updatedItems = updatedItems.map((item) => {
     const sourceUpdate = updateMap.get(item.id);
-    const appFieldSyncCandidate = appFieldSyncCandidateMap.get(item.id);
     const pendingQuantity = pendingQuantityMap.get(item.id);
     const limitedActualQuantity = item.limitedPurchasedQuantity;
     const isCompatibleLimitedQuantity =
@@ -174,50 +87,23 @@ export function applyEventUpdateToItems(
         limitedActualQuantity < (pendingQuantity?.nextQuantity ?? 0));
     let nextItem = item;
 
-    if (sourceUpdate) {
+    if (sourceUpdate && getEffectiveProtectionLevel(item) === "none") {
       // シート同期で変更できる項目だけを明示する。
-      // 購入状態・購入金額・利用者メモ・実購入数などは常に元の値を使う。
+      // 価格・備考はシート値を反映し、購入状態・実購入数などは元の値を使う。
       nextItem = {
         ...item,
         title: sourceUpdate.title,
         quantity: sourceUpdate.quantity,
-        catalogPrice: sourceUpdate.catalogPrice,
-        sheetRemarks: sourceUpdate.sheetRemarks,
-        sheetIdentityVerified: sourceUpdate.sheetIdentityVerified,
+        price: sourceUpdate.price,
+        remarks: sourceUpdate.remarks,
+        sheetIdentityFingerprint: sourceUpdate.sheetIdentityFingerprint,
         url: sourceUpdate.url,
       };
     }
 
     if (
-      appFieldSyncCandidate &&
-      isCandidateStillEligible(item, appFieldSyncCandidate)
-    ) {
-      const priceCandidate = appFieldSyncCandidate.price;
-      const remarksCandidate = appFieldSyncCandidate.remarks;
-
-      if (
-        priceCandidate &&
-        shouldApplyPriceCandidate(item, priceCandidate, priceSyncMode)
-      ) {
-        nextItem = {
-          ...nextItem,
-          price: priceCandidate.sheetValue,
-        };
-      }
-
-      if (
-        remarksCandidate &&
-        shouldApplyRemarksCandidate(item, remarksCandidate, remarksSyncMode)
-      ) {
-        nextItem = {
-          ...nextItem,
-          remarks: remarksCandidate.sheetValue,
-        };
-      }
-    }
-
-    if (
       pendingQuantity &&
+      getEffectiveProtectionLevel(item) === "none" &&
       item.purchaseStatus === pendingQuantity.purchaseStatus &&
       item.quantity === pendingQuantity.currentQuantity &&
       Number.isInteger(pendingQuantity.nextQuantity) &&

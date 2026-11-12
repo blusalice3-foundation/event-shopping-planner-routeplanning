@@ -1,3 +1,7 @@
+import {
+  createSheetIdentityFingerprint,
+  isSheetIdentityFingerprint,
+} from "../../utils/sheetIdentity";
 import { recordEntry } from "../../utils/ownRecord";
 import type { EventMetadata, ShoppingItem } from "../../types/item";
 
@@ -175,10 +179,11 @@ export function compareSpreadsheetSourceIdentities(
 export function getExactImportItemKey(
   item: ShoppingItem | ImportedShoppingItem,
 ): string {
-  const catalogPrice =
-    item.catalogPrice === undefined ? item.price : item.catalogPrice;
-  const sheetRemarks =
-    item.sheetRemarks === undefined ? item.remarks : item.sheetRemarks;
+  const sourceValueIdentity = isSheetIdentityFingerprint(
+    item.sheetIdentityFingerprint,
+  )
+    ? item.sheetIdentityFingerprint
+    : createSheetIdentityFingerprint(item.price, item.remarks);
 
   return JSON.stringify([
     item.circle,
@@ -186,9 +191,8 @@ export function getExactImportItemKey(
     item.block,
     item.number,
     item.title,
-    catalogPrice,
+    sourceValueIdentity,
     item.quantity,
-    sheetRemarks,
     item.url || null,
   ]);
 }

@@ -1,3 +1,4 @@
+import { isSheetIdentityFingerprint } from "../../utils/sheetIdentity";
 import type { ShoppingItem } from "../../types/item";
 import type { SheetItem } from "./updateDiff";
 import { getItemKey, getItemKeyWithoutTitle } from "../../utils/itemComparison";
@@ -11,8 +12,7 @@ export type SheetIdentityChoices = Readonly<Record<string, string>>;
 type SheetMatchGroup = { current: ShoppingItem[]; rows: number[] };
 
 // URL is editable in item details, so it cannot establish sheet provenance.
-const signature = (item: SheetItem) =>
-  JSON.stringify([item.catalogPrice, item.sheetRemarks]);
+const signature = (item: SheetItem) => item.sheetIdentityFingerprint!;
 
 // Keep whitespace rescue local to updates; persisted identity/location values stay intact.
 const trimmedKey = (item: ShoppingItem | SheetItem, includeTitle: boolean) =>
@@ -44,15 +44,10 @@ export function matchSheetItems(
       group.current.every(
         (item) =>
           item.source === "spreadsheet" &&
-          item.sheetIdentityVerified === true &&
-          item.catalogPrice !== undefined &&
-          item.sheetRemarks !== undefined,
+          isSheetIdentityFingerprint(item.sheetIdentityFingerprint),
       ) &&
-      group.rows.every(
-        (row) =>
-          incoming[row].sheetIdentityVerified === true &&
-          incoming[row].catalogPrice !== undefined &&
-          incoming[row].sheetRemarks !== undefined,
+      group.rows.every((row) =>
+        isSheetIdentityFingerprint(incoming[row].sheetIdentityFingerprint),
       );
     if (verifiedGroup) {
       const oldSignatures = new Map<string, ShoppingItem[]>();

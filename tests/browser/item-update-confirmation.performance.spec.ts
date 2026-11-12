@@ -1,3 +1,4 @@
+import { createSheetIdentityFingerprint } from "../../src/utils/sheetIdentity";
 import { readBrowserEventLists } from "./shopping-transfer-persisted-store";
 import { expect, test, type Page } from "@playwright/test";
 import { summarizePerformanceSamples } from "./performance-summary";
@@ -61,10 +62,12 @@ function fixture(count: number, scenario: Scenario) {
     );
     item.title =
       scenario === "collision-title" ? (a ? "旧A" : "旧B") : `新刊${index}`;
-    item.catalogPrice = a ? 500 : 700;
+    item.sheetIdentityFingerprint = createSheetIdentityFingerprint(
+      a ? 500 : 700,
+      "シート備考",
+    );
     item.price = 900 + index;
     item.remarks = `利用者メモ${index}`;
-    item.sheetRemarks = "シート備考";
     item.purchaseStatus = a ? "Purchased" : "LimitedPurchase";
     if (!a) item.limitedPurchasedQuantity = 1;
   }
@@ -84,12 +87,15 @@ function fixture(count: number, scenario: Scenario) {
           ? "旧A"
           : "新A"
         : item.title,
-    catalogPrice:
+    price:
       scenario === "collision-title"
         ? index % 2 === 0
           ? 700
           : 500
-        : item.catalogPrice,
+        : index % 2 === 0
+          ? 500
+          : 700,
+    remarks: "シート備考",
     quantity: scenario === "collision-title" && index % 2 !== 0 ? 4 : 3,
   }));
   const rows =
@@ -108,11 +114,11 @@ function fixture(count: number, scenario: Scenario) {
       item.block,
       item.number,
       item.title,
-      String(item.catalogPrice),
+      String(item.price),
     ].forEach((value, index) => {
       cells[12 + index] = value;
     });
-    cells[22] = item.sheetRemarks!;
+    cells[22] = item.remarks;
     cells[26] = String(item.quantity);
     return cells;
   });
@@ -502,8 +508,8 @@ for (const count of [150, 500])
                 purchaseStatus: original.purchaseStatus,
                 quantity:
                   scenario === "collision-title" && index % 2 === 0 ? 4 : 3,
-                price: original.price,
-                remarks: original.remarks,
+                price: index % 2 === 0 ? 500 : 700,
+                remarks: "シート備考",
                 title:
                   scenario === "collision-title"
                     ? index % 2 === 0

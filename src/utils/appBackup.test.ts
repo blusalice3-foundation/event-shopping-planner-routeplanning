@@ -1,3 +1,4 @@
+import { createSheetIdentityFingerprint } from "./sheetIdentity";
 import { describe, expect, it } from "vitest";
 import type { LegacySnapshot as AppData } from "../features/consistency/domain/migration";
 import type { AppBackupEventSettings } from "./appBackup";
@@ -39,11 +40,13 @@ const makeAppData = (): AppData => ({
         number: "01a",
         title: "新刊",
         price: 1000,
-        catalogPrice: 1200,
         purchaseStatus: "None",
         quantity: 1,
         remarks: "ユーザー登録",
-        sheetRemarks: "シート備考",
+        sheetIdentityFingerprint: createSheetIdentityFingerprint(
+          1200,
+          "シート備考",
+        ),
         url: "https://example.com/item-1",
         priorityLevel: "priority",
         protectionLevel: "deletable",
@@ -210,6 +213,51 @@ const asRecord = (value: unknown): Record<string, unknown> =>
 const asArray = (value: unknown): unknown[] => value as unknown[];
 
 describe("appBackup", () => {
+  it.each([false, true])(
+    "restores old sheet fields without overwriting locked on-site values (verified=%s)",
+    (verified) => {
+      const source = createLegacyBackup(makeAppData());
+      const item = asRecord(source.data.eventLists[EVENT_NAME][0]);
+      delete item.sheetIdentityFingerprint;
+      Object.assign(item, {
+        price: 900,
+        remarks: "ユーザー登録・現場メモ",
+        purchaseStatus: "Purchased",
+        protectionLevel: "deletable",
+        catalogPrice: 0,
+        sheetRemarks: "エラーが発生しました",
+        sheetIdentityVerified: verified,
+      });
+      const result = parseAppBackup(source);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error(result.errors.join("\n"));
+      const restored = asRecord(result.data.eventLists[EVENT_NAME][0]);
+      expect(restored).toMatchObject({
+        price: 900,
+        remarks: "ユーザー登録・現場メモ",
+        purchaseStatus: "Purchased",
+        protectionLevel: "deletable",
+      });
+      expect(restored.sheetIdentityFingerprint).toBe(
+        verified
+          ? createSheetIdentityFingerprint(0, "エラーが発生しました")
+          : undefined,
+      );
+      for (const key of [
+        "catalogPrice",
+        "sheetRemarks",
+        "sheetIdentityVerified",
+      ])
+        expect(restored).not.toHaveProperty(key);
+      const serialized = serializeAppBackup(result.backup);
+      expect(serialized).not.toContain('"catalogPrice"');
+      expect(serialized).not.toContain('"sheetRemarks"');
+      expect(serialized).not.toContain('"sheetIdentityVerified"');
+      expect(parseAppBackup(serialized).data).toEqual(result.data);
+      expect(item.catalogPrice).toBe(0);
+      expect(item.sheetRemarks).toBe("エラーが発生しました");
+    },
+  );
   it("creates, serializes, and parses a complete versioned backup", () => {
     const data = makeAppData();
     const eventSettings = {
@@ -368,9 +416,11 @@ describe("appBackup", () => {
   it.each([
     {
       section: "eventLists",
-      expectedPath: `data.eventLists.${EVENT_NAME}[0].catalogPrice`,
+      expectedPath: `data.eventLists.${EVENT_NAME}[0].sheetIdentityFingerprint`,
       corrupt: (backup: ReturnType<typeof createLegacyBackup>) => {
-        asRecord(backup.data.eventLists[EVENT_NAME][0]).catalogPrice = "1200";
+        asRecord(
+          backup.data.eventLists[EVENT_NAME][0],
+        ).sheetIdentityFingerprint = "invalid";
       },
     },
     {
@@ -468,9 +518,8 @@ describe("appBackup", () => {
   );
 
   it.each([
-    ["catalogPrice", "1000"],
+    ["sheetIdentityFingerprint", "invalid"],
     ["limitedPurchasedQuantity", 0],
-    ["sheetRemarks", 123],
     ["url", false],
     ["priorityLevel", "urgent"],
     ["protectionLevel", "locked"],
@@ -500,9 +549,8 @@ describe("appBackup", () => {
     const backup = clone(createLegacyBackup(makeAppData()));
     const item = asRecord(backup.data.eventLists[EVENT_NAME][0]);
     [
-      "catalogPrice",
+      "sheetIdentityFingerprint",
       "limitedPurchasedQuantity",
-      "sheetRemarks",
       "url",
       "priorityLevel",
       "protectionLevel",

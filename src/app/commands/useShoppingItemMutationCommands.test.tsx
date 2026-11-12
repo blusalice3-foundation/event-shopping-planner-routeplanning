@@ -1311,8 +1311,8 @@ describe("useShoppingItemMutationCommands", () => {
     expect(harness.stores.eventLists["new-event"][0]).toMatchObject({
       source: "spreadsheet",
       protectionLevel: "none",
-      catalogPrice: null,
-      sheetRemarks: "",
+      price: null,
+      remarks: "",
     });
     expect(harness.stores.dayModes["new-event"]).toEqual({
       "day-1": "edit",

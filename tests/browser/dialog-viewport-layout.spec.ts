@@ -35,7 +35,6 @@ function backup(name = eventName, mode = "execute") {
     quantity: 2,
     purchaseStatus: "None",
     remarks: "エラーが発生しました",
-    sheetRemarks: "シートの備考\n変更せず保持する説明\n最後の備考",
   }));
   return {
     kind: "event-shopping-planner-backup",

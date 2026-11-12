@@ -775,9 +775,9 @@ test.describe("sheet optional URL real-browser route measurements", () => {
                   (
                     (await stored(page, "eventLists")) as Record<
                       string,
-                      Array<{ catalogPrice: number }>
+                      Array<{ price: number }>
                     >
-                  )[SHEET_EVENT][0].catalogPrice,
+                  )[SHEET_EVENT][0].price,
                 ).toBe(501);
               } else if (route.startsWith("restore")) {
                 const bytes =

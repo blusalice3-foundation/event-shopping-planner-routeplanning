@@ -443,21 +443,6 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
               />
             </div>
           </div>
-          {item.catalogPrice !== undefined && (
-            <div className="rounded-md border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/50">
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                カタログ価格（シート・読み取り専用）
-              </p>
-              <output
-                aria-label="カタログ価格（シート・読み取り専用）"
-                className="mt-1 block font-semibold text-slate-800 dark:text-slate-100"
-              >
-                {item.catalogPrice === null
-                  ? "未定"
-                  : `${item.catalogPrice.toLocaleString()}円`}
-              </output>
-            </div>
-          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
             <div className="relative">
               <label htmlFor={fieldIds.price} className={labelClass}>
@@ -694,19 +679,6 @@ export const ItemEditDialog: React.FC<ItemEditDialogProps> = ({
                   </span>
                 </div>
               )}
-            </div>
-          )}
-          {item.sheetRemarks?.trim() && (
-            <div className="rounded-md border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/50">
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                シート備考（読み取り専用）
-              </p>
-              <p
-                aria-label="シート備考（読み取り専用）"
-                className="mt-1 whitespace-pre-wrap text-sm text-slate-800 dark:text-slate-100"
-              >
-                {item.sheetRemarks}
-              </p>
             </div>
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

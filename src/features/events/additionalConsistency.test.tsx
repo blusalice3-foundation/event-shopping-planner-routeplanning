@@ -35,28 +35,22 @@ const item = (
   number: "01a",
   title: "本A",
   price: 500,
-  catalogPrice: 500,
   quantity: 1,
   remarks: "",
-  sheetRemarks: "",
   purchaseStatus: "None",
   source: "spreadsheet",
-  sheetIdentityVerified: true,
   protectionLevel: "none",
   ...fields,
 });
 const sheet = (fields: Partial<SheetItem> = {}): SheetItem => ({
-  sheetIdentityVerified: true,
   circle: "サークルA",
   eventDate: "1日目",
   block: "A",
   number: "01a",
   title: "本A",
   price: 500,
-  catalogPrice: 500,
   quantity: 1,
   remarks: "",
-  sheetRemarks: "",
   ...fields,
 });
 const csvEscape = (text: string) =>
@@ -112,7 +106,7 @@ describe("additional consistency audit: spreadsheet row identity", () => {
     const current = [item("a", { remarks: "本Aへのメモ" })];
     const diff = createEventUpdateDiff(current, [
       sheet(),
-      sheet({ title: "本B", price: 700, catalogPrice: 700 }),
+      sheet({ title: "本B", price: 700 }),
     ]);
     const result = applyEventUpdateToItems(current, diff);
     expect(result.map((record) => record.title)).toEqual(["本A", "本B"]);
@@ -215,7 +209,7 @@ describe("additional consistency audit: arrow and drag reorder", () => {
 });
 
 it("CSV layout must preserve distinct records with the same identity fields and different prices", () => {
-  const incoming = [sheet(), sheet({ price: 700, catalogPrice: 700 })];
+  const incoming = [sheet(), sheet({ price: 700 })];
   const kept = excludeExactDuplicateItems(incoming, []).items;
   expect(kept).toHaveLength(2);
   const created = buildBulkAddItems(kept, { source: "app" });

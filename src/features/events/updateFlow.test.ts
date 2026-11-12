@@ -34,7 +34,6 @@ const diff = (overrides: Partial<EventUpdateDiff> = {}): EventUpdateDiff => ({
   itemsToDelete: [],
   itemsToUpdate: [],
   itemsToAdd: [],
-  appFieldSyncCandidates: [],
   protectedFromDelete: 0,
   protectedFromUpdate: 0,
   quantityWarnings: [],
@@ -303,7 +302,6 @@ it.each<unknown>([
         ...item("keep", "確認中"),
         assignedTo: undefined,
         postponed: false,
-        catalogPrice: null,
         futureOptionalField,
       },
     ];

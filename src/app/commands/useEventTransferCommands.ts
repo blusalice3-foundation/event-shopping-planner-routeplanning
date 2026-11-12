@@ -64,7 +64,6 @@ import {
 import {
   buildImportCompletionMessage,
   buildLargeXlsxRestoreDeferredNotice,
-  buildLegacySheetFieldFallbackMessage,
   resolveEventListTab,
   shouldDeferLargeXlsxRestoreOpen,
 } from "../../features/events/uiOrchestration";
@@ -686,15 +685,6 @@ export const useEventTransferCommands = ({
             );
           }
         }
-        const legacySheetFieldFallbackMessage =
-          buildLegacySheetFieldFallbackMessage({
-            fallbacks: result.legacySheetFieldFallbacks || [],
-            skippedItemIds,
-          });
-        if (legacySheetFieldFallbackMessage) {
-          fallbackResolutionMessages.push(legacySheetFieldFallbackMessage);
-        }
-
         const resolvedResult = {
           ...result,
           items: resolvedItems,

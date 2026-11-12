@@ -1,3 +1,4 @@
+import { createSheetIdentityFingerprint } from "../../utils/sheetIdentity";
 import { CsvInputError, parseCsvRecords } from "../../utils/csvRecords";
 import type { SheetItem } from "./updateDiff";
 import { normalizeImportedUrl } from "./pasteColumns";
@@ -219,12 +220,17 @@ export function readEventCsv(csvText: string, options?: EventCsvOptions) {
       number: cell(offset + 3),
       title: cell(offset + 4),
       price,
-      catalogPrice: price,
       quantity: 1,
       rawQuantity: cell(format === "google" ? 26 : 6),
       remarks,
-      sheetRemarks: remarks,
-      ...(format === "google" ? { sheetIdentityVerified: true } : {}),
+      ...(format === "google"
+        ? {
+            sheetIdentityFingerprint: createSheetIdentityFingerprint(
+              price,
+              remarks,
+            ),
+          }
+        : {}),
       ...(url ? { url } : {}),
     };
     const columnType =

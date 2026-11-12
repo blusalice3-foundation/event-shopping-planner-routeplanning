@@ -1,3 +1,4 @@
+import { createSheetIdentityFingerprint } from "./sheetIdentity";
 import { describe, expect, it } from "vitest";
 import {
   normalizeItemOptionalFields,
@@ -12,6 +13,79 @@ import {
 import { validateSnapshotStructure } from "./appBackup";
 
 describe("item optional field normalization", () => {
+  it("removes sheet provenance when an item becomes app-owned", () => {
+    const item = Object.freeze({ ...sheetItem(), source: "app" });
+    const result = normalizeItemOptionalFields(item);
+    expect(result).not.toHaveProperty("sheetIdentityFingerprint");
+    expect(result).toMatchObject({
+      price: item.price,
+      remarks: item.remarks,
+      source: "app",
+    });
+    expect(item.sheetIdentityFingerprint).toBeDefined();
+    expect(normalizeItemOptionalFields(result)).toBe(result);
+  });
+  it("migrates verified historical provenance without replacing on-site values or mutating input", () => {
+    const item = Object.freeze({
+      ...sheetItem(),
+      price: 900,
+      remarks: "ユーザー登録・現場追記",
+      protectionLevel: "deletable",
+      sheetIdentityFingerprint: undefined,
+      catalogPrice: 500,
+      sheetRemarks: "エラーが発生しました",
+      sheetIdentityVerified: true,
+    });
+    const result = normalizeItemOptionalFields(item);
+    expect(result).toMatchObject({
+      price: 900,
+      remarks: "ユーザー登録・現場追記",
+      protectionLevel: "deletable",
+      sheetIdentityFingerprint: createSheetIdentityFingerprint(
+        500,
+        "エラーが発生しました",
+      ),
+    });
+    for (const key of ["catalogPrice", "sheetRemarks", "sheetIdentityVerified"])
+      expect(Object.prototype.hasOwnProperty.call(result, key)).toBe(false);
+    expect(item.catalogPrice).toBe(500);
+    expect(normalizeItemOptionalFields(result)).toBe(result);
+  });
+  it.each([
+    { sheetIdentityVerified: false },
+    { sheetIdentityVerified: undefined },
+    { sheetIdentityVerified: true, catalogPrice: undefined },
+    { sheetIdentityVerified: true, catalogPrice: Number.NaN },
+    { sheetIdentityVerified: true, sheetRemarks: 123 },
+    { sheetIdentityVerified: true, source: "app" },
+  ])(
+    "never invents identity evidence from unverified legacy or editable values: %j",
+    (overrides) => {
+      const result = normalizeItemOptionalFields({
+        ...sheetItem(),
+        sheetIdentityFingerprint: undefined,
+        catalogPrice: null,
+        sheetRemarks: "",
+        ...overrides,
+      });
+      expect(result).not.toHaveProperty("sheetIdentityFingerprint");
+      expect(result).not.toHaveProperty("catalogPrice");
+      expect(result).not.toHaveProperty("sheetRemarks");
+      expect(result).not.toHaveProperty("sheetIdentityVerified");
+      expect(result.price).toBe(500);
+      expect(result.remarks).toBe("ユーザー登録");
+    },
+  );
+  it("keeps existing opaque provenance when discarding stale historical fields", () => {
+    const item = sheetItem();
+    const result = normalizeItemOptionalFields({
+      ...item,
+      catalogPrice: 900,
+      sheetRemarks: "古い残存値",
+      sheetIdentityVerified: true,
+    });
+    expect(result.sheetIdentityFingerprint).toBe(item.sheetIdentityFingerprint);
+  });
   it.each([undefined, "", " 　\t\r\n"])(
     "omits an empty URL (%s) without changing the input",
     (url) => {
@@ -37,10 +111,8 @@ describe("item optional field normalization", () => {
   it("only removes known undefined keys and preserves all other values and future fields", () => {
     const item = {
       ...sheetItem(),
-      catalogPrice: null,
       limitedPurchasedQuantity: undefined,
-      sheetRemarks: "",
-      sheetIdentityVerified: undefined,
+      sheetIdentityFingerprint: undefined,
       priorityLevel: undefined,
       protectionLevel: undefined,
       source: undefined,
@@ -54,8 +126,6 @@ describe("item optional field normalization", () => {
     };
     const result = normalizeItemOptionalFields(item);
     expect(result).toMatchObject({
-      catalogPrice: null,
-      sheetRemarks: "",
       assignedTo: "",
       orderIndex: 0,
       postponed: false,
@@ -64,7 +134,7 @@ describe("item optional field normalization", () => {
     expect(Object.prototype.hasOwnProperty.call(result, "id")).toBe(true);
     for (const key of [
       "limitedPurchasedQuantity",
-      "sheetIdentityVerified",
+      "sheetIdentityFingerprint",
       "priorityLevel",
       "protectionLevel",
       "source",
@@ -120,10 +190,8 @@ describe("item optional field normalization", () => {
   it("skips optional-key checks for 500 reordered or deleted unchanged items, including replay", () => {
     let optionalKeyChecks = 0;
     const optionalKeys = new Set([
-      "catalogPrice",
       "limitedPurchasedQuantity",
-      "sheetRemarks",
-      "sheetIdentityVerified",
+      "sheetIdentityFingerprint",
       "url",
       "priorityLevel",
       "protectionLevel",

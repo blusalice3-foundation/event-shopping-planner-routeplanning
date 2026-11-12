@@ -1,3 +1,4 @@
+import { normalizeItemsOptionalFields } from "../../utils/itemOptionalFields";
 import { createHash } from "node:crypto";
 import ExcelJS from "exceljs";
 import { describe, expect, it, vi } from "vitest";
@@ -62,6 +63,7 @@ const ITEM_OPTIONAL_KEYS = [
   "catalogPrice",
   "limitedPurchasedQuantity",
   "sheetRemarks",
+  "sheetIdentityFingerprint",
   "url",
   "priorityLevel",
   "protectionLevel",
@@ -288,6 +290,7 @@ describe("bound XLSX Worker engine", () => {
       delete item.manualHallId;
       if (item.url === "") delete item.url;
     }
+    expected.value.items = normalizeItemsOptionalFields(expected.value.items);
     // This export omits related information, so legacy manual choices are not exported.
     expect(result.kind).toBe("event-import");
     if (result.kind !== "event-import") throw new Error("wrong result kind");

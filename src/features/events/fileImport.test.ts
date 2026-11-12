@@ -1,3 +1,4 @@
+import { createSheetIdentityFingerprint } from "../../utils/sheetIdentity";
 import {
   createDayConsistency,
   createEventConsistency,
@@ -122,10 +123,11 @@ describe("buildXlsxEventRestoreSource", () => {
         purchaseStatus: "LimitedPurchase" as const,
         quantity: 3,
         limitedPurchasedQuantity: 1,
-        catalogPrice: 1200,
-        sheetRemarks: "ユーザー登録",
-        sheetIdentityVerified: true,
         remarks: "エラーが発生しました",
+        sheetIdentityFingerprint: createSheetIdentityFingerprint(
+          1200,
+          "ユーザー登録",
+        ),
         priorityLevel: "highest" as const,
         protectionLevel: "deletable" as const,
         source: "spreadsheet" as const,

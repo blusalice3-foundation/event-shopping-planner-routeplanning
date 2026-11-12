@@ -1,4 +1,8 @@
 import { normalizeItemsOptionalFields } from "../../utils/itemOptionalFields";
+import {
+  createSheetIdentityFingerprint,
+  isSheetIdentityFingerprint,
+} from "../../utils/sheetIdentity";
 import { recordEntry, setOwnValue } from "../../utils/ownRecord";
 import {
   createWorkbookSource,
@@ -41,12 +45,10 @@ import type {
   EventWorkbookAdditionalData,
   EventWorkbookImportResult,
   ItemFallbackWarning,
-  LegacySheetFieldFallback,
 } from "../domain/eventWorkbook";
 export type {
   EventWorkbookImportResult as ImportResult,
   ItemFallbackWarning,
-  LegacySheetFieldFallback,
 } from "../domain/eventWorkbook";
 
 // エクスポートデータの型
@@ -69,7 +71,7 @@ export interface ExportData {
   blockDetectionSettings?: BlockDetectionSettings;
 }
 
-const EXPORT_VERSION = "3.0";
+const EXPORT_VERSION = "3.1";
 const WORKBOOK_CREATOR = "Event Shopping Planner";
 const TEXT_METADATA_KEYS = new Set([
   "eventName",
@@ -265,9 +267,12 @@ export async function exportToXlsx(
     { header: "追加元", key: "source", width: 12 },
     { header: "手動ホール", key: "manualHallId", width: 20 },
     { header: "限数実購入数", key: "limitedPurchasedQuantity", width: 14 },
-    { header: "カタログ価格", key: "catalogPrice", width: 14 },
-    { header: "シート備考", key: "sheetRemarks", width: 30 },
-    { header: "シート照合根拠", key: "sheetIdentityEvidence", width: 18 },
+    {
+      header: "シート照合識別子",
+      key: "sheetIdentityFingerprint",
+      width: 24,
+      hidden: true,
+    },
   ];
 
   // データ
@@ -292,25 +297,11 @@ export async function exportToXlsx(
         item.purchaseStatus === "LimitedPurchase"
           ? (item.limitedPurchasedQuantity ?? "")
           : "",
-      // Keep legacy fallback values, but never turn them into identity evidence.
-      sheetIdentityEvidence:
-        item.sheetIdentityVerified === true &&
-        item.catalogPrice !== undefined &&
-        item.sheetRemarks !== undefined
-          ? "verified"
-          : "unverified",
-      catalogPrice:
-        item.catalogPrice !== undefined
-          ? (item.catalogPrice ?? "")
-          : item.source === "spreadsheet"
-            ? (item.price ?? "")
-            : "",
-      sheetRemarks:
-        item.sheetRemarks !== undefined
-          ? item.sheetRemarks
-          : item.source === "spreadsheet"
-            ? item.remarks
-            : "",
+      sheetIdentityFingerprint:
+        item.source === "spreadsheet" &&
+        isSheetIdentityFingerprint(item.sheetIdentityFingerprint)
+          ? item.sheetIdentityFingerprint
+          : "",
     });
   });
 
@@ -543,10 +534,10 @@ export async function importFromXlsx(
     }
 
     const version = metaMap.get("version");
-    const isNew = version === EXPORT_VERSION;
+    const isNew = version === "3.0" || version === EXPORT_VERSION;
     if (
       version !== undefined &&
-      !["1.0", "2.0", "2.1", "2.2", EXPORT_VERSION].includes(version)
+      !["1.0", "2.0", "2.1", "2.2", "3.0", EXPORT_VERSION].includes(version)
     )
       throw new Error("未対応のExcelバージョンです。");
     if (
@@ -606,7 +597,9 @@ export async function importFromXlsx(
     });
     const catalogPriceColumn = itemHeaderColumns.get("カタログ価格");
     const sheetRemarksColumn = itemHeaderColumns.get("シート備考");
-    const sheetIdentityColumn = itemHeaderColumns.get("シート照合根拠");
+    const legacySheetIdentityColumn = itemHeaderColumns.get("シート照合根拠");
+    const sheetIdentityFingerprintColumn =
+      itemHeaderColumns.get("シート照合識別子");
     const hasCatalogPriceColumn = catalogPriceColumn !== undefined;
     const hasSheetRemarksColumn = sheetRemarksColumn !== undefined;
     if (hasCatalogPriceColumn !== hasSheetRemarksColumn) {
@@ -617,19 +610,25 @@ export async function importFromXlsx(
     }
     const hasSheetDerivedColumns =
       hasCatalogPriceColumn && hasSheetRemarksColumn;
-    if (
-      !hasSheetDerivedColumns &&
-      ["2.2", EXPORT_VERSION].includes(metaMap.get("version") ?? "")
-    ) {
+    if (!hasSheetDerivedColumns && ["2.2", "3.0"].includes(version ?? "")) {
       result.errors.push(
         `バージョン${metaMap.get("version")}の完全版に「カタログ価格」または「シート備考」がありません。ファイルが破損している可能性があります。`,
       );
       return result;
     }
 
+    if (
+      version === EXPORT_VERSION &&
+      sheetIdentityFingerprintColumn === undefined
+    ) {
+      result.errors.push(
+        "バージョン3.1の完全版にシート照合識別子がありません。ファイルが破損している可能性があります。",
+      );
+      return result;
+    }
+
     const items: ShoppingItem[] = [];
     const itemFallbackWarnings: ItemFallbackWarning[] = [];
-    const legacySheetFieldFallbacks: LegacySheetFieldFallback[] = [];
     const validPurchaseStatuses = new Set<string>(
       PurchaseStatuses as readonly string[],
     );
@@ -748,46 +747,39 @@ export async function importFromXlsx(
         }
       }
 
-      let catalogPrice: number | null | undefined;
-      let sheetRemarks: string | undefined;
-      let usedLegacySheetFieldFallback = false;
-      // Older exports could fill these columns from editable price/notes.
-      // Missing or unknown evidence must remain unverified across JSON/XLSX.
-      let sheetIdentityVerified =
-        source === "spreadsheet" &&
-        hasSheetDerivedColumns &&
-        sheetIdentityColumn !== undefined &&
-        row.getCell(sheetIdentityColumn).value === "verified";
-      if (hasSheetDerivedColumns) {
-        const parsedCatalogPrice = parseFiniteNumberCell(
-          row.getCell(catalogPriceColumn!).value,
-        );
-        if (parsedCatalogPrice.kind === "value") {
-          catalogPrice = parsedCatalogPrice.value;
-        } else if (parsedCatalogPrice.kind === "empty") {
-          if (source === "spreadsheet") {
-            catalogPrice = null;
-          }
-        } else {
-          sheetIdentityVerified = false;
-          rowReasons.push(
-            `カタログ価格「${parsedCatalogPrice.raw}」は不正のため空値で補完しました`,
+      let sheetIdentityFingerprint: string | undefined;
+      if (source === "spreadsheet") {
+        if (sheetIdentityFingerprintColumn !== undefined) {
+          const fingerprint = parseTextCell(
+            row.getCell(sheetIdentityFingerprintColumn).value,
           );
-          if (source === "spreadsheet") {
-            catalogPrice = null;
+          if (isSheetIdentityFingerprint(fingerprint)) {
+            sheetIdentityFingerprint = fingerprint;
+          } else if (fingerprint !== "") {
+            rowReasons.push(
+              "シート照合識別子が不正のため照合情報を破棄しました",
+            );
+          }
+        } else if (
+          hasSheetDerivedColumns &&
+          legacySheetIdentityColumn !== undefined &&
+          row.getCell(legacySheetIdentityColumn).value === "verified"
+        ) {
+          // Only explicitly verified legacy sheet values are identity evidence.
+          // Editable price/remarks remain untouched, including for locked items.
+          const legacyPrice = parseFiniteNumberCell(
+            row.getCell(catalogPriceColumn!).value,
+          );
+          const legacyRemarks = parseTextCell(
+            row.getCell(sheetRemarksColumn!).value,
+          );
+          if (legacyPrice.kind !== "invalid" && legacyRemarks !== undefined) {
+            sheetIdentityFingerprint = createSheetIdentityFingerprint(
+              legacyPrice.kind === "value" ? legacyPrice.value : null,
+              legacyRemarks,
+            );
           }
         }
-
-        if (parseTextCell(row.getCell(sheetRemarksColumn!).value) === undefined)
-          sheetIdentityVerified = false;
-        const parsedSheetRemarks = textCell(sheetRemarksColumn!);
-        if (source === "spreadsheet" || parsedSheetRemarks !== "") {
-          sheetRemarks = parsedSheetRemarks;
-        }
-      } else if (source === "spreadsheet") {
-        catalogPrice = price;
-        sheetRemarks = remarks;
-        usedLegacySheetFieldFallback = true;
       }
 
       // 手動ホールIDを取得（列15、後方互換: 古いファイルは空）
@@ -838,12 +830,10 @@ export async function importFromXlsx(
         number,
         title,
         price,
-        ...(catalogPrice !== undefined ? { catalogPrice } : {}),
         quantity,
         purchaseStatus,
         remarks,
-        ...(sheetRemarks !== undefined ? { sheetRemarks } : {}),
-        ...(sheetIdentityVerified ? { sheetIdentityVerified: true } : {}),
+        ...(sheetIdentityFingerprint ? { sheetIdentityFingerprint } : {}),
         url,
         ...(priorityLevel !== undefined ? { priorityLevel } : {}),
         ...(protectionLevel !== undefined ? { protectionLevel } : {}),
@@ -856,12 +846,6 @@ export async function importFromXlsx(
 
       if (item.circle || item.title) {
         items.push(item);
-        if (usedLegacySheetFieldFallback) {
-          legacySheetFieldFallbacks.push({
-            itemId: item.id,
-            rowNumber,
-          });
-        }
         if (rowReasons.length > 0) {
           itemFallbackWarnings.push({
             itemId: item.id,
@@ -875,9 +859,6 @@ export async function importFromXlsx(
     result.items = items;
     if (itemFallbackWarnings.length > 0) {
       result.itemFallbackWarnings = itemFallbackWarnings;
-    }
-    if (legacySheetFieldFallbacks.length > 0) {
-      result.legacySheetFieldFallbacks = legacySheetFieldFallbacks;
     }
 
     // 2. メタデータシートを読み込み

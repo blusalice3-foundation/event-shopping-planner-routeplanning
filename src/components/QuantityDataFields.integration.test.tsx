@@ -23,31 +23,37 @@ const optionValues = (select: HTMLElement): string[] =>
     (option) => option.value,
   );
 
+const cardProps = () => ({
+  onUpdate: vi.fn(),
+  isStriped: false,
+  onEditRequest: vi.fn(),
+  onDeleteRequest: vi.fn(),
+  isSelected: false,
+  onSelectItem: vi.fn(),
+  skipLimitedPurchaseForSingleQuantity: true,
+});
+
 describe("quantity and synchronized field presentation", () => {
-  it("separates sheet values from user-editable values in the item editor", () => {
+  it("shows synchronized price and remarks in editable fields without duplicate sheet fields", () => {
     render(
       <ItemEditDialog
-        item={{
-          ...baseItem,
-          catalogPrice: 1200,
-          sheetRemarks: "新刊セットあり",
-        }}
+        item={{ ...baseItem, price: 1200, remarks: "新刊セットあり" }}
         onSave={vi.fn()}
         onClose={vi.fn()}
       />,
     );
 
     expect(
-      screen.getByLabelText("カタログ価格（シート・読み取り専用）"),
-    ).toHaveTextContent("1,200円");
+      screen.queryByLabelText("カタログ価格（シート・読み取り専用）"),
+    ).not.toBeInTheDocument();
     expect(
-      screen.getByLabelText("シート備考（読み取り専用）"),
-    ).toHaveTextContent("新刊セットあり");
+      screen.queryByLabelText("シート備考（読み取り専用）"),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "購入金額" })).toHaveValue(
-      "900",
+      "1200",
     );
     expect(screen.getByRole("textbox", { name: "利用者メモ" })).toHaveValue(
-      "当日確認",
+      "新刊セットあり",
     );
 
     const quantity = screen.getByRole("combobox", { name: "数量" });
@@ -61,7 +67,7 @@ describe("quantity and synchronized field presentation", () => {
     ).toBeInTheDocument();
   });
 
-  it("does not invent duplicate sheet fields for legacy items", () => {
+  it("keeps existing editable values without duplicate sheet fields", () => {
     render(
       <ItemEditDialog item={baseItem} onSave={vi.fn()} onClose={vi.fn()} />,
     );
@@ -80,45 +86,68 @@ describe("quantity and synchronized field presentation", () => {
     );
   });
 
-  it("shows source data read-only and keeps purchase data editable on cards", () => {
-    const onUpdate = vi.fn();
-    render(
+  it("shows synchronized fields once and reflects zero prices and empty remarks on cards", () => {
+    const props = cardProps();
+    const { rerender } = render(
       <ShoppingItemCard
-        item={{
-          ...baseItem,
-          catalogPrice: 1200,
-          sheetRemarks: "シート側の備考",
-        }}
-        onUpdate={onUpdate}
-        isStriped={false}
-        onEditRequest={vi.fn()}
-        onDeleteRequest={vi.fn()}
-        isSelected={false}
-        onSelectItem={vi.fn()}
-        skipLimitedPurchaseForSingleQuantity
+        {...props}
+        item={{ ...baseItem, price: 1200, remarks: "シート側の備考" }}
       />,
     );
 
-    const sheetInfo = screen.getByLabelText("シート情報");
-    expect(sheetInfo).toHaveTextContent("カタログ価格: 1,200円");
-    expect(sheetInfo).toHaveTextContent("シート備考: シート側の備考");
+    expect(screen.queryByLabelText("シート情報")).not.toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "利用者メモ" })).toHaveValue(
-      "当日確認",
+      "シート側の備考",
     );
     expect(screen.getByRole("combobox", { name: "購入金額" })).toHaveValue(
-      "900",
+      "1200",
     );
 
-    const quantity = screen.getByRole("combobox", {
-      name: "購入予定数量",
-    });
+    const quantity = screen.getByRole("combobox", { name: "購入予定数量" });
     expect(quantity).toHaveValue("25");
     expect(optionValues(quantity)).toContain("20");
     fireEvent.change(quantity, { target: { value: "20" } });
-    expect(onUpdate).toHaveBeenCalledWith(
+    expect(props.onUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ quantity: 20 }),
     );
+
+    rerender(
+      <ShoppingItemCard
+        {...props}
+        item={{ ...baseItem, price: 0, remarks: "" }}
+      />,
+    );
+    expect(screen.getByRole("combobox", { name: "購入金額" })).toHaveValue("0");
+    expect(screen.getByRole("textbox", { name: "利用者メモ" })).toHaveValue("");
   });
+
+  it.each([
+    ["full", "完全保護"],
+    ["deletable", "削除のみ許可"],
+  ] as const)(
+    "keeps the %s lock visible and permits direct memo edits",
+    (protectionLevel, label) => {
+      const props = cardProps();
+      render(
+        <ShoppingItemCard
+          {...props}
+          item={{ ...baseItem, purchaseStatus: "Purchased", protectionLevel }}
+        />,
+      );
+
+      expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
+      expect(screen.queryByLabelText("シート情報")).not.toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: "購入金額" })).toHaveValue(
+        "900",
+      );
+      fireEvent.change(screen.getByRole("textbox", { name: "利用者メモ" }), {
+        target: { value: "現地で追記" },
+      });
+      expect(props.onUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ remarks: "現地で追記", protectionLevel }),
+      );
+    },
+  );
 
   it("uses the same 1-to-20 range in the focus-mode add dialog", () => {
     render(

@@ -1,3 +1,4 @@
+import { isSheetIdentityFingerprint } from "./sheetIdentity";
 import { normalizeSnapshotItemOptionalFields } from "./itemOptionalFields";
 import { setOwnValue } from "./ownRecord";
 import { recordEntry } from "../utils/ownRecord";
@@ -553,7 +554,6 @@ const validateItem = (
     }
   }
 
-  validateOptionalFiniteNumber(item, "catalogPrice", path, errors, true);
   const limitedPurchasedQuantity = validateOptionalInteger(
     item,
     "limitedPurchasedQuantity",
@@ -586,8 +586,17 @@ const validateItem = (
       );
     }
   }
-  validateOptionalString(item, "sheetRemarks", path, errors);
-  validateOptionalBoolean(item, "sheetIdentityVerified", path, errors);
+  if (
+    hasOwn(item, "sheetIdentityFingerprint") &&
+    (!isSheetIdentityFingerprint(item.sheetIdentityFingerprint) ||
+      item.source !== "spreadsheet")
+  ) {
+    addError(
+      errors,
+      `${path}.sheetIdentityFingerprint`,
+      "シート照合識別子の形式または追加元が不正です",
+    );
+  }
   validateOptionalString(item, "url", path, errors);
   validateOptionalEnum(item, "priorityLevel", path, errors, PRIORITY_LEVEL_SET);
   validateOptionalEnum(

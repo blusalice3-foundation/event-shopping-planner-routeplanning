@@ -4,7 +4,6 @@ import React, { useEffect, useId, useState } from "react";
 import type { EventUpdateApplyOptions } from "../features/events/updateApply";
 import type { SpreadsheetSource } from "../features/events/updateFlow";
 import type {
-  AppFieldSyncCandidate,
   LimitedPurchaseQuantityConflict,
   PendingPurchasedQuantityChange,
   QuantitySyncWarning,
@@ -29,7 +28,6 @@ interface UpdateConfirmationModalProps {
   quantityWarnings?: QuantitySyncWarning[];
   pendingPurchasedQuantityChanges?: PendingPurchasedQuantityChange[];
   limitedPurchaseQuantityConflicts?: LimitedPurchaseQuantityConflict[];
-  appFieldSyncCandidates?: AppFieldSyncCandidate[];
   nextSource?: SpreadsheetSource;
   onConfirm: (options: EventUpdateApplyOptions) => void;
   onCancel: () => void;
@@ -105,6 +103,9 @@ const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = ({
           >
             アイテム更新の確認
           </h2>
+          <p className="mb-4 text-sm text-slate-700 dark:text-slate-300">
+            保護なしの品目の購入金額・利用者メモは、空欄を含めてシートの価格・備考で上書きされます。ロック中の品目は維持します。
+          </p>
 
           {eventName && (
             <p className="mb-3 text-sm text-slate-700 dark:text-slate-300">
@@ -353,8 +354,6 @@ const UpdateConfirmationModal: React.FC<UpdateConfirmationModalProps> = ({
                 onConfirm({
                   applyPurchasedQuantityChanges,
                   acceptCsvExclusions: true,
-                  priceSyncMode: "preserve",
-                  remarksSyncMode: "preserve",
                 })
               }
               className="px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"

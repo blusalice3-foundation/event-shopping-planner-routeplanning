@@ -27,12 +27,7 @@ export type SheetItem = Pick<
   | "quantity"
   | "remarks"
 > &
-  Partial<
-    Pick<
-      ShoppingItem,
-      "catalogPrice" | "sheetRemarks" | "sheetIdentityVerified" | "url"
-    >
-  > & {
+  Partial<Pick<ShoppingItem, "sheetIdentityFingerprint" | "url">> & {
     /**
      * CSV に記載された数量。空欄・不正値を差分作成時まで失わないために保持する。
      * 既存の呼び出し元は quantity だけを渡してもよい。
@@ -77,30 +72,6 @@ export type LimitedPurchaseQuantityConflict = {
   actualPurchasedQuantity: number;
 };
 
-export type AppFieldSyncMode = "preserve" | "fill-empty" | "overwrite";
-
-export type AppFieldSyncCandidate = {
-  itemId: string;
-  circle: string;
-  eventDate: string;
-  block: string;
-  number: string;
-  title: string;
-  purchaseStatus: PurchaseStatus;
-  price?: {
-    currentValue: number | null;
-    previousSheetValue: number | null;
-    sheetValue: number | null;
-    canFillEmpty: boolean;
-  };
-  remarks?: {
-    currentValue: string;
-    previousSheetValue: string;
-    sheetValue: string;
-    canFillEmpty: boolean;
-  };
-};
-
 export type EventUpdateDiff = {
   sheetImport?: SheetImportDiagnostics;
   /** Incoming rows suppressed only because they would add a complete duplicate. */
@@ -115,7 +86,6 @@ export type EventUpdateDiff = {
   itemsToDelete: ShoppingItem[];
   itemsToUpdate: ShoppingItem[];
   itemsToAdd: SpreadsheetItemToAdd[];
-  appFieldSyncCandidates: AppFieldSyncCandidate[];
   protectedFromDelete: number;
   protectedFromUpdate: number;
   quantityWarnings: QuantitySyncWarning[];
@@ -138,74 +108,6 @@ function isPurchasedStatus(
 
 function getSheetQuantityInput(item: SheetItem): SheetQuantityInput {
   return item.rawQuantity === undefined ? item.quantity : item.rawQuantity;
-}
-
-function getCatalogPrice(item: SheetItem): number | null {
-  return item.catalogPrice === undefined ? item.price : item.catalogPrice;
-}
-
-function getSheetRemarks(item: SheetItem): string {
-  return item.sheetRemarks === undefined ? item.remarks : item.sheetRemarks;
-}
-
-function getPreviousCatalogPrice(item: ShoppingItem): number | null {
-  return item.catalogPrice === undefined ? item.price : item.catalogPrice;
-}
-
-function getPreviousSheetRemarks(item: ShoppingItem): string {
-  return item.sheetRemarks === undefined ? item.remarks : item.sheetRemarks;
-}
-
-function isBlank(value: string): boolean {
-  return value.trim() === "";
-}
-
-function createAppFieldSyncCandidate(
-  existing: ShoppingItem,
-  sheetItem: SheetItem,
-): AppFieldSyncCandidate | undefined {
-  const sheetPrice = getCatalogPrice(sheetItem);
-  const previousSheetPrice = getPreviousCatalogPrice(existing);
-  const sheetRemarks = getSheetRemarks(sheetItem);
-  const previousSheetRemarks = getPreviousSheetRemarks(existing);
-  const price =
-    existing.price !== sheetPrice
-      ? {
-          currentValue: existing.price,
-          previousSheetValue: previousSheetPrice,
-          sheetValue: sheetPrice,
-          canFillEmpty:
-            existing.price === null &&
-            previousSheetPrice === null &&
-            sheetPrice !== null,
-        }
-      : undefined;
-  const remarks =
-    existing.remarks !== sheetRemarks
-      ? {
-          currentValue: existing.remarks,
-          previousSheetValue: previousSheetRemarks,
-          sheetValue: sheetRemarks,
-          canFillEmpty:
-            isBlank(existing.remarks) &&
-            isBlank(previousSheetRemarks) &&
-            !isBlank(sheetRemarks),
-        }
-      : undefined;
-
-  if (!price && !remarks) return undefined;
-
-  return {
-    itemId: existing.id,
-    circle: existing.circle,
-    eventDate: existing.eventDate,
-    block: existing.block,
-    number: existing.number,
-    title: sheetItem.title,
-    purchaseStatus: existing.purchaseStatus,
-    ...(price ? { price } : {}),
-    ...(remarks ? { remarks } : {}),
-  };
 }
 
 function toQuantityWarning(
@@ -232,15 +134,10 @@ function toItemToAdd(item: SheetItem, quantity: number): SpreadsheetItemToAdd {
     block: item.block,
     number: item.number,
     title: item.title,
-    // 新規品目では、既存画面との表示互換のため利用者欄にも初期値を入れる。
     price: item.price,
-    catalogPrice: getCatalogPrice(item),
     quantity,
     remarks: item.remarks,
-    sheetRemarks: getSheetRemarks(item),
-    ...(item.sheetIdentityVerified === true
-      ? { sheetIdentityVerified: true }
-      : {}),
+    sheetIdentityFingerprint: item.sheetIdentityFingerprint,
     url: item.url,
   });
 }
@@ -251,9 +148,9 @@ function sourceManagedFieldsChanged(
 ): boolean {
   return (
     current.title !== next.title ||
-    current.catalogPrice !== next.catalogPrice ||
-    current.sheetRemarks !== next.sheetRemarks ||
-    current.sheetIdentityVerified !== next.sheetIdentityVerified ||
+    current.price !== next.price ||
+    current.remarks !== next.remarks ||
+    current.sheetIdentityFingerprint !== next.sheetIdentityFingerprint ||
     current.url !== next.url
   );
 }
@@ -323,7 +220,6 @@ export function createEventUpdateDiff(
   const itemsToDelete: ShoppingItem[] = [];
   const itemsToUpdate: ShoppingItem[] = [];
   const itemsToAdd: SpreadsheetItemToAdd[] = [];
-  const appFieldSyncCandidates: AppFieldSyncCandidate[] = [];
   const quantityWarnings: QuantitySyncWarning[] = [];
   const pendingPurchasedQuantityChanges: PendingPurchasedQuantityChange[] = [];
   const limitedPurchaseQuantityConflicts: LimitedPurchaseQuantityConflict[] =
@@ -386,10 +282,9 @@ export function createEventUpdateDiff(
     const nextItem: ShoppingItem = normalizeItemOptionalFields({
       ...existing,
       title: sheetItem.title,
-      catalogPrice: getCatalogPrice(sheetItem),
-      sheetRemarks: getSheetRemarks(sheetItem),
-      sheetIdentityVerified:
-        sheetItem.sheetIdentityVerified === true ? true : undefined,
+      price: sheetItem.price,
+      remarks: sheetItem.remarks,
+      sheetIdentityFingerprint: sheetItem.sheetIdentityFingerprint,
       url: sheetItem.url,
     });
     const nextSheetQuantity =
@@ -408,16 +303,6 @@ export function createEventUpdateDiff(
         protectedFromUpdate++;
       }
       return;
-    }
-
-    if (existing.source === "spreadsheet") {
-      const appFieldSyncCandidate = createAppFieldSyncCandidate(
-        existing,
-        sheetItem,
-      );
-      if (appFieldSyncCandidate) {
-        appFieldSyncCandidates.push(appFieldSyncCandidate);
-      }
     }
 
     if (hasQuantityChange && isPurchasedStatus(existing.purchaseStatus)) {
@@ -486,7 +371,6 @@ export function createEventUpdateDiff(
     itemsToDelete,
     itemsToUpdate,
     itemsToAdd,
-    appFieldSyncCandidates,
     protectedFromDelete,
     protectedFromUpdate,
     quantityWarnings,

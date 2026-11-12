@@ -66,20 +66,28 @@ async function exportBook() {
   return book;
 }
 
-function makeLegacy(book: ExcelJS.Workbook) {
-  book.removeWorksheet("関連設定");
+function makeLegacy(book: ExcelJS.Workbook, version: "2.2" | "3.0" = "2.2") {
+  const sheet = book.getWorksheet("アイテムデータ")!;
+  sheet.spliceColumns(17, 1);
+  sheet.getCell(1, 17).value = "カタログ価格";
+  sheet.getCell(1, 18).value = "シート備考";
+  items.forEach((item, index) => {
+    sheet.getCell(index + 2, 17).value = item.price;
+    sheet.getCell(index + 2, 18).value = item.remarks;
+  });
+  if (version === "2.2") book.removeWorksheet("関連設定");
   const meta = book.getWorksheet("メタデータ")!;
   for (let row = meta.rowCount; row >= 2; row--) {
     const key = meta.getCell(row, 1).value;
-    if (key === "version") meta.getCell(row, 2).value = "2.2";
+    if (key === "version") meta.getCell(row, 2).value = version;
     if (
-      key === "contentManifest" ||
-      key === "consistencySchemaVersion" ||
-      key === "eventMetadata"
+      version === "2.2" &&
+      (key === "contentManifest" ||
+        key === "consistencySchemaVersion" ||
+        key === "eventMetadata")
     )
       meta.spliceRows(row, 1);
   }
-  book.getWorksheet("アイテムデータ")!.spliceColumns(19, 1);
 }
 
 async function importBook(book: ExcelJS.Workbook) {
@@ -111,12 +119,12 @@ function auxiliarySheets(book: ExcelJS.Workbook) {
 }
 
 describe("layout text through production ZIP preflight, Worker and JSON restore", () => {
-  for (const version of ["2.2", "3.0"]) {
+  for (const version of ["2.2", "3.0", "3.1"] as const) {
     it.each(Object.entries(textEncodings))(
       `${version} preserves %s layout text, execution order and item references`,
       async (_name, encode) => {
         const book = await exportBook();
-        if (version === "2.2") makeLegacy(book);
+        if (version !== "3.1") makeLegacy(book, version);
         book.getWorksheet("配置情報")!.eachRow((row, index) => {
           if (index === 1) return;
           const isMode = row.getCell(1).value === "dayModes";

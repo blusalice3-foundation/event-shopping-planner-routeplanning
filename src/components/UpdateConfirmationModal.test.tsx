@@ -4,7 +4,6 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import {
   createEventUpdateDiff,
-  type AppFieldSyncCandidate,
   type PendingPurchasedQuantityChange,
   type SheetItem,
 } from "../features/events/updateDiff";
@@ -91,8 +90,6 @@ describe("UpdateConfirmationModal quantity confirmation", () => {
     expect(onConfirm).toHaveBeenLastCalledWith({
       applyPurchasedQuantityChanges: false,
       acceptCsvExclusions: true,
-      priceSyncMode: "preserve",
-      remarksSyncMode: "preserve",
     });
 
     fireEvent.click(
@@ -104,8 +101,6 @@ describe("UpdateConfirmationModal quantity confirmation", () => {
     expect(onConfirm).toHaveBeenLastCalledWith({
       applyPurchasedQuantityChanges: true,
       acceptCsvExclusions: true,
-      priceSyncMode: "preserve",
-      remarksSyncMode: "preserve",
     });
   });
 
@@ -269,54 +264,11 @@ const makeItem = (index: number): ShoppingItem => ({
   number: String(index + 1),
   title: `旧刊${index}`,
   price: 900,
-  catalogPrice: 500,
   quantity: 2,
   purchaseStatus: "None",
   remarks: "利用者の記録",
-  sheetRemarks: "旧シート備考",
-  sheetIdentityVerified: true,
   source: "spreadsheet",
 });
-
-const fillEmptyCandidate: AppFieldSyncCandidate = {
-  itemId: "item-fill",
-  circle: "サークル補完",
-  eventDate: "1日目",
-  block: "東A",
-  number: "01a",
-  title: "新刊セット",
-  purchaseStatus: "None",
-  price: {
-    currentValue: null,
-    previousSheetValue: null,
-    sheetValue: 1200,
-    canFillEmpty: true,
-  },
-  remarks: {
-    currentValue: "",
-    previousSheetValue: "",
-    sheetValue: "会場限定特典付き",
-    canFillEmpty: true,
-  },
-};
-
-const purchasedOverwriteCandidate: AppFieldSyncCandidate = {
-  ...fillEmptyCandidate,
-  itemId: "item-purchased",
-  purchaseStatus: "Purchased",
-  price: {
-    currentValue: 900,
-    previousSheetValue: 1000,
-    sheetValue: null,
-    canFillEmpty: false,
-  },
-  remarks: {
-    currentValue: "利用者の記録",
-    previousSheetValue: "旧シート備考",
-    sheetValue: "",
-    canFillEmpty: false,
-  },
-};
 
 describe("UpdateConfirmationModal automatic update review", () => {
   it("500件のタイトル変更でも個別選択なしで1回の更新操作を受け付ける", () => {
@@ -347,8 +299,6 @@ describe("UpdateConfirmationModal automatic update review", () => {
     expect(onConfirm).toHaveBeenCalledWith({
       applyPurchasedQuantityChanges: false,
       acceptCsvExclusions: true,
-      priceSyncMode: "preserve",
-      remarksSyncMode: "preserve",
     });
   });
 
@@ -376,34 +326,25 @@ describe("UpdateConfirmationModal automatic update review", () => {
     expect(screen.getByText("更新から保護: 3件")).toBeInTheDocument();
   });
 
-  it.each([
-    ["空欄補完候補", fillEmptyCandidate],
-    ["購入済みの上書き候補", purchasedOverwriteCandidate],
-  ] as const)(
-    "%sがあっても価格・利用者メモの選択を出さず維持を送る",
-    (_, candidate) => {
-      const onConfirm = vi.fn();
-      render(
-        <UpdateConfirmationModal
-          {...commonProps}
-          appFieldSyncCandidates={[candidate]}
-          onConfirm={onConfirm}
-        />,
-      );
+  it("価格・利用者メモの空欄を含む上書きとロック中の維持を説明する", () => {
+    const onConfirm = vi.fn();
+    render(<UpdateConfirmationModal {...commonProps} onConfirm={onConfirm} />);
 
-      expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
-      expect(
-        screen.queryByText("利用者欄へのシート値反映"),
-      ).not.toBeInTheDocument();
-      fireEvent.click(screen.getByRole("button", { name: "更新を実行" }));
-      expect(onConfirm).toHaveBeenCalledWith({
-        applyPurchasedQuantityChanges: false,
-        acceptCsvExclusions: true,
-        priceSyncMode: "preserve",
-        remarksSyncMode: "preserve",
-      });
-    },
-  );
+    expect(
+      screen.getByText(
+        "保護なしの品目の購入金額・利用者メモは、空欄を含めてシートの価格・備考で上書きされます。ロック中の品目は維持します。",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+    expect(
+      screen.queryByText("利用者欄へのシート値反映"),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "更新を実行" }));
+    expect(onConfirm).toHaveBeenCalledWith({
+      applyPurchasedQuantityChanges: false,
+      acceptCsvExclusions: true,
+    });
+  });
 
   it("CSVの除外結果と警告を表示し、追加チェックなしで更新できる", () => {
     const onConfirm = vi.fn();

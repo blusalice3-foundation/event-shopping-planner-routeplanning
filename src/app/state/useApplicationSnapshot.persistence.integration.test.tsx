@@ -663,7 +663,7 @@ it.each(["queued", "cas-retry", "confirmation", "manual-retry"] as const)(
       eventLists: {
         [EVENT]: baseline.eventLists[EVENT].map((item) => ({
           ...item,
-          sheetRemarks: "取得したAの値",
+          remarks: "取得したAの値",
         })),
       },
     };
@@ -710,7 +710,7 @@ it.each(["queued", "cas-retry", "confirmation", "manual-retry"] as const)(
       expectedItems = {
         [EVENT]: baseline.eventLists[EVENT].map((item) => ({
           ...item,
-          sheetRemarks: "保存済みの別の変更",
+          remarks: "保存済みの別の変更",
         })),
       };
       await act(() =>

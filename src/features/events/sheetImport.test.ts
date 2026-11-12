@@ -1,3 +1,4 @@
+import { createSheetIdentityFingerprint } from "../../utils/sheetIdentity";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ShoppingItem } from "../../types/item";
 import {
@@ -220,9 +221,11 @@ describe("parseEventItemsFromCsv quantity", () => {
     expect(parsed.every((item) => item.quantity === 1)).toBe(true);
     expect(parsed[0]).toMatchObject({
       price: 1200,
-      catalogPrice: 1200,
       remarks: "シート備考",
-      sheetRemarks: "シート備考",
+      sheetIdentityFingerprint: createSheetIdentityFingerprint(
+        1200,
+        "シート備考",
+      ),
       url: "https://example.com",
     });
   });

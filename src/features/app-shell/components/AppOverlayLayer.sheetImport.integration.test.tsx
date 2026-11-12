@@ -143,8 +143,6 @@ describe("sheet diagnostics through the actual overlay and update modal", () => 
     ).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         acceptCsvExclusions: true,
-        priceSyncMode: "preserve",
-        remarksSyncMode: "preserve",
       }),
     );
   });
@@ -156,7 +154,7 @@ describe("sheet diagnostics through the actual overlay and update modal", () => 
     const previous = {
       ...sheetItem(1),
       title: "旧刊",
-      sheetIdentityVerified: false,
+      sheetIdentityFingerprint: undefined,
     };
     const diff = await buildEventUpdateDiffFromSpreadsheet([previous], {
       url: "https://docs.google.com/spreadsheets/d/test/edit",

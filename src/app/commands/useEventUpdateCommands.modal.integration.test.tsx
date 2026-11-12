@@ -20,6 +20,7 @@ import type {
 } from "../../features/events/updateFlow";
 import { sheetCsv, sheetItem } from "../../test/sheetImportOptionalUrlFixtures";
 import { useEventUpdateCommands } from "./useEventUpdateCommands";
+import { createSheetIdentityFingerprint } from "../../utils/sheetIdentity";
 
 const EVENT = "確認対象";
 const SOURCE = {
@@ -37,7 +38,7 @@ afterEach(() => {
 });
 
 it.each(["items-only", "source-switch"] as const)(
-  "%s: automatically matches items and preserves quantity choices through a failed pending save",
+  "%s: atomically retries synchronized price and remarks while preserving quantity choices through a failed pending save",
   async (kind) => {
     const items = ["A", "B"].map((id) => ({
       ...sheetItem(0),
@@ -45,6 +46,7 @@ it.each(["items-only", "source-switch"] as const)(
       title: `旧品目${id}`,
       purchaseStatus: "Purchased" as const,
       quantity: 2,
+      price: 900,
       remarks: `${id}の購入記録`,
       futureOptionalField: { preserved: true },
     }));
@@ -61,6 +63,7 @@ it.each(["items-only", "source-switch"] as const)(
         executeModeItems: { [EVENT]: { "1日目": ["A", "B"] } },
       },
     };
+    const beforeSave = structuredClone(durable.current);
     const cells = Array<string>(27).fill("");
     Object.assign(cells, {
       12: items[0].circle,
@@ -198,11 +201,26 @@ it.each(["items-only", "source-switch"] as const)(
       kind === "items-only" ? "更新を実行" : "更新元を切り替えて更新";
     fireEvent.click(screen.getByRole("button", { name: confirmName }));
     await waitFor(() => expect(commit).toHaveBeenCalledOnce());
-    expect(
-      commit.mock.calls[0][0].eventLists[EVENT].find(({ id }) => id === "A")
-        ?.quantity,
-    ).toBe(4);
+    const firstAttemptItem = commit.mock.calls[0][0].eventLists[EVENT].find(
+      ({ id }) => id === "A",
+    );
+    const synchronizedFields = {
+      price: 500,
+      remarks: "シート備考",
+      sheetIdentityFingerprint: createSheetIdentityFingerprint(
+        500,
+        "シート備考",
+      ),
+    };
+    expect(firstAttemptItem).toMatchObject({
+      ...synchronizedFields,
+      quantity: 4,
+      title: "更新された品目",
+    });
+    expect(firstAttemptItem).not.toHaveProperty("catalogPrice");
+    expect(firstAttemptItem).not.toHaveProperty("sheetRemarks");
     expect(durable.current.eventLists[EVENT]).toBe(items);
+    expect(durable.current).toEqual(beforeSave);
 
     expect(
       screen.getByRole("checkbox", {
@@ -222,6 +240,7 @@ it.each(["items-only", "source-switch"] as const)(
       );
     });
     expect(durable.current.eventLists[EVENT]).toBe(items);
+    expect(durable.current).toEqual(beforeSave);
     expect(notify).toHaveBeenCalledWith(
       "イベントを保存できませんでした。確認内容を保持しています。もう一度更新してください。",
     );
@@ -251,9 +270,12 @@ it.each(["items-only", "source-switch"] as const)(
     ).toMatchObject({
       quantity: 2,
       title: "更新された品目",
-      remarks: "Aの購入記録",
+      ...synchronizedFields,
       futureOptionalField: { preserved: true },
     });
+    expect(commit.mock.calls[1][0].eventLists[EVENT]).toEqual(
+      durable.current.eventLists[EVENT],
+    );
     expect(durable.current.eventMetadata[EVENT].spreadsheetUrl).toBe(
       kind === "items-only" ? SOURCE.url : NEXT_SOURCE.url,
     );

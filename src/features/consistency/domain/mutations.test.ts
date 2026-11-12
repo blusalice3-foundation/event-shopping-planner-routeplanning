@@ -1,3 +1,4 @@
+import { createSheetIdentityFingerprint } from "../../../utils/sheetIdentity";
 import { describe, expect, it, vi } from "vitest";
 import type {
   ApplicationShoppingMove,
@@ -1923,11 +1924,12 @@ function freezeShoppingPlanInput(value: unknown): void {
 function shoppingPlanSnapshot(count = 4): PersistenceSnapshot {
   const source = snapshot();
   const optional = {
-    catalogPrice: 1200,
     limitedPurchasedQuantity: 2,
     purchaseStatus: "LimitedPurchase" as const,
-    sheetRemarks: "最新のシート備考",
-    sheetIdentityVerified: true,
+    sheetIdentityFingerprint: createSheetIdentityFingerprint(
+      1200,
+      "最新の備考",
+    ),
     url: "https://example.test/current",
     priorityLevel: "highest" as const,
     protectionLevel: "full" as const,
