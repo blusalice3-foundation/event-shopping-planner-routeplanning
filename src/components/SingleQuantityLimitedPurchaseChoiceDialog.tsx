@@ -95,7 +95,7 @@ function OpenSingleQuantityLimitedPurchaseChoiceDialog({
       aria-modal="true"
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
-      className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 p-4"
+      className="esp-dialog-viewport fixed inset-0 z-[90] flex items-center justify-center bg-black/50"
       onClick={stopDialogEvent}
       onMouseDown={stopDialogEvent}
       onMouseUp={stopDialogEvent}
@@ -108,7 +108,7 @@ function OpenSingleQuantityLimitedPurchaseChoiceDialog({
       onKeyDown={handleDialogKeyDown}
     >
       <div
-        className="w-full max-w-sm rounded-lg bg-white p-4 shadow-xl dark:bg-slate-800"
+        className="esp-dialog-panel w-full max-w-sm rounded-lg bg-white p-4 shadow-xl dark:bg-slate-800"
         onClick={stopDialogEvent}
         onMouseDown={stopDialogEvent}
         onMouseUp={stopDialogEvent}
@@ -127,7 +127,7 @@ function OpenSingleQuantityLimitedPurchaseChoiceDialog({
         >
           数量が1のため、通常は購入済として扱います。限数にしますか？
         </p>
-        <div className="mt-4 flex flex-wrap justify-end gap-2">
+        <div className="esp-dialog-actions mt-4 flex justify-end gap-2">
           <button
             ref={cancelButtonRef}
             type="button"

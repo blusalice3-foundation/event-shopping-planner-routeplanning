@@ -1,6 +1,7 @@
 @import "./tailwind.css";
 @import "./global.css";
 @import "./runtime-layout.css";
+@import "./dialog-layout.css";
 @import "../utils/bodyScrollLock.css";
 @import "../components/ShoppingItemCard.css";
 @import "../components/ShoppingList.css";

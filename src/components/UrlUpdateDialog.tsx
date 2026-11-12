@@ -1,3 +1,4 @@
+import { useDialogViewport } from "../hooks/useDialogViewport";
 import { useModalDialogBehavior } from "../hooks/useModalDialogBehavior";
 import React, { useId, useState } from "react";
 
@@ -14,6 +15,7 @@ const UrlUpdateDialog: React.FC<UrlUpdateDialogProps> = ({
   onConfirm,
   onCancel,
 }) => {
+  const viewportRef = useDialogViewport(true);
   const titleId = useId();
   const { dialogRef, onDialogKeyDown } = useModalDialogBehavior({
     isOpen: true,
@@ -31,7 +33,10 @@ const UrlUpdateDialog: React.FC<UrlUpdateDialogProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div
+      ref={viewportRef}
+      className="esp-dialog-viewport fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+    >
       <div
         ref={dialogRef}
         role="dialog"
@@ -39,7 +44,7 @@ const UrlUpdateDialog: React.FC<UrlUpdateDialogProps> = ({
         aria-labelledby={titleId}
         tabIndex={-1}
         onKeyDown={onDialogKeyDown}
-        className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4"
+        className="esp-dialog-panel bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full"
       >
         <div className="p-6">
           <h2
@@ -88,7 +93,7 @@ const UrlUpdateDialog: React.FC<UrlUpdateDialogProps> = ({
               </p>
             </div>
 
-            <div className="flex justify-end space-x-3 pt-4">
+            <div className="esp-dialog-actions flex justify-end gap-3 pt-4">
               <button
                 type="button"
                 onClick={onCancel}

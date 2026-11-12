@@ -323,6 +323,10 @@ const FocusMode: React.FC<FocusModeProps> = ({
     setPostEventDistributionCheckContext,
   ] = useState<PostEventDistributionCheckContext | null>(null);
   const activeLimitedBulkFlowTokenRef = useRef<symbol | null>(null);
+  const limitedBulkPostEventTargetsRef = useRef<{
+    flowToken: symbol;
+    targets: ShoppingItem[];
+  } | null>(null);
   const limitedBulkNotificationOwnerRef =
     useRef<LimitedBulkNotificationOwner | null>(null);
   const [completionSubView, setCompletionSubView] = useState<
@@ -702,6 +706,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
   const closeNavigatorEditableSurfaces = useCallback(() => {
     clearAutoAdvanceTimer();
     activeLimitedBulkFlowTokenRef.current = null;
+    limitedBulkPostEventTargetsRef.current = null;
     setBulkLimitedMessage(null);
     setPhaseChangeDialog({
       isOpen: false,
@@ -871,6 +876,10 @@ const FocusMode: React.FC<FocusModeProps> = ({
   const completionPrevLeftPx =
     16 + (activeNavigatorRailSide === "left" ? railClearance : 0);
   const focusViewportHeight = `calc((100dvh - ${measuredFooterHeight + FOOTER_OVERLAP_GUARD_PX}px - var(--app-header-height) - var(--app-main-content-padding)) / ${safeAppScale})`;
+  useEffect(() => {
+    closeNavigatorEditableSurfaces();
+  }, [closeNavigatorEditableSurfaces, focusNavigatorRegistrationId]);
+
   useEffect(() => {
     if (!isInspecting) return;
     closeNavigatorEditableSurfaces();
@@ -1158,6 +1167,10 @@ const FocusMode: React.FC<FocusModeProps> = ({
   );
   const handlePostEventDistributionCheckApply = useCallback(
     (answers: { itemId: string; answer: PostEventDistributionAnswer }[]) => {
+      if (!postEventDistributionCheckEnabled) {
+        setPostEventDistributionCheckContext(null);
+        return;
+      }
       if (isInspecting) {
         setPostEventDistributionCheckContext(null);
         setNotification("内容確認中は事後通販・頒布可否を記録できません");
@@ -1183,10 +1196,17 @@ const FocusMode: React.FC<FocusModeProps> = ({
     [
       isInspecting,
       getLatestItemById,
+      postEventDistributionCheckEnabled,
       setNotification,
       updateItemsWithDeferredCleanup,
     ],
   );
+  useEffect(() => {
+    if (postEventDistributionCheckEnabled) return;
+    limitedBulkPostEventTargetsRef.current = null;
+    setPostEventDistributionCheckContext(null);
+  }, [postEventDistributionCheckEnabled]);
+
   const handlePostEventDistributionCheckCancel = useCallback(() => {
     setPostEventDistributionCheckContext(null);
   }, []);
@@ -2146,6 +2166,17 @@ const FocusMode: React.FC<FocusModeProps> = ({
       skipped: number,
       options: { flowToken?: symbol; preserveStartNotification?: boolean } = {},
     ) => {
+      const activeFlowToken = activeLimitedBulkFlowTokenRef.current;
+      if (
+        options.flowToken !== undefined &&
+        options.flowToken !== activeFlowToken
+      )
+        return;
+      const pending = limitedBulkPostEventTargetsRef.current;
+      const postEventTargets =
+        pending?.flowToken === activeFlowToken
+          ? pending.targets.filter(isCurrentLimitedTarget)
+          : [];
       setLimitedBulkDialogContext((current) =>
         options.flowToken !== undefined &&
         current?.flowToken !== options.flowToken
@@ -2157,7 +2188,9 @@ const FocusMode: React.FC<FocusModeProps> = ({
         activeLimitedBulkFlowTokenRef.current === options.flowToken
       ) {
         activeLimitedBulkFlowTokenRef.current = null;
+        limitedBulkPostEventTargetsRef.current = null;
       }
+      openPostEventDistributionCheck("bulk", postEventTargets);
       if (skipped > 0) {
         showLimitedBulkMessage(
           `対象外になったアイテムを${skipped}件スキップしました`,
@@ -2169,7 +2202,12 @@ const FocusMode: React.FC<FocusModeProps> = ({
         clearLimitedBulkMessage(options.flowToken);
       }
     },
-    [clearLimitedBulkMessage, showLimitedBulkMessage],
+    [
+      clearLimitedBulkMessage,
+      isCurrentLimitedTarget,
+      openPostEventDistributionCheck,
+      showLimitedBulkMessage,
+    ],
   );
 
   const advanceLimitedBulkToNextTarget = useCallback(
@@ -2182,6 +2220,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
     ) => {
       if (isInspecting) {
         activeLimitedBulkFlowTokenRef.current = null;
+        limitedBulkPostEventTargetsRef.current = null;
         setLimitedBulkDialogContext(null);
         return;
       }
@@ -2233,6 +2272,15 @@ const FocusMode: React.FC<FocusModeProps> = ({
       const guard = limitedTargetsRef.current.get(baseItem.id)?.guard;
       if (guard) rememberItemUpdateGuard(updated, guard);
       updateItemWithDeferredCleanup(updated);
+      const pending = limitedBulkPostEventTargetsRef.current;
+      if (
+        postEventDistributionCheckEnabled &&
+        baseItem.purchaseStatus !== "LimitedPurchase" &&
+        updated.purchaseStatus === "LimitedPurchase" &&
+        pending?.flowToken === activeLimitedBulkFlowTokenRef.current
+      ) {
+        pending.targets.push(updated);
+      }
       return true;
     },
   );
@@ -2255,6 +2303,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
         targetItems.every((item) => item.purchaseStatus === "LimitedPurchase");
       const flowToken = Symbol("limited-bulk-flow");
       activeLimitedBulkFlowTokenRef.current = flowToken;
+      limitedBulkPostEventTargetsRef.current = { flowToken, targets: [] };
 
       if (allAlreadyLimited) {
         setLimitedBulkDialogContext(null);
@@ -2262,6 +2311,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
         if (missing.length === 0) {
           showLimitedBulkMessage("解除対象の限数未入力はありません", flowToken);
           activeLimitedBulkFlowTokenRef.current = null;
+          limitedBulkPostEventTargetsRef.current = null;
           return;
         }
         if (
@@ -2270,6 +2320,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
           )
         ) {
           activeLimitedBulkFlowTokenRef.current = null;
+          limitedBulkPostEventTargetsRef.current = null;
           return;
         }
         clearLimitedBulkMessage();
@@ -2279,6 +2330,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
           );
         });
         activeLimitedBulkFlowTokenRef.current = null;
+        limitedBulkPostEventTargetsRef.current = null;
         return;
       }
 
@@ -2296,10 +2348,12 @@ const FocusMode: React.FC<FocusModeProps> = ({
             flowToken,
           );
           activeLimitedBulkFlowTokenRef.current = null;
+          limitedBulkPostEventTargetsRef.current = null;
           return;
         }
         showLimitedBulkMessage("変更対象のアイテムはありません", flowToken);
         activeLimitedBulkFlowTokenRef.current = null;
+        limitedBulkPostEventTargetsRef.current = null;
         return;
       }
       if (singleQuantitySkippedCount > 0) {
@@ -2334,6 +2388,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
     (result: LimitedPurchaseDialogResult) => {
       if (isInspecting) {
         activeLimitedBulkFlowTokenRef.current = null;
+        limitedBulkPostEventTargetsRef.current = null;
         setLimitedBulkDialogContext(null);
         setNotification("内容確認中は限数を保存できません");
         return;
@@ -3117,7 +3172,10 @@ const FocusMode: React.FC<FocusModeProps> = ({
   );
   const postEventDistributionCheckDialogJSX = (
     <PostEventDistributionCheckDialog
-      open={postEventDistributionCheckContext !== null}
+      open={
+        postEventDistributionCheckEnabled &&
+        postEventDistributionCheckContext !== null
+      }
       mode={postEventDistributionCheckContext?.mode ?? "single"}
       targets={postEventDistributionCheckContext?.targets ?? []}
       onCancel={handlePostEventDistributionCheckCancel}

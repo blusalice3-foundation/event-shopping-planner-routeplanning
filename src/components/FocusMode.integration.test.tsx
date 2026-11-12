@@ -511,6 +511,11 @@ describe("FocusMode limited purchase defer - integration", () => {
     fireEvent.click(
       await screen.findByRole("button", { name: "この商品を後で入力" }),
     );
+    fireEvent.click(
+      within(
+        await screen.findByRole("dialog", { name: "事後通販･頒布可否確認" }),
+      ).getByRole("button", { name: "キャンセル" }),
+    );
     clickNextVisitButton();
 
     expect(await screen.findByText("A-02A")).toBeInTheDocument();

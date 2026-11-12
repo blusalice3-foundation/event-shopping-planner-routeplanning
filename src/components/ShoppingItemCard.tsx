@@ -683,6 +683,12 @@ const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
       }
       if (guard) rememberItemUpdateGuard(updated, guard);
       commitItemUpdate(updated);
+      if (
+        baseItem.purchaseStatus !== "LimitedPurchase" &&
+        updated.purchaseStatus === "LimitedPurchase"
+      ) {
+        onPostEventDistributionCheckRequest?.(updated);
+      }
       return true;
     },
   );

@@ -1214,7 +1214,7 @@ const AppHeaderShell: React.FC<AppHeaderShellProps> = ({
                                 </span>
                                 <span className="block text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
                                   ON
-                                  にすると、売切へ変更した時に確認結果を備考へ記録できます
+                                  にすると、売切･限数へ変更した時に確認結果を備考へ記録できます
                                 </span>
                               </span>
                             </label>

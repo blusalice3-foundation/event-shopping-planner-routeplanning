@@ -55,7 +55,7 @@ export function SpaceNavigatorActionDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      className="esp-dialog-viewport fixed inset-0 z-[80] flex items-center justify-center bg-black/50 backdrop-blur-sm"
       role="presentation"
       onPointerDown={(event) => {
         event.stopPropagation();
@@ -67,7 +67,7 @@ export function SpaceNavigatorActionDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="space-navigator-action-title"
-        className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-800"
+        className="esp-dialog-panel w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-800"
       >
         <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-300">
           {entry.index + 1} / 選択中

@@ -137,6 +137,17 @@ describe("FocusMode real limited dialog interaction", () => {
       expect(
         screen.queryByRole("dialog", { name: "限数購入の数量" }),
       ).not.toBeInTheDocument();
+      if (kind === "limited" || kind === "defer") {
+        const checkDialog = await screen.findByRole("dialog", {
+          name: "事後通販･頒布可否確認",
+        });
+        expect(checkDialog).toContainElement(
+          document.activeElement as HTMLElement,
+        );
+        await user.click(
+          within(checkDialog).getByRole("button", { name: "キャンセル" }),
+        );
+      }
       expect(origin).toHaveFocus();
     },
   );

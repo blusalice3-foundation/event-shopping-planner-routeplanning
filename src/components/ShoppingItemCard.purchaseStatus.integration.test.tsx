@@ -174,6 +174,103 @@ describe("ShoppingItemCard purchase status control", () => {
     );
   });
 
+  it.each([
+    { mode: "cycle" as const, defer: false },
+    { mode: "radial" as const, defer: false },
+    { mode: "cycle" as const, defer: true },
+    { mode: "radial" as const, defer: true },
+  ])(
+    "requests post-event distribution after a new limited change ($mode, defer=$defer)",
+    ({ mode, defer }) => {
+      const onPostEventDistributionCheckRequest = vi.fn();
+      const { onUpdate } = renderCard({
+        purchaseStatusControlMode: mode,
+        item: { ...baseItem, purchaseStatus: "Late", quantity: 5 },
+        onPostEventDistributionCheckRequest,
+      });
+
+      fireEvent.click(getStatusButton());
+      if (mode === "radial") {
+        fireEvent.click(
+          screen.getByRole("radio", { name: "LimitedPurchaseに変更" }),
+        );
+      }
+      expect(onPostEventDistributionCheckRequest).not.toHaveBeenCalled();
+      const dialog = getLimitedDialog();
+      if (defer) {
+        fireEvent.click(
+          within(dialog).getByRole("button", { name: "この商品を後で入力" }),
+        );
+      } else {
+        fireEvent.change(
+          within(dialog).getByRole("textbox", { name: "実購入数" }),
+          { target: { value: "2" } },
+        );
+        fireEvent.click(within(dialog).getByRole("button", { name: "保存" }));
+      }
+
+      expect(onUpdate).toHaveBeenCalledTimes(1);
+      expect(
+        onPostEventDistributionCheckRequest,
+      ).toHaveBeenCalledExactlyOnceWith(onUpdate.mock.calls[0][0]);
+      expect(onUpdate.mock.calls[0][0]).toMatchObject({
+        purchaseStatus: "LimitedPurchase",
+        quantity: 5,
+        ...(defer ? {} : { limitedPurchasedQuantity: 2 }),
+      });
+      expect(
+        screen.queryByRole("dialog", { name: "限数購入の数量" }),
+      ).not.toBeInTheDocument();
+    },
+  );
+
+  it.each(["cancel", "purchased", "edit"] as const)(
+    "does not request post-event distribution for limited input outcome %s",
+    (outcome) => {
+      const onPostEventDistributionCheckRequest = vi.fn();
+      const { onUpdate } = renderCard({
+        item: {
+          ...baseItem,
+          purchaseStatus: outcome === "edit" ? "LimitedPurchase" : "Late",
+          quantity: 5,
+          ...(outcome === "edit" ? { limitedPurchasedQuantity: 1 } : {}),
+        },
+        onPostEventDistributionCheckRequest,
+      });
+      fireEvent.click(
+        outcome === "edit"
+          ? screen.getByRole("button", { name: "1/5" })
+          : getStatusButton(),
+      );
+      const dialog = getLimitedDialog();
+      if (outcome === "cancel") {
+        fireEvent.click(
+          within(dialog).getByRole("button", { name: "キャンセル" }),
+        );
+        expect(onUpdate).not.toHaveBeenCalled();
+      } else {
+        fireEvent.change(
+          within(dialog).getByRole("textbox", { name: "実購入数" }),
+          { target: { value: outcome === "purchased" ? "5" : "2" } },
+        );
+        fireEvent.click(within(dialog).getByRole("button", { name: "保存" }));
+        if (outcome === "purchased") {
+          fireEvent.click(
+            within(
+              screen.getByRole("dialog", {
+                name: "購入済として保存しますか？",
+              }),
+            ).getByRole("button", { name: "購入済にする" }),
+          );
+        }
+        expect(onUpdate).toHaveBeenCalledTimes(1);
+        expect(onUpdate.mock.calls[0][0].purchaseStatus).toBe(
+          outcome === "purchased" ? "Purchased" : "LimitedPurchase",
+        );
+      }
+      expect(onPostEventDistributionCheckRequest).not.toHaveBeenCalled();
+    },
+  );
   it("opens the limited purchase dialog without saving when cycle reaches LimitedPurchase", () => {
     const { onUpdate } = renderCard({
       item: { ...baseItem, purchaseStatus: "Late", quantity: 5 },

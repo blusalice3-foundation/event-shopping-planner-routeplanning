@@ -1,3 +1,4 @@
+import { useDialogViewport } from "../hooks/useDialogViewport";
 import { useModalDialogBehavior } from "../hooks/useModalDialogBehavior";
 import React, { useEffect, useMemo, useState } from "react";
 
@@ -45,6 +46,7 @@ const BackupRestoreDialog: React.FC<BackupRestoreDialogProps> = ({
   const [targetEventName, setTargetEventName] = useState("");
   const [isRestoring, setIsRestoring] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const viewportRef = useDialogViewport(isOpen);
   const backupEventNamesSignature = JSON.stringify(backupEventNames);
   const currentEventNamesSignature = JSON.stringify(currentEventNames);
 
@@ -133,7 +135,8 @@ const BackupRestoreDialog: React.FC<BackupRestoreDialogProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+      ref={viewportRef}
+      className="esp-dialog-viewport fixed inset-0 z-[100] flex items-center justify-center bg-black/50"
       role="presentation"
       onMouseDown={(event) => {
         if (
@@ -150,7 +153,7 @@ const BackupRestoreDialog: React.FC<BackupRestoreDialogProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="backup-restore-title"
-        className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl dark:bg-slate-800"
+        className="esp-dialog-panel w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl dark:bg-slate-800"
       >
         <h2
           id="backup-restore-title"
@@ -277,7 +280,7 @@ const BackupRestoreDialog: React.FC<BackupRestoreDialogProps> = ({
           </p>
         )}
 
-        <div className="mt-6 flex justify-end gap-3">
+        <div className="esp-dialog-actions mt-6 flex justify-end gap-3">
           <button
             type="button"
             className="rounded-lg px-4 py-2 text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-700"

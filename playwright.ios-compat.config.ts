@@ -9,6 +9,7 @@ export default defineConfig({
     "ios-file-transfer.spec.ts",
     "ios-xlsx-pwa.spec.ts",
     "map-import-layout.spec.ts",
+    "dialog-viewport-layout.spec.ts",
     "map-workspace-continuity.spec.ts",
     "integrated-block-remediation.spec.ts",
     "map-selection-popup.spec.ts",
