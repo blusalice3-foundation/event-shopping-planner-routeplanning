@@ -1,3 +1,4 @@
+import { createSheetIdentityFingerprint } from "../../../utils/sheetIdentity";
 import { describe, expect, it, vi } from "vitest";
 import type { PersistenceSnapshot } from "../../../app/ports/PersistenceCommandPort";
 import type { ShoppingItem } from "../../../types/item";
@@ -532,8 +533,10 @@ describe("pure immutable item reordering", () => {
             quantity: 7,
             remarks: "更新済みのメモ",
             url: "https://example.test/latest",
-            sheetRemarks: "最新の備考",
-            sheetIdentityVerified: true,
+            sheetIdentityFingerprint: createSheetIdentityFingerprint(
+              1200,
+              "最新の備考",
+            ),
             limitedPurchasedQuantity: 2,
             priorityLevel: "highest" as const,
             protectionLevel: "full" as const,

@@ -1,3 +1,4 @@
+import { createSheetIdentityFingerprint } from "../utils/sheetIdentity";
 import type { PersistenceSnapshot } from "../app/ports/PersistenceCommandPort";
 import type { DayModeState, ShoppingItem } from "../types/item";
 import { createEventConsistency } from "../types/consistency";
@@ -11,11 +12,9 @@ export const sheetItem = (index = 0): ShoppingItem => ({
   number: String(index),
   title: `新刊${index}`,
   price: 500,
-  catalogPrice: 500,
   quantity: 2,
   remarks: "ユーザー登録",
-  sheetRemarks: "ユーザー登録",
-  sheetIdentityVerified: true,
+  sheetIdentityFingerprint: createSheetIdentityFingerprint(500, "ユーザー登録"),
   purchaseStatus: "None",
   source: "spreadsheet",
   protectionLevel: "none",

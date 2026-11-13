@@ -666,25 +666,12 @@ const CellItemsPopup: React.FC<CellItemsPopupProps> = ({
                       <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
                         {item.title}
                       </p>
-                      {item.catalogPrice !== undefined && (
-                        <p className="text-sm text-slate-500 dark:text-slate-500 mt-1">
-                          カタログ価格:{" "}
-                          {item.catalogPrice === null
-                            ? "未定"
-                            : `¥${item.catalogPrice.toLocaleString()}`}
-                        </p>
-                      )}
                       <p className="text-sm text-slate-500 dark:text-slate-500 mt-1">
                         購入金額:{" "}
                         {item.price === null
                           ? "未定"
                           : `¥${item.price.toLocaleString()}`}
                       </p>
-                      {item.sheetRemarks?.trim() && (
-                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                          シート備考: {item.sheetRemarks}
-                        </p>
-                      )}
                       {item.remarks && (
                         <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                           利用者メモ: {item.remarks}
@@ -916,18 +903,6 @@ const CellItemsPopup: React.FC<CellItemsPopupProps> = ({
                       className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                     />
                   </div>
-                  {editingItem.catalogPrice !== undefined && (
-                    <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-600 dark:bg-slate-800">
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        カタログ価格（シート・読み取り専用）
-                      </p>
-                      <p className="font-medium text-slate-800 dark:text-slate-100">
-                        {editingItem.catalogPrice === null
-                          ? "未定"
-                          : `${editingItem.catalogPrice.toLocaleString()}円`}
-                      </p>
-                    </div>
-                  )}
                   {/* 購入金額: ドロップダウン + 直接入力 */}
                   <fieldset>
                     <legend className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -1120,16 +1095,6 @@ const CellItemsPopup: React.FC<CellItemsPopupProps> = ({
                           </span>
                         </div>
                       )}
-                    </div>
-                  )}
-                  {editingItem.sheetRemarks?.trim() && (
-                    <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-600 dark:bg-slate-800">
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        シート備考（読み取り専用）
-                      </p>
-                      <p className="whitespace-pre-wrap text-sm text-slate-800 dark:text-slate-100">
-                        {editingItem.sheetRemarks}
-                      </p>
                     </div>
                   )}
                   <div>

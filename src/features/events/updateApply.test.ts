@@ -1,13 +1,11 @@
+import { computeUpdateItem } from "./itemOps/crud";
+import { createSheetIdentityFingerprint } from "../../utils/sheetIdentity";
 import { describe, expect, it } from "vitest";
 import type { ShoppingItem } from "../../types/item";
 import { applyEventUpdateToItems } from "./updateApply";
 import { createEventUpdateDiff } from "./updateDiff";
 import { getActualPurchasedQuantity } from "../../utils/purchaseQuantity";
-import type {
-  AppFieldSyncCandidate,
-  EventUpdateDiff,
-  SpreadsheetItemToAdd,
-} from "./updateDiff";
+import type { EventUpdateDiff, SpreadsheetItemToAdd } from "./updateDiff";
 
 const item = (overrides: Partial<ShoppingItem> = {}): ShoppingItem => ({
   id: "item-1",
@@ -17,16 +15,17 @@ const item = (overrides: Partial<ShoppingItem> = {}): ShoppingItem => ({
   number: "01a",
   title: "旧タイトル",
   price: 900,
-  catalogPrice: 1000,
   purchaseStatus: "LimitedPurchase",
   quantity: 4,
   limitedPurchasedQuantity: 2,
   remarks: "利用者メモ",
-  sheetRemarks: "旧シート備考",
   url: "https://old.example",
   source: "spreadsheet",
-  sheetIdentityVerified: true,
-  protectionLevel: "deletable",
+  sheetIdentityFingerprint: createSheetIdentityFingerprint(
+    1000,
+    "旧シート備考",
+  ),
+  protectionLevel: "none",
   assignedTo: "担当者",
   lastSyncedAt: "2026-01-01",
   orderIndex: 8,
@@ -42,7 +41,6 @@ const payload = (
       | "itemsToDelete"
       | "itemsToUpdate"
       | "itemsToAdd"
-      | "appFieldSyncCandidates"
       | "pendingPurchasedQuantityChanges"
     >
   > = {},
@@ -50,21 +48,7 @@ const payload = (
   itemsToDelete: [],
   itemsToUpdate: [],
   itemsToAdd: [],
-  appFieldSyncCandidates: [],
   pendingPurchasedQuantityChanges: [],
-  ...overrides,
-});
-
-const syncCandidate = (
-  overrides: Partial<AppFieldSyncCandidate> = {},
-): AppFieldSyncCandidate => ({
-  itemId: "item-1",
-  circle: "サークルA",
-  eventDate: "1日目",
-  block: "東A",
-  number: "01a",
-  title: "旧タイトル",
-  purchaseStatus: "LimitedPurchase",
   ...overrides,
 });
 
@@ -76,11 +60,9 @@ describe("applyEventUpdateToItems allowlist", () => {
       ...before,
       title: "新タイトル",
       quantity: 5,
-      catalogPrice: 1200,
-      sheetRemarks: "新シート備考",
+      price: 1200,
+      remarks: "更新した備考",
       url: "https://new.example",
-      price: 1,
-      remarks: "上書きしてはいけない",
       purchaseStatus: "SoldOut",
       limitedPurchasedQuantity: 99,
       assignedTo: "別担当",
@@ -97,13 +79,13 @@ describe("applyEventUpdateToItems allowlist", () => {
       ...before,
       title: "新タイトル",
       quantity: 5,
-      catalogPrice: 1200,
-      sheetRemarks: "新シート備考",
+      price: 1200,
+      remarks: "更新した備考",
       url: "https://new.example",
     });
     expect(result[0]).toMatchObject({
-      price: 900,
-      remarks: "利用者メモ",
+      price: 1200,
+      remarks: "更新した備考",
       purchaseStatus: "LimitedPurchase",
       limitedPurchasedQuantity: 2,
       assignedTo: "担当者",
@@ -141,181 +123,116 @@ describe("applyEventUpdateToItems allowlist", () => {
     expect(applied.limitedPurchasedQuantity).toBe(2);
   });
 
-  it("上書きモードなら、シート管理値に変更がなくても利用者欄へ反映する", () => {
-    const before = item({ protectionLevel: "none" });
-    const result = applyEventUpdateToItems(
-      [before],
-      payload({
-        appFieldSyncCandidates: [
-          syncCandidate({
-            price: {
-              currentValue: 900,
-              previousSheetValue: 1000,
-              sheetValue: 1000,
-              canFillEmpty: false,
-            },
-            remarks: {
-              currentValue: "利用者メモ",
-              previousSheetValue: "旧シート備考",
-              sheetValue: "旧シート備考",
-              canFillEmpty: false,
-            },
-          }),
-        ],
-      }),
-      { priceSyncMode: "overwrite", remarksSyncMode: "overwrite" },
-    );
+  it.each([
+    [1000, "旧シート備考"],
+    [null, ""],
+    [0, "ユーザー登録\nエラーが発生しました"],
+  ] as const)(
+    "保護なしの価格%sと備考を通常更新で反映する",
+    (price, remarks) => {
+      const before = item({ protectionLevel: "none" });
+      const incoming = {
+        ...before,
+        price,
+        remarks,
+        sheetIdentityFingerprint: createSheetIdentityFingerprint(
+          price,
+          remarks,
+        ),
+        rawQuantity: "",
+      };
+      const diff = createEventUpdateDiff([before], [incoming]);
+      const after = applyEventUpdateToItems([before], diff);
+      expect(after[0]).toMatchObject({
+        price,
+        remarks,
+        sheetIdentityFingerprint: incoming.sheetIdentityFingerprint,
+        purchaseStatus: before.purchaseStatus,
+        limitedPurchasedQuantity: before.limitedPurchasedQuantity,
+      });
+      expect(after[0]).not.toHaveProperty("catalogPrice");
+      expect(after[0]).not.toHaveProperty("sheetRemarks");
+      expect(before.price).toBe(900);
+      expect(before.remarks).toBe("利用者メモ");
+    },
+  );
 
-    expect(result[0]).toMatchObject({
-      price: 1000,
-      catalogPrice: 1000,
-      remarks: "旧シート備考",
-      sheetRemarks: "旧シート備考",
-    });
+  it.each(["deletable", "full"] as const)(
+    "確認後に%sへ保護された品目は、価格・備考・数量を反映しない",
+    (protectionLevel) => {
+      const before = item({ protectionLevel: "none" });
+      const incoming = {
+        ...before,
+        price: 1200,
+        remarks: "新しいシートの備考",
+        rawQuantity: "7",
+      };
+      const diff = createEventUpdateDiff([before], [incoming]);
+      const protectedItem = { ...before, protectionLevel };
+      expect(
+        applyEventUpdateToItems([protectedItem], diff, {
+          applyPurchasedQuantityChanges: true,
+        }),
+      ).toEqual([protectedItem]);
+    },
+  );
+  it("確認後に完全保護された品目は、古い削除候補にも従わない", () => {
+    const before = item();
+    const diff = createEventUpdateDiff([before], []);
+    expect(diff.itemsToDelete).toEqual([before]);
+    const protectedItem = { ...before, protectionLevel: "full" as const };
+    expect(applyEventUpdateToItems([protectedItem], diff)).toEqual([
+      protectedItem,
+    ]);
   });
-
-  it("上書きモードはシート側の価格未定と空の備考もそのまま反映する", () => {
-    const before = item({ protectionLevel: "none" });
-    const sourceUpdate = item({
-      protectionLevel: "none",
-      catalogPrice: null,
-      sheetRemarks: "",
-      price: 1,
-      remarks: "通常更新からは反映しない値",
-    });
-    const result = applyEventUpdateToItems(
-      [before],
-      payload({
-        itemsToUpdate: [sourceUpdate],
-        appFieldSyncCandidates: [
-          syncCandidate({
-            price: {
-              currentValue: 900,
-              previousSheetValue: 1000,
-              sheetValue: null,
-              canFillEmpty: false,
-            },
-            remarks: {
-              currentValue: "利用者メモ",
-              previousSheetValue: "旧シート備考",
-              sheetValue: "",
-              canFillEmpty: false,
-            },
-          }),
+  it.each(["execute", "focus"] as const)(
+    "%sで購入状態を変更して既存ロックが付いた後は、現場入力の価格と備考を守る",
+    (mode) => {
+      const initial = item({
+        purchaseStatus: "None",
+        limitedPurchasedQuantity: undefined,
+      });
+      const purchased = computeUpdateItem(
+        [initial],
+        { ...initial, purchaseStatus: "Purchased" },
+        mode,
+        initial.protectionLevel,
+        initial.source,
+      ).items[0];
+      const edited = computeUpdateItem(
+        [purchased],
+        {
+          ...purchased,
+          price: 700,
+          remarks: "ユーザー登録\nエラーが発生しました",
+        },
+        mode,
+        purchased.protectionLevel,
+        purchased.source,
+      ).items[0];
+      expect(edited.protectionLevel).toBe("deletable");
+      expect(edited.sheetIdentityFingerprint).toBe(
+        initial.sheetIdentityFingerprint,
+      );
+      const diff = createEventUpdateDiff(
+        [edited],
+        [
+          {
+            ...edited,
+            price: 1200,
+            remarks: "更新したシートの備考",
+            sheetIdentityFingerprint: createSheetIdentityFingerprint(
+              1200,
+              "更新したシートの備考",
+            ),
+            rawQuantity: "",
+          },
         ],
-      }),
-      { priceSyncMode: "overwrite", remarksSyncMode: "overwrite" },
-    );
-
-    expect(result[0].price).toBeNull();
-    expect(result[0].catalogPrice).toBeNull();
-    expect(result[0].remarks).toBe("");
-    expect(result[0].sheetRemarks).toBe("");
-  });
-
-  it("空欄補完モードは補完可能な候補だけを反映する", () => {
-    const before = item({
-      protectionLevel: "none",
-      price: null,
-      catalogPrice: null,
-      remarks: " \t",
-      sheetRemarks: " ",
-    });
-    const result = applyEventUpdateToItems(
-      [before],
-      payload({
-        appFieldSyncCandidates: [
-          syncCandidate({
-            price: {
-              currentValue: null,
-              previousSheetValue: null,
-              sheetValue: 0,
-              canFillEmpty: true,
-            },
-            remarks: {
-              currentValue: " \t",
-              previousSheetValue: " ",
-              sheetValue: "新しいシート備考",
-              canFillEmpty: true,
-            },
-          }),
-        ],
-      }),
-      { priceSyncMode: "fill-empty", remarksSyncMode: "fill-empty" },
-    );
-
-    expect(result[0].price).toBe(0);
-    expect(result[0].remarks).toBe("新しいシート備考");
-  });
-
-  it("以前のシート値があった明示的な空欄は、空欄補完モードで変更しない", () => {
-    const before = item({
-      protectionLevel: "none",
-      price: null,
-      catalogPrice: 1000,
-      remarks: "",
-      sheetRemarks: "旧シート備考",
-    });
-    const result = applyEventUpdateToItems(
-      [before],
-      payload({
-        appFieldSyncCandidates: [
-          syncCandidate({
-            price: {
-              currentValue: null,
-              previousSheetValue: 1000,
-              sheetValue: 1200,
-              canFillEmpty: false,
-            },
-            remarks: {
-              currentValue: "",
-              previousSheetValue: "旧シート備考",
-              sheetValue: "新シート備考",
-              canFillEmpty: false,
-            },
-          }),
-        ],
-      }),
-      { priceSyncMode: "fill-empty", remarksSyncMode: "fill-empty" },
-    );
-
-    expect(result[0].price).toBeNull();
-    expect(result[0].remarks).toBe("");
-  });
-
-  it("確認後に利用者欄か以前のシート値が変わった候補は反映しない", () => {
-    const changedWhileConfirming = item({
-      protectionLevel: "none",
-      price: 950,
-      sheetRemarks: "別のシート備考",
-    });
-    const result = applyEventUpdateToItems(
-      [changedWhileConfirming],
-      payload({
-        appFieldSyncCandidates: [
-          syncCandidate({
-            price: {
-              currentValue: 900,
-              previousSheetValue: 1000,
-              sheetValue: 1200,
-              canFillEmpty: false,
-            },
-            remarks: {
-              currentValue: "利用者メモ",
-              previousSheetValue: "旧シート備考",
-              sheetValue: "新シート備考",
-              canFillEmpty: false,
-            },
-          }),
-        ],
-      }),
-      { priceSyncMode: "overwrite", remarksSyncMode: "overwrite" },
-    );
-
-    expect(result[0].price).toBe(950);
-    expect(result[0].remarks).toBe("利用者メモ");
-  });
-
+      );
+      expect(diff.itemsToUpdate).toEqual([]);
+      expect(applyEventUpdateToItems([edited], diff)).toEqual([edited]);
+    },
+  );
   it("確認中に利用者が数量を変えた場合は、古い確認結果で上書きしない", () => {
     const changedWhileConfirming = item({ quantity: 6 });
     const result = applyEventUpdateToItems(
@@ -404,7 +321,7 @@ describe("applyEventUpdateToItems allowlist", () => {
     expect(result[0].limitedPurchasedQuantity).toBe(3);
   });
 
-  it("新規シート品目は表示互換用と同期用の価格・備考を両方保持する", () => {
+  it("新規シート品目は単一の価格・備考と内部識別情報を保持する", () => {
     const newItem: SpreadsheetItemToAdd = {
       circle: "サークルB",
       eventDate: "1日目",
@@ -412,11 +329,12 @@ describe("applyEventUpdateToItems allowlist", () => {
       number: "03a",
       title: "新刊",
       price: 1300,
-      catalogPrice: 1300,
       quantity: 2,
-      remarks: "シート備考",
-      sheetRemarks: "シート備考",
-      sheetIdentityVerified: true,
+      remarks: "シートからの備考",
+      sheetIdentityFingerprint: createSheetIdentityFingerprint(
+        1300,
+        "シートからの備考",
+      ),
     };
 
     const result = applyEventUpdateToItems(
@@ -427,12 +345,10 @@ describe("applyEventUpdateToItems allowlist", () => {
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({
       price: 1300,
-      catalogPrice: 1300,
-      remarks: "シート備考",
-      sheetRemarks: "シート備考",
+      remarks: "シートからの備考",
       purchaseStatus: "None",
       source: "spreadsheet",
-      sheetIdentityVerified: true,
+      sheetIdentityFingerprint: newItem.sheetIdentityFingerprint,
       protectionLevel: "none",
     });
   });
@@ -446,7 +362,6 @@ it.each([false, true])(
         id: "A",
         circle: "X ",
         title: "旧A",
-        catalogPrice: 500,
         purchaseStatus: "Purchased",
         protectionLevel: "none",
         price: 900,
@@ -455,7 +370,6 @@ it.each([false, true])(
         id: "B",
         circle: "X",
         title: "旧B",
-        catalogPrice: 700,
         purchaseStatus: "LimitedPurchase",
         protectionLevel: "none",
         price: 1200,

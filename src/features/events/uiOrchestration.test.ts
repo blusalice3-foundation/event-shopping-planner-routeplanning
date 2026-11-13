@@ -1,28 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { buildLegacySheetFieldFallbackMessage } from "./uiOrchestration";
+import { buildImportCompletionMessage } from "./uiOrchestration";
 
-describe("buildLegacySheetFieldFallbackMessage", () => {
-  it("reports one aggregated count after excluding skipped rows", () => {
+describe("buildImportCompletionMessage", () => {
+  it("reports restored field values without a retired sheet-field fallback notice", () => {
     expect(
-      buildLegacySheetFieldFallbackMessage({
-        fallbacks: [
-          { itemId: "imported-1" },
-          { itemId: "skipped" },
-          { itemId: "imported-2" },
-        ],
-        skippedItemIds: new Set(["skipped"]),
+      buildImportCompletionMessage({
+        errors: [],
+        eventName: "ユーザー登録",
+        isUpdate: true,
+        itemCount: 2,
       }),
-    ).toBe(
-      "旧形式のため、2件のシート品目でカタログ価格とシート備考を現在の価格・備考から推定して補完しました。",
-    );
-  });
-
-  it("omits the migration message when no fallback row was imported", () => {
-    expect(
-      buildLegacySheetFieldFallbackMessage({
-        fallbacks: [{ itemId: "skipped" }],
-        skippedItemIds: new Set(["skipped"]),
-      }),
-    ).toBeNull();
+    ).toBe("ユーザー登録を更新しました。\n2件");
   });
 });

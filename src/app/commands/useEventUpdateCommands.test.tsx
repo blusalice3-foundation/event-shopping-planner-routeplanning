@@ -71,7 +71,6 @@ const diff = (overrides: Partial<EventUpdateDiff> = {}): EventUpdateDiff => ({
   itemsToDelete: [],
   itemsToUpdate: [],
   itemsToAdd: [],
-  appFieldSyncCandidates: [],
   protectedFromDelete: 0,
   protectedFromUpdate: 0,
   quantityWarnings: [],

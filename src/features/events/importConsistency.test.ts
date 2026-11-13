@@ -1,3 +1,4 @@
+import { createSheetIdentityFingerprint } from "../../utils/sheetIdentity";
 import { describe, expect, it } from "vitest";
 import type { ShoppingItem } from "../../types/item";
 import { createEventUpdateDiff, type SheetItem } from "./updateDiff";
@@ -21,20 +22,17 @@ const item = (
   block: "A",
   number: "01a",
   price: 500,
-  catalogPrice: 500,
   remarks: "エラーが発生しました",
-  sheetRemarks: "",
   quantity: 5,
   purchaseStatus: "None",
   source: "spreadsheet",
-  sheetIdentityVerified: true,
   protectionLevel: "none",
   ...fields,
 });
 const incoming = (value: ShoppingItem): SheetItem => ({
   ...value,
-  price: value.catalogPrice ?? null,
-  remarks: value.sheetRemarks ?? "",
+  price: value.price,
+  remarks: value.remarks,
 });
 const csv = (cells: string[]) =>
   cells
@@ -147,12 +145,16 @@ describe("one-to-one sheet identity", () => {
         title: "同名",
         purchaseStatus: "Purchased",
         remarks: "Aの記録",
+        sheetIdentityFingerprint: createSheetIdentityFingerprint(
+          500,
+          "Aの記録",
+        ),
       }),
       item("b", {
         title: "同名",
         price: 0,
-        catalogPrice: 700,
         remarks: "Bの記録",
+        sheetIdentityFingerprint: createSheetIdentityFingerprint(0, "Bの記録"),
       }),
     ];
     const diff = createEventUpdateDiff(before, [
@@ -189,20 +191,16 @@ describe("one-to-one sheet identity", () => {
   it("falls back to order without using user fields as provenance or reusing a protected ID", () => {
     const a = item("a", {
       title: "同名",
-      catalogPrice: undefined,
-      sheetRemarks: undefined,
       protectionLevel: "full",
     });
     const b = item("b", {
       title: "同名",
       price: 0,
       remarks: "Bの記録",
-      catalogPrice: undefined,
-      sheetRemarks: undefined,
     });
     const rows = [
-      incoming(item("new-a", { title: "同名", catalogPrice: 500 })),
-      incoming(item("new-b", { title: "同名", catalogPrice: 700 })),
+      incoming(item("new-a", { title: "同名", price: 600 })),
+      incoming(item("new-b", { title: "同名", price: 700 })),
     ];
     const diff = createEventUpdateDiff([a, b], rows);
     expect(diff.unresolvedMatches).toEqual([]);
@@ -214,8 +212,8 @@ describe("one-to-one sheet identity", () => {
       a,
       {
         ...b,
-        catalogPrice: 700,
-        sheetRemarks: "",
+        price: 700,
+        remarks: "エラーが発生しました",
       },
     ]);
     expect(createEventUpdateDiff([a, b], rows, { "0": "a", "1": "a" })).toEqual(
@@ -238,7 +236,7 @@ describe("one-to-one sheet identity", () => {
 it("places rows by source identity before sorting, excluding dropped duplicate placements", () => {
   const items = buildBulkAddItems([
     incoming(item("a")),
-    incoming(item("b", { price: 700, catalogPrice: 700 })),
+    incoming(item("b", { price: 700 })),
   ]);
   const rows = new Map([
     ["r1", items[0].id],

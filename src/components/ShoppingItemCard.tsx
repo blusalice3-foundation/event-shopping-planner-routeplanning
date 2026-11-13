@@ -231,9 +231,6 @@ const ITEM_NOT_FOUND_MESSAGE =
 const ITEM_ALREADY_CHANGED_MESSAGE =
   "\u5bfe\u8c61\u306e\u30a2\u30a4\u30c6\u30e0\u306f\u3059\u3067\u306b\u5225\u306e\u8cfc\u5165\u72b6\u614b\u306b\u5909\u66f4\u3055\u308c\u3066\u3044\u307e\u3059";
 
-const formatCatalogPrice = (price: number | null): string =>
-  price === null ? "未定" : `${price.toLocaleString()}円`;
-
 type LimitedDialogSource = "current" | "singleQuantityChoice";
 
 const PurchaseStatusRadialMenu: React.FC<PurchaseStatusRadialMenuProps> = ({
@@ -1101,34 +1098,13 @@ const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
       updateQuantitySelectOptions(select, item.quantity),
     [item.quantity],
   );
-  const sheetReferenceDetails =
-    item.catalogPrice !== undefined || item.sheetRemarks?.trim() ? (
-      <div
-        aria-label="シート情報"
-        className="flex min-w-0 flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-500 dark:text-slate-400"
-      >
-        {item.catalogPrice !== undefined && (
-          <span className="whitespace-nowrap">
-            カタログ価格: {formatCatalogPrice(item.catalogPrice)}
-          </span>
-        )}
-        {item.sheetRemarks?.trim() && (
-          <span className="min-w-0 truncate" title={item.sheetRemarks}>
-            シート備考: {item.sheetRemarks}
-          </span>
-        )}
-      </div>
-    ) : null;
-
   const currentStatus = statusConfig[item.purchaseStatus];
   const locationString = `${item.block}-${item.number}`;
   const IconComponent = currentStatus.icon;
 
   const warningTags = useMemo(() => {
     const tags: string[] = [];
-    const warningText = [item.sheetRemarks, item.remarks]
-      .filter(Boolean)
-      .join("\n");
+    const warningText = item.remarks;
     if (isDuplicateCircle) {
       tags.push("複数種");
     }
@@ -1141,7 +1117,7 @@ const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
       }
     }
     return tags;
-  }, [isDuplicateCircle, item.remarks, item.sheetRemarks]);
+  }, [isDuplicateCircle, item.remarks]);
 
   // 警告タグが表示されるかどうか
   const hasWarningTags = warningTags.length > 0;
@@ -1319,25 +1295,6 @@ const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
       </button>
     );
 
-    const compactSheetReferenceDetails =
-      item.catalogPrice !== undefined || item.sheetRemarks?.trim() ? (
-        <div
-          aria-label="シート情報"
-          className="flex min-w-0 items-center gap-2 overflow-hidden text-[10px] leading-tight text-slate-500 dark:text-slate-400"
-        >
-          {item.catalogPrice !== undefined && (
-            <span className="flex-shrink-0 whitespace-nowrap">
-              定価 {formatCatalogPrice(item.catalogPrice)}
-            </span>
-          )}
-          {item.sheetRemarks?.trim() && (
-            <span className="min-w-0 truncate" title={item.sheetRemarks}>
-              {item.sheetRemarks}
-            </span>
-          )}
-        </div>
-      ) : null;
-
     if (viewMode !== "edit") {
       return (
         <ShoppingItemSelectionFrame
@@ -1398,10 +1355,6 @@ const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
               >
                 {item.title || "（タイトルなし）"}
               </p>
-
-              {compactSheetReferenceDetails && (
-                <div className="mt-0.5">{compactSheetReferenceDetails}</div>
-              )}
 
               <div className="mt-1 flex min-w-0 items-center gap-1 border-t border-slate-200/60 pt-1 dark:border-slate-700/60">
                 <input
@@ -1548,7 +1501,6 @@ const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
             </div>
 
             <div className="p-1.5 pt-0.5 flex flex-col gap-1 border-t border-slate-200/50 dark:border-slate-700/50">
-              {sheetReferenceDetails}
               <input
                 type="text"
                 value={item.remarks}
@@ -1795,9 +1747,8 @@ const ShoppingItemCardContent: React.FC<ShoppingItemCardContentProps> = ({
           </button>
         </div>
 
-        {/* Row 3: シート情報 + 利用者メモ + リンク */}
+        {/* Row 3: 利用者メモ + リンク */}
         <div className="relative z-10 flex min-w-0 flex-col gap-1">
-          {sheetReferenceDetails}
           <div className="flex min-w-0 items-center gap-2">
             <input
               type="text"

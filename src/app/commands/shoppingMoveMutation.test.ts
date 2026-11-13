@@ -1,3 +1,4 @@
+import { createSheetIdentityFingerprint } from "../../utils/sheetIdentity";
 import { dayMergeChoicePrefix } from "../../features/consistency/domain/dayMergeMutation";
 import { ensureDayConsistency } from "../../features/consistency/domain/context";
 import { describe, expect, it, vi } from "vitest";
@@ -36,8 +37,7 @@ const item = (id: string, number: string): ShoppingItem => ({
   purchaseStatus: "None",
   remarks: "エラーが発生しました",
   url: undefined,
-  sheetRemarks: "元のメモ",
-  sheetIdentityVerified: false,
+  sheetIdentityFingerprint: createSheetIdentityFingerprint(500, "元のメモ"),
 });
 function fixture(): PersistenceSnapshot {
   return {
@@ -131,8 +131,10 @@ describe("shopping move read-only planner items", () => {
         input.executeIds,
       );
       expect(plan.snapshot.eventLists.event[0]).toMatchObject({
-        sheetRemarks: "元のメモ",
-        sheetIdentityVerified: false,
+        sheetIdentityFingerprint: createSheetIdentityFingerprint(
+          500,
+          "元のメモ",
+        ),
       });
     },
   );

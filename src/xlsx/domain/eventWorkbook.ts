@@ -27,11 +27,6 @@ export interface ItemFallbackWarning {
   reasons: string[];
 }
 
-export interface LegacySheetFieldFallback {
-  itemId: string;
-  rowNumber: number;
-}
-
 export interface EventWorkbookImportResult {
   eventConsistency?: EventConsistencyV1;
   contentManifest?: ContentManifest;
@@ -52,7 +47,6 @@ export interface EventWorkbookImportResult {
   blockDetectionSettings?: BlockDetectionSettings;
   errors: string[];
   itemFallbackWarnings?: ItemFallbackWarning[];
-  legacySheetFieldFallbacks?: LegacySheetFieldFallback[];
 }
 
 export type EventWorkbookAdditionalData = {

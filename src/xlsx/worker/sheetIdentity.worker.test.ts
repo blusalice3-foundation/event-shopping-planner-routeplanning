@@ -17,6 +17,7 @@ import {
   parseAppBackup,
   validateSnapshotStructure,
 } from "../../utils/appBackup";
+import { createSheetIdentityFingerprint } from "../../utils/sheetIdentity";
 import { buildEventWorkbookExportSnapshot } from "../domain/eventWorkbook";
 import { xlsxWorkerExecutor } from "./workerExecutor";
 
@@ -39,13 +40,13 @@ const incoming = (): SheetItem[] =>
   records().map((item, index) => ({
     ...item,
     price: index === 0 ? 600 : 800,
-    catalogPrice: index === 0 ? 600 : 800,
     remarks: "シート備考",
-    sheetRemarks: "シート備考",
     rawQuantity: String(item.quantity),
-    sheetIdentityVerified: true,
+    sheetIdentityFingerprint: createSheetIdentityFingerprint(
+      index === 0 ? 600 : 800,
+      "シート備考",
+    ),
   }));
-
 async function exportBook(
   items = records(),
   format: "full" | "simple" = "full",
@@ -92,163 +93,136 @@ function jsonRoundTrip(result: Awaited<ReturnType<typeof importBook>>) {
   if (!parsed.ok) throw new Error("Invalid backup");
   return parsed.data.eventLists[result.eventName] as ShoppingItem[];
 }
-
 function expectAutomaticOrder(before: ShoppingItem[], rows: SheetItem[]) {
   const diff = createEventUpdateDiff(before, rows);
   expect(diff.unresolvedMatches).toEqual([]);
-  expect(diff.matching).toBeUndefined();
   expect(diff.itemsToAdd).toEqual([]);
   expect(diff.itemsToDelete).toEqual([]);
   const after = applyEventUpdateToItems(before, diff);
-  expect(new Set(after.map((item) => item.id)).size).toBe(before.length);
-  const userRecords = (items: ShoppingItem[]) =>
-    items.map(({ id, price, remarks, purchaseStatus }) => ({
-      id,
-      price,
-      remarks,
-      purchaseStatus,
-    }));
-  expect(userRecords(after)).toEqual(userRecords(before));
-  expect(after.map((item) => item.quantity)).toEqual(
-    rows.map((item) => item.quantity),
-  );
-  expect(after.map((item) => item.catalogPrice)).toEqual(
-    rows.map((item) => item.catalogPrice),
-  );
+  expect(after.map((item) => item.id)).toEqual(before.map((item) => item.id));
+  expect(
+    after.map((item) => [item.price, item.remarks, item.quantity]),
+  ).toEqual(rows.map((item) => [item.price, item.remarks, item.quantity]));
 }
-describe("sheet identity provenance through production ZIP preflight and Worker engine", () => {
+function setLegacyVersion(book: ExcelJS.Workbook, version: string) {
+  const sheet = book.getWorksheet("アイテムデータ")!;
+  sheet.spliceColumns(17, 1);
+  if (version !== "2.1") {
+    ["カタログ価格", "シート備考", "シート照合根拠"].forEach(
+      (header, index) => {
+        sheet.getCell(1, 17 + index).value = header;
+      },
+    );
+    records().forEach((item, index) => {
+      sheet.getCell(index + 2, 17).value = item.price;
+      sheet.getCell(index + 2, 18).value = item.remarks;
+    });
+  }
+  if (version !== "3.0") book.removeWorksheet("関連設定");
+  const meta = book.getWorksheet("メタデータ")!;
+  for (let row = meta.rowCount; row >= 2; row--) {
+    const key = meta.getCell(row, 1).value;
+    if (key === "version") meta.getCell(row, 2).value = version;
+    if (
+      version !== "3.0" &&
+      ["contentManifest", "consistencySchemaVersion", "eventMetadata"].includes(
+        String(key),
+      )
+    )
+      meta.spliceRows(row, 1);
+  }
+}
+
+describe("sheet identity through production ZIP preflight and Worker engine", () => {
   it.each(["full", "simple"] as const)(
-    "%s keeps inferred values unverified across repeated Excel and JSON round-trips",
+    "%s keeps absent provenance absent through repeated Excel/JSON round-trips",
     async (format) => {
-      // Same notes make a price swap alone sufficient to reproduce the old bug.
-      const originals = records().map((item) => ({
-        ...item,
-        remarks: "シート備考",
-      }));
-      let result = await importBook(await exportBook(originals, format));
+      let result = await importBook(await exportBook(records(), format));
       for (let round = 0; round < 2; round++) {
         expect(result.success, result.errors.join("\n")).toBe(true);
-        expect(result.items.map((item) => item.sheetIdentityVerified)).toEqual([
-          undefined,
-          undefined,
-        ]);
-        expect(result.items.map((item) => item.catalogPrice)).toEqual([
-          800, 600,
-        ]);
+        expect(
+          result.items.map((item) => item.sheetIdentityFingerprint),
+        ).toEqual([undefined, undefined]);
+        expect(result.items.map((item) => [item.price, item.remarks])).toEqual(
+          records().map((item) => [item.price, item.remarks]),
+        );
         const restored =
           format === "simple" ? result.items : jsonRoundTrip(result);
-        for (const rows of [incoming(), incoming().reverse()]) {
+        for (const rows of [incoming(), incoming().reverse()])
           expectAutomaticOrder(restored, rows);
-          expect(restored.map((item) => item.quantity)).toEqual([2, 5]);
-        }
         result = await importBook(await exportBook(restored, format));
       }
     },
   );
 
   it.each(["2.1", "2.2", "3.0"])(
-    "does not trust an older %s workbook without provenance even after re-export",
+    "does not trust older %s workbook columns without verified provenance",
     async (version) => {
-      const book = await exportBook(
-        records().map((item) => ({ ...item, remarks: "シート備考" })),
-      );
-      const sheet = book.getWorksheet("アイテムデータ")!;
-      sheet.spliceColumns(19, 1);
-      if (version !== "3.0") {
-        book.removeWorksheet("関連設定");
-        const meta = book.getWorksheet("メタデータ")!;
-        for (let row = meta.rowCount; row >= 2; row--) {
-          const key = meta.getCell(row, 1).value;
-          if (key === "version") meta.getCell(row, 2).value = version;
-          if (
-            [
-              "contentManifest",
-              "consistencySchemaVersion",
-              "eventMetadata",
-            ].includes(String(key))
-          )
-            meta.spliceRows(row, 1);
-        }
-      }
-      if (version === "2.1") sheet.spliceColumns(17, 2);
+      const book = await exportBook();
+      setLegacyVersion(book, version);
       const result = await importBook(book);
       expect(result.success, result.errors.join("\n")).toBe(true);
-      expect(result.items.map((item) => item.sheetIdentityVerified)).toEqual([
-        undefined,
-        undefined,
-      ]);
-      const restored = jsonRoundTrip(result);
-      const next = await importBook(await exportBook(restored));
+      expect(result.items.map((item) => item.sheetIdentityFingerprint)).toEqual(
+        [undefined, undefined],
+      );
+      const next = await importBook(await exportBook(jsonRoundTrip(result)));
       expectAutomaticOrder(next.items, incoming());
-      expect(next.items.map((item) => item.quantity)).toEqual([2, 5]);
     },
   );
 
-  it("retains verified sheet fields, including null/empty/zero, independently of user fields", async () => {
-    const originals = records().map((item, index) => ({
-      ...item,
-      catalogPrice: index === 0 ? 600 : 800,
-      sheetRemarks: "シート備考",
-      sheetIdentityVerified: true,
-    }));
-    const result = await importBook(await exportBook(originals));
-    expect(result.items.every((item) => item.sheetIdentityVerified)).toBe(true);
-    const diff = createEventUpdateDiff(
-      jsonRoundTrip(result),
-      incoming().reverse(),
-    );
-    expect(diff.unresolvedMatches).toEqual([]);
-    expect(
-      applyEventUpdateToItems(result.items, diff).map((item) => [
-        item.id,
-        item.quantity,
-        item.price,
-        item.remarks,
-      ]),
-    ).toEqual(
-      originals.map((item) => [
-        item.id,
-        item.quantity,
-        item.price,
-        item.remarks,
-      ]),
-    );
-    const empty = await importBook(
-      await exportBook([
-        { ...originals[0], catalogPrice: null, sheetRemarks: "" },
-        { ...originals[1], catalogPrice: 0, sheetRemarks: "" },
-      ]),
-    );
-    expect(
-      empty.items.map((item) => [
-        item.catalogPrice,
-        item.sheetRemarks,
-        item.sheetIdentityVerified,
-      ]),
-    ).toEqual([
-      [null, "", true],
-      [0, "", true],
-    ]);
-  });
+  it.each(["full", "simple"] as const)(
+    "%s retains opaque identity independently of edited fields and locks",
+    async (format) => {
+      const originals = records().map((item, index) => ({
+        ...item,
+        protectionLevel: "full" as const,
+        purchaseStatus: "Purchased" as const,
+        sheetIdentityFingerprint: incoming()[index].sheetIdentityFingerprint,
+      }));
+      const result = await importBook(await exportBook(originals, format));
+      expect(result.success, result.errors.join("\n")).toBe(true);
+      const restored =
+        format === "simple" ? result.items : jsonRoundTrip(result);
+      originals.forEach((item, index) =>
+        expect(restored[index]).toMatchObject(item),
+      );
+      const diff = createEventUpdateDiff(restored, incoming().reverse());
+      expect(diff.unresolvedMatches).toEqual([]);
+      expect(diff.itemsToAdd).toEqual([]);
+      expect(diff.itemsToDelete).toEqual([]);
+      expect(applyEventUpdateToItems(restored, diff)).toEqual(restored);
+      for (const item of restored) {
+        expect(item).not.toHaveProperty("catalogPrice");
+        expect(item).not.toHaveProperty("sheetRemarks");
+        expect(item).not.toHaveProperty("sheetIdentityVerified");
+      }
+    },
+  );
 
-  it("automatic correspondence establishes new sheet values while preserving user records and purchased-quantity confirmation", async () => {
-    const result = await importBook(await exportBook(records()));
+  it("establishes incoming identity and updates unlocked fields while preserving quantity confirmation", async () => {
+    const result = await importBook(await exportBook());
     const restored = jsonRoundTrip(result);
     restored[1].purchaseStatus = "Purchased";
     const rows = incoming();
     rows[1] = { ...rows[1], quantity: 3, rawQuantity: "3" };
     const diff = createEventUpdateDiff(restored, rows);
-    expect(diff.unresolvedMatches).toEqual([]);
     expect(diff.pendingPurchasedQuantityChanges).toMatchObject([
       { itemId: "2", currentQuantity: 5, nextQuantity: 3 },
     ]);
     const after = applyEventUpdateToItems(restored, diff);
     expect(after.map((item) => item.quantity)).toEqual([2, 5]);
-    expect(after.map((item) => [item.price, item.remarks])).toEqual(
-      records().map((item) => [item.price, item.remarks]),
-    );
-    expect(after.every((item) => item.sheetIdentityVerified === true)).toBe(
-      true,
+    expect(
+      after.map((item) => [
+        item.price,
+        item.remarks,
+        item.sheetIdentityFingerprint,
+      ]),
+    ).toEqual(
+      rows.map((item) => [
+        item.price,
+        item.remarks,
+        item.sheetIdentityFingerprint,
+      ]),
     );
     expect(
       applyEventUpdateToItems(restored, diff, {
@@ -261,50 +235,25 @@ describe("sheet identity provenance through production ZIP preflight and Worker 
     ).toEqual([]);
   });
 
-  it("establishes provenance even when the automatically matched sheet values are unchanged", async () => {
-    const before = records().map((item, index) => ({
-      ...item,
-      catalogPrice: index === 0 ? 600 : 800,
-      sheetRemarks: "シート備考",
-    }));
-    const diff = createEventUpdateDiff(before, incoming());
-    expect(diff.itemsToUpdate).toHaveLength(2);
-    expect(
-      applyEventUpdateToItems(before, diff).every(
-        (item) => item.sheetIdentityVerified,
-      ),
-    ).toBe(true);
-    before[1].protectionLevel = "full";
-    const protectedDiff = createEventUpdateDiff(before, incoming());
-    expect(applyEventUpdateToItems(before, protectedDiff)[1]).toEqual(
-      before[1],
-    );
-  });
-
-  it("rejects invalid provenance types in restored JSON", () => {
-    const result = validateSnapshotStructure({
+  it("rejects malformed identity fingerprints in restored JSON", () => {
+    const errors = validateSnapshotStructure({
       eventLists: {
-        event: [{ ...records()[0], sheetIdentityVerified: "true" }],
+        event: [{ ...records()[0], sheetIdentityFingerprint: "invalid" }],
       },
     });
     expect(
-      result.some((message) => message.includes("sheetIdentityVerified")),
+      errors.some((message) => message.includes("sheetIdentityFingerprint")),
     ).toBe(true);
   });
 
   it.each(["missing", "unknown", "invalid-price", "invalid-notes"])(
-    "%s evidence or cells cannot establish identity",
+    "legacy %s evidence cannot establish identity",
     async (kind) => {
-      const book = await exportBook(
-        records().map((item, index) => ({
-          ...item,
-          catalogPrice: index === 0 ? 600 : 800,
-          sheetRemarks: "シート備考",
-          sheetIdentityVerified: true,
-        })),
-      );
+      const book = await exportBook();
+      setLegacyVersion(book, "3.0");
       const sheet = book.getWorksheet("アイテムデータ")!;
       for (const row of [2, 3]) {
+        sheet.getCell(row, 19).value = "verified";
         if (kind === "missing") sheet.getCell(row, 19).value = null;
         if (kind === "unknown") sheet.getCell(row, 19).value = "future";
         if (kind === "invalid-price")
@@ -313,10 +262,12 @@ describe("sheet identity provenance through production ZIP preflight and Worker 
           sheet.getCell(row, 18).value = { error: "#VALUE!" };
       }
       const result = await importBook(book);
-      expect(result.success).toBe(true);
-      expect(result.items.every((item) => !item.sheetIdentityVerified)).toBe(
-        true,
-      );
+      expect(result.success, result.errors.join("\n")).toBe(true);
+      expect(
+        result.items.every(
+          (item) => item.sheetIdentityFingerprint === undefined,
+        ),
+      ).toBe(true);
       expectAutomaticOrder(result.items, incoming());
     },
   );
@@ -404,13 +355,29 @@ describe("event metadata text through production ZIP preflight and Worker engine
 });
 
 describe("only actual sheet values establish identity provenance", () => {
-  it("keeps old JSON and legacy CSV values unverified before and after Excel export", async () => {
-    const oldJson = records().map((item) => ({
-      ...item,
-      catalogPrice: item.price,
-      sheetRemarks: "シート備考",
-    }));
-    expectAutomaticOrder(oldJson, incoming());
+  it("exports sheet imports appended as fixed app items without retaining sheet identity", async () => {
+    const added = buildBulkAddItems(
+      incoming().map(({ rawQuantity, ...item }) => ({
+        ...item,
+        quantity: Number(rawQuantity),
+      })),
+      { source: "app" },
+    );
+    for (const item of added) {
+      expect(item.source).toBe("app");
+      expect(item.protectionLevel).toBe("full");
+      expect(item).not.toHaveProperty("sheetIdentityFingerprint");
+    }
+    const result = await importBook(await exportBook(added));
+    expect(result.success, result.errors.join("\n")).toBe(true);
+    added.forEach((item, index) => {
+      expect(result.items[index]).toMatchObject(item);
+      expect(result.items[index]).not.toHaveProperty(
+        "sheetIdentityFingerprint",
+      );
+    });
+  });
+  it("keeps legacy CSV values unverified before and after Excel export", async () => {
     const csv = records()
       .map((item) =>
         [
@@ -437,14 +404,16 @@ describe("only actual sheet values establish identity provenance", () => {
       })),
       { source: "spreadsheet" },
     );
-    expect(added.every((item) => item.sheetIdentityVerified !== true)).toBe(
-      true,
+    expect(
+      added.every((item) => item.sheetIdentityFingerprint === undefined),
+    ).toBe(true);
+    expectAutomaticOrder(
+      (await importBook(await exportBook(added))).items,
+      incoming(),
     );
-    const result = await importBook(await exportBook(added));
-    expectAutomaticOrder(result.items, incoming());
   });
 
-  it("marks actual Google sheet values as verified when creating items", () => {
+  it("records Google sheet identity without retaining separate price or notes", () => {
     const rows = incoming().map((item) => {
       const cells = Array<string>(27).fill("");
       [
@@ -457,7 +426,7 @@ describe("only actual sheet values establish identity provenance", () => {
       ].forEach((value, index) => {
         cells[12 + index] = value;
       });
-      cells[22] = item.sheetRemarks!;
+      cells[22] = item.remarks;
       cells[26] = String(item.quantity);
       return cells.join(",");
     });
@@ -472,7 +441,9 @@ describe("only actual sheet values establish identity provenance", () => {
       })),
       { source: "spreadsheet" },
     );
-    expect(added.every((item) => item.sheetIdentityVerified)).toBe(true);
+    expect(added.map((item) => item.sheetIdentityFingerprint)).toEqual(
+      incoming().map((item) => item.sheetIdentityFingerprint),
+    );
     expect(
       createEventUpdateDiff(added, incoming().reverse()).unresolvedMatches,
     ).toEqual([]);

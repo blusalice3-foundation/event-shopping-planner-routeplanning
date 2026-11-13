@@ -22,11 +22,9 @@ const item: ShoppingItem = {
   number: "01a",
   title: "ユーザー登録",
   price: 700,
-  catalogPrice: 700,
   quantity: 5,
   purchaseStatus: "None",
   remarks: "エラーが発生しました",
-  sheetRemarks: "シート備考",
   url: "https://example.com/item",
   source: "spreadsheet",
 };
@@ -68,19 +66,19 @@ describe("Excelセル形式の横断整合性", () => {
     const r = await workbookCase(() => {});
     expect(r.items[0]).toMatchObject(item);
   });
-  it("数量とカタログ価格の数式キャッシュは保持する", async () => {
+  it("数量と価格の数式キャッシュは保持する", async () => {
     const r = await workbookCase((row) => {
       row.getCell(8).value = { formula: "2+3", result: 5 };
-      row.getCell(17).value = { formula: "350*2", result: 700 };
+      row.getCell(7).value = { formula: "350*2", result: 700 };
     });
-    expect(r.items[0]).toMatchObject({ quantity: 5, catalogPrice: 700 });
+    expect(r.items[0]).toMatchObject({ quantity: 5, price: 700 });
   });
   it("購入価格も同じ数式キャッシュを保持すべき", async () => {
     const r = await workbookCase((row) => {
       row.getCell(7).value = { formula: "350*2", result: 700 };
-      row.getCell(17).value = { formula: "350*2", result: 700 };
+      row.getCell(7).value = { formula: "350*2", result: 700 };
     });
-    expect(r.items[0].price).toBe(r.items[0].catalogPrice);
+    expect(r.items[0].price).toBe(700);
   });
   it("外部リンク付きセルは本番の事前検査で拒否されるため破損指摘から除外する", async () => {
     await expect(
@@ -97,14 +95,10 @@ describe("Excelセル形式の横断整合性", () => {
       row.getCell(10).value = {
         richText: [{ font: { bold: true }, text: item.remarks }],
       };
-      row.getCell(18).value = {
-        richText: [{ font: { bold: true }, text: item.sheetRemarks! }],
-      };
     });
     expect(r.items[0]).toMatchObject({
       title: item.title,
       remarks: item.remarks,
-      sheetRemarks: item.sheetRemarks,
     });
   });
 });

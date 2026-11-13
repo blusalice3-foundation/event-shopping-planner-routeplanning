@@ -1,3 +1,4 @@
+import { createSheetIdentityFingerprint } from "./sheetIdentity";
 import ExcelJS from "exceljs";
 import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -502,6 +503,12 @@ describe("db.saveMapDataChanges", () => {
     );
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(await readBlobAsArrayBuffer(blob));
+    // Build a genuine legacy 2.2 item sheet, including its two historical columns.
+    const legacyItems = workbook.getWorksheet("アイテムデータ")!;
+    legacyItems.getCell(1, 17).value = "カタログ価格";
+    legacyItems.getCell(1, 18).value = "シート備考";
+    legacyItems.getCell(2, 17).value = null;
+    legacyItems.getCell(2, 18).value = "";
     workbook.getWorksheet("メタデータ")!.eachRow((row) => {
       if (row.getCell(1).value === "version") row.getCell(2).value = "2.2";
       if (
@@ -582,11 +589,13 @@ describe("db.saveMapDataChanges", () => {
       number: "01a",
       title: "現行形式頒布物",
       price: 700,
-      catalogPrice: 900,
       purchaseStatus: "Purchased",
       quantity: 1,
       remarks: "利用者メモ",
-      sheetRemarks: "シート備考",
+      sheetIdentityFingerprint: createSheetIdentityFingerprint(
+        900,
+        "シート備考",
+      ),
       source: "spreadsheet",
     };
     const blob = await exportToXlsx(
@@ -619,9 +628,11 @@ describe("db.saveMapDataChanges", () => {
     expect(importResult.success).toBe(true);
     expect(imported.items[0]).toMatchObject({
       price: 700,
-      catalogPrice: 900,
       remarks: "利用者メモ",
-      sheetRemarks: "シート備考",
+      sheetIdentityFingerprint: createSheetIdentityFingerprint(
+        900,
+        "シート備考",
+      ),
     });
     expect(imported.mapData?.["1日目マップ"]).toEqual(dayMap);
 

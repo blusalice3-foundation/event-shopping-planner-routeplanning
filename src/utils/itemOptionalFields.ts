@@ -1,11 +1,10 @@
 import { ownValue, setOwnValue } from "./ownRecord";
 import { itemPositions } from "./itemIndex";
+import { createSheetIdentityFingerprint } from "./sheetIdentity";
 
 const OPTIONAL_ITEM_KEYS = [
-  "catalogPrice",
   "limitedPurchasedQuantity",
-  "sheetRemarks",
-  "sheetIdentityVerified",
+  "sheetIdentityFingerprint",
   "url",
   "priorityLevel",
   "protectionLevel",
@@ -22,9 +21,41 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 /** Normalize completed items, after applying edit intent. Invalid values stay visible to validation. */
 export function normalizeItemOptionalFields<T extends object>(item: T): T {
   let result = item;
+  const record = item as Record<string, unknown>;
+  const legacyKeys = ["catalogPrice", "sheetRemarks", "sheetIdentityVerified"];
+  if (
+    legacyKeys.some((key) => Object.prototype.hasOwnProperty.call(item, key))
+  ) {
+    result = { ...item };
+    const migrated = result as Record<string, unknown>;
+    // Keep on-site edits intact. Only verified historical sheet values may
+    // establish identity; unverified legacy values must never become evidence.
+    if (
+      migrated.sheetIdentityFingerprint === undefined &&
+      record.source === "spreadsheet" &&
+      record.sheetIdentityVerified === true &&
+      (record.catalogPrice === null ||
+        (typeof record.catalogPrice === "number" &&
+          Number.isFinite(record.catalogPrice))) &&
+      typeof record.sheetRemarks === "string"
+    ) {
+      migrated.sheetIdentityFingerprint = createSheetIdentityFingerprint(
+        record.catalogPrice as number | null,
+        record.sheetRemarks,
+      );
+    }
+    for (const key of legacyKeys) delete migrated[key];
+  }
+  if (
+    record.source === "app" &&
+    Object.prototype.hasOwnProperty.call(result, "sheetIdentityFingerprint")
+  ) {
+    if (result === item) result = { ...item };
+    delete (result as Record<string, unknown>).sheetIdentityFingerprint;
+  }
   for (const key of OPTIONAL_ITEM_KEYS) {
-    if (!Object.prototype.hasOwnProperty.call(item, key)) continue;
-    const value = (item as Record<string, unknown>)[key];
+    if (!Object.prototype.hasOwnProperty.call(result, key)) continue;
+    const value = (result as Record<string, unknown>)[key];
     if (
       value !== undefined &&
       !(key === "url" && typeof value === "string" && value.trim() === "")

@@ -538,9 +538,6 @@ const AppOverlayLayer: React.FC<AppOverlayLayerProps> = ({
           itemsToDelete={pendingEventUpdate.diff.itemsToDelete}
           itemsToUpdate={pendingEventUpdate.diff.itemsToUpdate}
           itemsToAdd={pendingEventUpdate.diff.itemsToAdd}
-          appFieldSyncCandidates={
-            pendingEventUpdate.diff.appFieldSyncCandidates
-          }
           protectedFromDelete={pendingEventUpdate.diff.protectedFromDelete}
           protectedFromUpdate={pendingEventUpdate.diff.protectedFromUpdate}
           quantityWarnings={pendingEventUpdate.diff.quantityWarnings}

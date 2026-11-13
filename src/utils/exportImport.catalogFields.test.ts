@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import { describe, expect, it } from "vitest";
 import type { ShoppingItem } from "../types/item";
+import { createSheetIdentityFingerprint } from "./sheetIdentity";
 import {
   exportToXlsx,
   importFromXlsx,
@@ -24,9 +25,13 @@ const legacyHeaders = [
   "手動ホール",
   "限数実購入数",
 ];
-
-const currentHeaders = [...legacyHeaders, "カタログ価格", "シート備考"];
-
+const oldHeaders = [
+  ...legacyHeaders,
+  "カタログ価格",
+  "シート備考",
+  "シート照合根拠",
+];
+const fingerprint = createSheetIdentityFingerprint(1200, "シートの原文");
 const item = (
   id: string,
   overrides: Partial<ShoppingItem> = {},
@@ -40,93 +45,81 @@ const item = (
   price: 900,
   quantity: 1,
   purchaseStatus: "None",
-  remarks: `アプリ備考-${id}`,
+  remarks: `現場備考-${id}`,
   ...overrides,
 });
-
-const rowValues = ({
-  id,
-  source = "spreadsheet",
-  price = 900,
-  remarks = `アプリ備考-${id}`,
-  status = "None",
-  quantity = 1,
-  limited = null,
-  catalogPrice = null,
-  sheetRemarks = "",
-}: {
-  id: string;
-  source?: string;
-  price?: ExcelJS.CellValue;
-  remarks?: ExcelJS.CellValue;
-  status?: string;
-  quantity?: ExcelJS.CellValue;
-  limited?: ExcelJS.CellValue;
-  catalogPrice?: ExcelJS.CellValue;
-  sheetRemarks?: ExcelJS.CellValue;
-}): ExcelJS.CellValue[] => [
+const rowValues = (id: string): ExcelJS.CellValue[] => [
   id,
   `サークル-${id}`,
   "1日目",
   "東A",
   "01a",
   `タイトル-${id}`,
-  price,
-  quantity,
-  status,
-  remarks,
+  900,
+  3,
+  "Purchased",
+  "現場のメモ",
   "",
   "",
+  "full",
+  "spreadsheet",
   "",
-  source,
   "",
-  limited,
-  catalogPrice,
-  sheetRemarks,
+  1200,
+  "シートの原文",
+  "verified",
 ];
-
-const workbookFile = async (
-  workbook: ExcelJS.Workbook,
-  name = "catalog-fields.xlsx",
-): Promise<File> => {
-  const buffer = await workbook.xlsx.writeBuffer();
-  return new File([buffer], name, {
+const workbookFile = async (workbook: ExcelJS.Workbook): Promise<File> =>
+  new File([await workbook.xlsx.writeBuffer()], "fields.xlsx", {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
+const exportBook = async (
+  items: ShoppingItem[],
+  format: "simple" | "full" = "full",
+) => {
+  const blob = await exportToXlsx(
+    "往復イベント",
+    items,
+    {
+      includeItems: true,
+      includeLayoutInfo: false,
+      includeMapData: false,
+      includeRouteInfo: false,
+      format,
+    },
+    {},
+  );
+  const book = new ExcelJS.Workbook();
+  await book.xlsx.load(await blob.arrayBuffer());
+  return book;
 };
-
-const importRows = async ({
-  headers,
-  rows,
-  version,
-}: {
-  headers: string[];
-  rows: ExcelJS.CellValue[][];
-  version?: string;
-}) => {
-  const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet("アイテムデータ");
+const importRows = async (
+  headers: string[],
+  rows: ExcelJS.CellValue[][],
+  version?: string,
+) => {
+  const book = new ExcelJS.Workbook();
+  const sheet = book.addWorksheet("アイテムデータ");
   sheet.addRow(headers);
   rows.forEach((row) => sheet.addRow(row.slice(0, headers.length)));
-
   if (version) {
-    const metaSheet = workbook.addWorksheet("メタデータ");
-    metaSheet.addRow(["キー", "値"]);
-    metaSheet.addRow(["version", version]);
-    metaSheet.addRow(["eventName", "取込イベント"]);
+    const meta = book.addWorksheet("メタデータ");
+    meta.addRow(["キー", "値"]);
+    meta.addRow(["version", version]);
+    meta.addRow(["eventName", "取込イベント"]);
   }
-
-  return importFromXlsx(await workbookFile(workbook));
+  return importFromXlsx(await workbookFile(book));
 };
+function expectRetiredFieldsRemoved(value: object) {
+  expect(value).not.toHaveProperty("catalogPrice");
+  expect(value).not.toHaveProperty("sheetRemarks");
+  expect(value).not.toHaveProperty("sheetIdentityVerified");
+}
 
-describe("event XLSX catalog fields", () => {
+describe("event XLSX unified price and remarks", () => {
   it("uses the transferred workbook buffer without rereading the File", async () => {
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("アイテムデータ");
-    sheet.addRow(currentHeaders);
-    sheet.addRow(rowValues({ id: "transferred" }));
-    const buffer = await workbook.xlsx.writeBuffer();
-    const bytes = new Uint8Array(buffer);
+    const book = await exportBook([item("transferred")]);
+    const bytes = new Uint8Array(await book.xlsx.writeBuffer());
     const input = bytes.buffer.slice(
       bytes.byteOffset,
       bytes.byteOffset + bytes.byteLength,
@@ -137,289 +130,233 @@ describe("event XLSX catalog fields", () => {
         throw new Error("The transferred workbook was read twice.");
       },
     } as unknown as File;
-
     const result = await importFromXlsx(file, input);
-
     expect(result.success).toBe(true);
     expect(result.items.map(({ id }) => id)).toEqual(["transferred"]);
   });
 
-  it("exports version 3.0 with the catalog columns retained", async () => {
-    const blob = await exportToXlsx(
-      "形式確認",
-      [item("format", { source: "spreadsheet" })],
-      {
-        includeItems: true,
-        includeLayoutInfo: false,
-        includeMapData: false,
-        includeRouteInfo: false,
-        format: "full",
-      },
-      {},
-    );
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(await blob.arrayBuffer());
-    const itemsSheet = workbook.getWorksheet("アイテムデータ");
-    const metaSheet = workbook.getWorksheet("メタデータ");
-
-    expect(itemsSheet?.getCell(1, 17).value).toBe("カタログ価格");
-    expect(itemsSheet?.getCell(1, 18).value).toBe("シート備考");
-    expect(metaSheet?.getCell(2, 1).value).toBe("version");
-    expect(metaSheet?.getCell(2, 2).value).toBe("3.0");
+  it("exports 3.1 with a hidden identity fingerprint and no retired columns", async () => {
+    const book = await exportBook([
+      item("format", {
+        source: "spreadsheet",
+        sheetIdentityFingerprint: fingerprint,
+      }),
+    ]);
+    const sheet = book.getWorksheet("アイテムデータ")!;
+    expect(sheet.columnCount).toBe(17);
+    expect(sheet.getCell(1, 17).value).toBe("シート照合識別子");
+    expect(sheet.getColumn(17).hidden).toBe(true);
+    expect(sheet.getCell(2, 17).value).toBe(fingerprint);
+    const headers = sheet.getRow(1).values;
+    expect(headers).not.toContain("カタログ価格");
+    expect(headers).not.toContain("シート備考");
+    expect(headers).not.toContain("シート照合根拠");
+    expect(book.getWorksheet("メタデータ")!.getCell(2, 2).value).toBe("3.1");
   });
 
   it.each(["simple", "full"] as const)(
-    "round-trips distinct sheet fields in the %s export",
+    "round-trips field values, locks and opaque identity in %s",
     async (format) => {
-      const items = [
-        item("distinct", {
+      const originals = [
+        item("locked", {
           source: "spreadsheet",
-          price: 900,
-          catalogPrice: 1200,
-          remarks: "利用者メモ",
-          sheetRemarks: "シートの原文",
+          purchaseStatus: "Purchased",
+          protectionLevel: "full",
+          price: 800,
+          remarks: "ユーザー登録\nエラーが発生しました",
+          sheetIdentityFingerprint: fingerprint,
         }),
         item("zero", {
           source: "spreadsheet",
-          price: 500,
-          catalogPrice: 0,
-          remarks: "現在の備考",
-          sheetRemarks: "",
+          price: 0,
+          remarks: "",
+          sheetIdentityFingerprint: createSheetIdentityFingerprint(0, ""),
         }),
         item("null", {
           source: "spreadsheet",
-          catalogPrice: null,
-          sheetRemarks: "",
+          price: null,
+          sheetIdentityFingerprint: createSheetIdentityFingerprint(null, ""),
         }),
-        item("spreadsheet-fallback", {
-          source: "spreadsheet",
-          catalogPrice: undefined,
-          sheetRemarks: undefined,
-        }),
-        item("app", {
-          source: "app",
-          catalogPrice: undefined,
-          sheetRemarks: undefined,
-        }),
-        item("unknown", {
-          source: undefined,
-          catalogPrice: undefined,
-          sheetRemarks: undefined,
-        }),
+        item("unverified", { source: "spreadsheet" }),
+        item("app", { source: "app" }),
       ];
-      const blob = await exportToXlsx(
-        "往復イベント",
-        items,
-        {
-          includeItems: true,
-          includeLayoutInfo: false,
-          includeMapData: false,
-          includeRouteInfo: false,
-          format,
-        },
-        {},
-      );
-      const file = new File([await blob.arrayBuffer()], `${format}.xlsx`);
-
-      const result = await importFromXlsx(file);
-
-      expect(result.success).toBe(true);
-      expect(result.items.find(({ id }) => id === "distinct")).toMatchObject({
-        price: 900,
-        catalogPrice: 1200,
-        remarks: "利用者メモ",
-        sheetRemarks: "シートの原文",
+      const book = await exportBook(originals, format);
+      const result = await importFromXlsx(await workbookFile(book));
+      expect(result.success, result.errors.join("\n")).toBe(true);
+      originals.forEach((expected, index) => {
+        expect(result.items[index]).toMatchObject(expected);
+        expect(result.items[index].sheetIdentityFingerprint).toBe(
+          expected.sheetIdentityFingerprint,
+        );
+        expectRetiredFieldsRemoved(result.items[index]);
       });
-      expect(result.items.find(({ id }) => id === "zero")).toMatchObject({
-        catalogPrice: 0,
-        sheetRemarks: "",
-      });
-      expect(result.items.find(({ id }) => id === "null")).toMatchObject({
-        catalogPrice: null,
-        sheetRemarks: "",
-      });
-      expect(
-        result.items.find(({ id }) => id === "spreadsheet-fallback"),
-      ).toMatchObject({
-        catalogPrice: 900,
-        sheetRemarks: "アプリ備考-spreadsheet-fallback",
-      });
-      for (const id of ["app", "unknown"]) {
-        const imported = result.items.find((candidate) => candidate.id === id);
-        expect(imported?.catalogPrice).toBeUndefined();
-        expect(imported?.sheetRemarks).toBeUndefined();
-      }
-      expect(result.legacySheetFieldFallbacks).toBeUndefined();
+      expect(result).not.toHaveProperty("legacySheetFieldFallbacks");
     },
   );
 
-  it("detects the two new columns by header name", async () => {
-    const result = await importRows({
-      headers: [...legacyHeaders, "シート備考", "カタログ価格"],
-      rows: [
-        rowValues({
-          id: "swapped",
-          catalogPrice: "シート原文",
-          sheetRemarks: 1234,
-        }),
-      ],
-    });
-
-    expect(result.success).toBe(true);
-    expect(result.items[0]).toMatchObject({
-      catalogPrice: 1234,
-      sheetRemarks: "シート原文",
-    });
-  });
-
-  it("does not use current values as fallback when new headers are present", async () => {
-    const result = await importRows({
-      headers: currentHeaders,
-      rows: [
-        rowValues({
-          id: "explicit-empty",
-          price: 1500,
-          remarks: "現在の備考",
-          catalogPrice: null,
-          sheetRemarks: null,
-        }),
-      ],
-    });
-
-    expect(result.success).toBe(true);
-    expect(result.items[0]).toMatchObject({
-      price: 1500,
-      catalogPrice: null,
-      remarks: "現在の備考",
-      sheetRemarks: "",
-    });
-    expect(result.legacySheetFieldFallbacks).toBeUndefined();
-  });
-
   it.each([15, 16])(
-    "migrates only spreadsheet rows from a legacy %s-column file",
-    async (columnCount) => {
-      const spreadsheetRow = rowValues({
-        id: `spreadsheet-${columnCount}`,
-        price: 700,
-        remarks: "旧シート備考",
-        status: columnCount === 16 ? "LimitedPurchase" : "None",
-        quantity: columnCount === 16 ? 3 : 1,
-        limited: columnCount === 16 ? 1 : null,
-      });
-      const result = await importRows({
-        headers: legacyHeaders.slice(0, columnCount),
-        rows: [
-          spreadsheetRow,
-          rowValues({ id: `app-${columnCount}`, source: "app" }),
-          rowValues({ id: `unknown-${columnCount}`, source: "" }),
-        ],
-      });
-
+    "keeps legacy %s-column field values without inventing identity",
+    async (count) => {
+      const result = await importRows(legacyHeaders.slice(0, count), [
+        rowValues("legacy"),
+      ]);
       expect(result.success).toBe(true);
       expect(result.items[0]).toMatchObject({
-        catalogPrice: 700,
-        sheetRemarks: "旧シート備考",
+        price: 900,
+        remarks: "現場のメモ",
+        purchaseStatus: "Purchased",
+        protectionLevel: "full",
       });
-      if (columnCount === 16) {
-        expect(result.items[0].limitedPurchasedQuantity).toBe(1);
-        expect(result.items[0].catalogPrice).toBe(700);
-      }
-      expect(result.items[1].catalogPrice).toBeUndefined();
-      expect(result.items[1].sheetRemarks).toBeUndefined();
-      expect(result.items[2].catalogPrice).toBeUndefined();
-      expect(result.items[2].sheetRemarks).toBeUndefined();
-      expect(result.legacySheetFieldFallbacks).toEqual([
-        {
-          itemId: `spreadsheet-${columnCount}`,
-          rowNumber: 2,
-        },
-      ]);
+      expect(result.items[0].sheetIdentityFingerprint).toBeUndefined();
+      expectRetiredFieldsRemoved(result.items[0]);
+      expect(result).not.toHaveProperty("legacySheetFieldFallbacks");
       expect(result.itemFallbackWarnings).toBeUndefined();
     },
   );
 
-  it("rejects a file that has only one of the new columns", async () => {
-    const result = await importRows({
-      headers: [...legacyHeaders, "カタログ価格"],
-      rows: [rowValues({ id: "broken" })],
-    });
-
-    expect(result.success).toBe(false);
-    expect(result.errors.join("\n")).toContain(
-      "「カタログ価格」と「シート備考」は両方の列が必要",
-    );
-  });
-
-  it("rejects a full 2.2 file when both new headers are missing", async () => {
-    const result = await importRows({
-      headers: legacyHeaders,
-      rows: [rowValues({ id: "broken-full" })],
-      version: "2.2",
-    });
-
-    expect(result.success).toBe(false);
-    expect(result.errors.join("\n")).toContain("バージョン2.2の完全版");
-  });
-
-  it("accepts a full 2.1 file as a legacy format", async () => {
-    const result = await importRows({
-      headers: legacyHeaders,
-      rows: [rowValues({ id: "legacy-full" })],
-      version: "2.1",
-    });
-
+  it("migrates verified legacy sheet columns into identity without replacing current fields", async () => {
+    const result = await importRows(oldHeaders, [rowValues("verified")], "2.2");
     expect(result.success).toBe(true);
     expect(result.items[0]).toMatchObject({
-      catalogPrice: 900,
-      sheetRemarks: "アプリ備考-legacy-full",
+      price: 900,
+      remarks: "現場のメモ",
+      protectionLevel: "full",
+      sheetIdentityFingerprint: fingerprint,
     });
+    expectRetiredFieldsRemoved(result.items[0]);
   });
 
-  it("validates catalog price cell types without losing zero", async () => {
-    const result = await importRows({
-      headers: currentHeaders,
-      rows: [
-        rowValues({ id: "zero", catalogPrice: 0 }),
-        rowValues({
-          id: "formula-result",
-          catalogPrice: { formula: "500+500", result: 1000 },
-        }),
-        rowValues({ id: "invalid", catalogPrice: "千円" }),
-        rowValues({
-          id: "formula-missing",
-          catalogPrice: { formula: "500+500" },
-        }),
-        rowValues({
-          id: "rich-text",
-          catalogPrice: { richText: [{ text: "1000" }] },
-        }),
-      ],
-    });
-
-    expect(result.success).toBe(true);
-    expect(result.items.find(({ id }) => id === "zero")?.catalogPrice).toBe(0);
-    expect(
-      result.items.find(({ id }) => id === "formula-result")?.catalogPrice,
-    ).toBe(1000);
-    for (const id of ["invalid", "formula-missing", "rich-text"]) {
-      expect(
-        result.items.find((candidate) => candidate.id === id)?.catalogPrice,
-      ).toBeNull();
-    }
-    expect(result.itemFallbackWarnings?.map(({ itemId }) => itemId)).toEqual([
-      "invalid",
-      "formula-missing",
-      "rich-text",
+  it("retains old 3.0 manifest compatibility", async () => {
+    const book = await exportBook([
+      item("old", { source: "spreadsheet", protectionLevel: "full" }),
     ]);
-    expect(
-      result.itemFallbackWarnings?.find(
-        ({ itemId }) => itemId === "formula-missing",
-      )?.reasons[0],
-    ).toContain("数式結果なし");
-    expect(
-      result.itemFallbackWarnings?.find(({ itemId }) => itemId === "rich-text")
-        ?.reasons[0],
-    ).toContain("非対応セル形式");
+    const sheet = book.getWorksheet("アイテムデータ")!;
+    sheet.spliceColumns(17, 1);
+    oldHeaders.slice(16).forEach((header, index) => {
+      sheet.getCell(1, 17 + index).value = header;
+    });
+    sheet.getCell(2, 17).value = 1200;
+    sheet.getCell(2, 18).value = "シートの原文";
+    sheet.getCell(2, 19).value = "verified";
+    book.getWorksheet("メタデータ")!.eachRow((row) => {
+      if (row.getCell(1).value === "version") row.getCell(2).value = "3.0";
+    });
+    const result = await importFromXlsx(await workbookFile(book));
+    expect(result.success, result.errors.join("\n")).toBe(true);
+    expect(result.items[0]).toMatchObject({
+      price: 900,
+      remarks: "現場備考-old",
+      protectionLevel: "full",
+      sheetIdentityFingerprint: fingerprint,
+    });
+    expectRetiredFieldsRemoved(result.items[0]);
+  });
+
+  it.each(["", "unverified", "future"])(
+    "does not trust legacy %j evidence",
+    async (evidence) => {
+      const row = rowValues("untrusted");
+      row[18] = evidence;
+      const result = await importRows(oldHeaders, [row]);
+      expect(result.success).toBe(true);
+      expect(result.items[0].sheetIdentityFingerprint).toBeUndefined();
+      expect(result.items[0]).toMatchObject({
+        price: 900,
+        remarks: "現場のメモ",
+      });
+    },
+  );
+
+  it.each([null, 0])(
+    "migrates verified empty and zero sheet prices (%j)",
+    async (price) => {
+      const row = rowValues("empty");
+      row[16] = price;
+      row[17] = null;
+      const result = await importRows(oldHeaders, [row]);
+      expect(result.items[0].sheetIdentityFingerprint).toBe(
+        createSheetIdentityFingerprint(price, ""),
+      );
+      expect(result.items[0].price).toBe(900);
+    },
+  );
+
+  it.each(["invalid-price", "invalid-notes", "app"])(
+    "discards invalid or non-sheet legacy identity (%s)",
+    async (kind) => {
+      const row = rowValues(kind);
+      if (kind === "invalid-price") row[16] = { formula: "1+1" };
+      if (kind === "invalid-notes") row[17] = { error: "#VALUE!" };
+      if (kind === "app") row[13] = "app";
+      const result = await importRows(oldHeaders, [row]);
+      expect(result.success).toBe(true);
+      expect(result.items[0].sheetIdentityFingerprint).toBeUndefined();
+      expect(result.items[0]).toMatchObject({
+        price: 900,
+        remarks: "現場のメモ",
+      });
+    },
+  );
+
+  it("detects verified legacy columns by header name", async () => {
+    const row = rowValues("swapped");
+    [row[16], row[17]] = [row[17], row[16]];
+    const result = await importRows(
+      [...legacyHeaders, "シート備考", "カタログ価格", "シート照合根拠"],
+      [row],
+    );
+    expect(result.items[0].sheetIdentityFingerprint).toBe(fingerprint);
+  });
+
+  it.each(["invalid", "sheet-v1:12:ABCDEF0123456789"])(
+    "does not retain malformed fingerprint %j",
+    async (value) => {
+      const book = await exportBook([item("bad", { source: "spreadsheet" })]);
+      book.getWorksheet("アイテムデータ")!.getCell(2, 17).value = value;
+      const result = await importFromXlsx(await workbookFile(book));
+      expect(result.success).toBe(true);
+      expect(result.items[0].sheetIdentityFingerprint).toBeUndefined();
+      expect(result.itemFallbackWarnings).toMatchObject([
+        {
+          itemId: "bad",
+          reasons: [expect.stringContaining("シート照合識別子")],
+        },
+      ]);
+    },
+  );
+
+  it("rejects a 3.1 workbook missing its identity column", async () => {
+    const book = await exportBook([item("missing")]);
+    book.getWorksheet("アイテムデータ")!.spliceColumns(17, 1);
+    const result = await importFromXlsx(await workbookFile(book));
+    expect(result.success).toBe(false);
+    expect(result.errors.join("\n")).toContain("シート照合識別子がありません");
+  });
+
+  it("rejects incomplete old sheet columns", async () => {
+    const result = await importRows(
+      [...legacyHeaders, "カタログ価格"],
+      [rowValues("broken")],
+    );
+    expect(result.success).toBe(false);
+    expect(result.errors.join("\n")).toContain("両方の列が必要");
+  });
+  it("rejects missing mandatory columns in old 2.2", async () => {
+    const result = await importRows(
+      legacyHeaders,
+      [rowValues("broken")],
+      "2.2",
+    );
+    expect(result.success).toBe(false);
+    expect(result.errors.join("\n")).toContain("バージョン2.2");
+  });
+  it("accepts legacy 2.1 without inventing fingerprint", async () => {
+    const result = await importRows(
+      legacyHeaders,
+      [rowValues("legacy")],
+      "2.1",
+    );
+    expect(result.success).toBe(true);
+    expect(result.items[0].sheetIdentityFingerprint).toBeUndefined();
   });
 });

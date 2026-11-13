@@ -1,3 +1,4 @@
+import { isSheetIdentityFingerprint } from "../../utils/sheetIdentity";
 import { validateEventConsistency } from "../../types/consistencyValidation";
 import { parseContentManifest } from "../domain/consistencyWorkbook";
 import type {
@@ -141,8 +142,9 @@ const isWorkbookItems = (value: unknown): boolean =>
   value.every(
     (item) =>
       isRecord(item) &&
-      (item.sheetIdentityVerified === undefined ||
-        typeof item.sheetIdentityVerified === "boolean"),
+      (item.sheetIdentityFingerprint === undefined ||
+        (item.source === "spreadsheet" &&
+          isSheetIdentityFingerprint(item.sheetIdentityFingerprint))),
   );
 
 const isStringArray = (value: unknown): value is string[] =>
@@ -211,7 +213,6 @@ const EVENT_RESULT_KEYS = [
   "blockDetectionSettings",
   "errors",
   "itemFallbackWarnings",
-  "legacySheetFieldFallbacks",
 ] as const;
 
 const isEventImportValue = (value: unknown): boolean =>
@@ -235,9 +236,7 @@ const isEventImportValue = (value: unknown): boolean =>
   isWorkbookItems(value.items) &&
   isStringArray(value.errors) &&
   (value.itemFallbackWarnings === undefined ||
-    isRecordArray(value.itemFallbackWarnings)) &&
-  (value.legacySheetFieldFallbacks === undefined ||
-    isRecordArray(value.legacySheetFieldFallbacks));
+    isRecordArray(value.itemFallbackWarnings));
 
 const isMapImportValue = (value: unknown): boolean =>
   isRecord(value) &&

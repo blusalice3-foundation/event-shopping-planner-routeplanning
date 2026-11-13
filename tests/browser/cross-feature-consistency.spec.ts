@@ -4,6 +4,7 @@ import {
   partitionDayRecordStore,
 } from "../../src/persistence/db/dayRecordStorage";
 import ExcelJS from "exceljs";
+import { createSheetIdentityFingerprint } from "../../src/utils/sheetIdentity";
 import type { PersistenceSnapshot } from "../../src/app/ports/PersistenceCommandPort";
 import { planEventRestore } from "../../src/features/consistency/domain/eventMutations";
 import { duplicateEventDays } from "../../src/features/consistency/domain/dayMerge";
@@ -1399,8 +1400,12 @@ test.describe("spreadsheet and save-conflict connections", () => {
         .toMatchObject({
           [eventName]: [
             expect.objectContaining({
-              catalogPrice: 800,
-              sheetRemarks: "更新後のシート備考",
+              price: 800,
+              remarks: "更新後のシート備考",
+              sheetIdentityFingerprint: createSheetIdentityFingerprint(
+                800,
+                "更新後のシート備考",
+              ),
             }),
           ],
         });
@@ -1414,8 +1419,12 @@ test.describe("spreadsheet and save-conflict connections", () => {
       expect(await stored(page, "eventLists")).toMatchObject({
         [eventName]: [
           expect.objectContaining({
-            catalogPrice: 800,
-            sheetRemarks: "更新後のシート備考",
+            price: 800,
+            remarks: "更新後のシート備考",
+            sheetIdentityFingerprint: createSheetIdentityFingerprint(
+              800,
+              "更新後のシート備考",
+            ),
           }),
         ],
       });
@@ -4576,13 +4585,16 @@ test.describe("editable item URLs are not sheet identity", () => {
       page,
     }) => {
       const urls = ["https://example.com/book-a", "https://example.com/book-b"];
+      const commonSheetRemarks = "共通のシート備考";
       const records = [2, 5].map((quantity, index) => ({
         ...item(String(index + 1)),
         circle: "同名サークル",
         number: "01a",
         title: "同名品目",
-        catalogPrice: 500,
-        sheetRemarks: "共通のシート備考",
+        sheetIdentityFingerprint: createSheetIdentityFingerprint(
+          500,
+          commonSheetRemarks,
+        ),
         quantity,
         remarks: `ID ${index + 1} の記録`,
         url: urls[index],
@@ -4610,7 +4622,7 @@ test.describe("editable item URLs are not sheet identity", () => {
         cells[15] = record.number;
         cells[16] = record.title;
         cells[17] = "500";
-        cells[22] = record.sheetRemarks;
+        cells[22] = commonSheetRemarks;
         cells[24] = record.url;
         cells[26] = String(record.quantity);
         return cells.join(",");
@@ -4738,7 +4750,9 @@ test.describe("editable item URLs are not sheet identity", () => {
       await expect
         .poll(() => stored(page, "eventLists"))
         .toMatchObject({
-          [eventName]: records.map((record) => expect.objectContaining(record)),
+          [eventName]: records.map((record) =>
+            expect.objectContaining({ ...record, remarks: commonSheetRemarks }),
+          ),
         });
       expect(await stored(page, "eventConsistency")).toEqual(beforeConsistency);
       expect(await stored(page, "executeModeItems")).toEqual(beforeExecution);
@@ -4766,7 +4780,7 @@ test.describe("Excel identity provenance and decorated metadata", () => {
   for (const format of ["current", "legacy"] as const) {
     test(
       format +
-        " Excel automatically matches inferred prices and preserves quantities and layout @n1-n13-xlsx @n13-layout",
+        " Excel preserves unverified item order and quantities while syncing prices and layout @n1-n13-xlsx @n13-layout",
       async ({ page }, testInfo) => {
         page.on("dialog", (dialog) => dialog.accept());
         const records = [2, 5].map((quantity, index) => ({
@@ -4833,8 +4847,24 @@ test.describe("Excel identity provenance and decorated metadata", () => {
             };
           }
         });
+        const exportedItems = book.getWorksheet("アイテムデータ")!;
+        let fingerprintColumn = 0;
+        exportedItems.getRow(1).eachCell((cell, column) => {
+          if (cell.value === "シート照合識別子") fingerprintColumn = column;
+        });
+        expect(fingerprintColumn).toBeGreaterThan(0);
+        expect(exportedItems.getCell(2, fingerprintColumn).value ?? "").toBe(
+          "",
+        );
         if (format === "legacy") {
-          book.getWorksheet("アイテムデータ")!.spliceColumns(19, 1);
+          exportedItems.spliceColumns(fingerprintColumn, 1);
+          // Reconstruct the historical 2.2 columns without claiming verified identity.
+          exportedItems.getCell(1, 17).value = "カタログ価格";
+          exportedItems.getCell(1, 18).value = "シート備考";
+          records.forEach((record, index) => {
+            exportedItems.getCell(index + 2, 17).value = record.price;
+            exportedItems.getCell(index + 2, 18).value = record.remarks;
+          });
           book.removeWorksheet("関連設定");
           for (let row = meta.rowCount; row >= 2; row--) {
             const key = String(meta.getCell(row, 1).value);
@@ -4848,11 +4878,8 @@ test.describe("Excel identity provenance and decorated metadata", () => {
             )
               meta.spliceRows(row, 1);
           }
-        } else {
-          expect(
-            book.getWorksheet("アイテムデータ")!.getCell(2, 19).value,
-          ).toBe("unverified");
         }
+
         await page
           .locator('input[aria-label="Excelファイルを選択"]')
           .setInputFiles({
@@ -4964,12 +4991,25 @@ test.describe("Excel identity provenance and decorated metadata", () => {
         await expect(confirm).toBeHidden();
         await expect
           .poll(() => stored(page, "eventLists"))
-          .toMatchObject({ [eventName]: records });
+          .toMatchObject({
+            [eventName]: records.map((record, index) => {
+              const price = index === 0 ? 600 : 800;
+              return {
+                ...record,
+                price,
+                sheetIdentityFingerprint: createSheetIdentityFingerprint(
+                  price,
+                  "シート備考",
+                ),
+              };
+            }),
+          });
         const saved = await stored(page, "eventLists");
-        for (const record of (
-          saved as Record<string, Array<{ sheetIdentityVerified?: boolean }>>
-        )[eventName])
-          expect(record.sheetIdentityVerified).toBe(true);
+        for (const record of saved[eventName]) {
+          expect(record).not.toHaveProperty("catalogPrice");
+          expect(record).not.toHaveProperty("sheetRemarks");
+          expect(record).not.toHaveProperty("sheetIdentityVerified");
+        }
         expect(await stored(page, "executeModeItems")).toEqual(
           originalExecution,
         );

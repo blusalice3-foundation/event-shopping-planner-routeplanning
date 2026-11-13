@@ -77,7 +77,6 @@ describe("completed item optional fields", () => {
     const incoming = {
       ...sheetItem(),
       url: undefined,
-      sheetIdentityVerified: undefined,
       title: "改訂版",
     };
     const diff = createEventUpdateDiff([original], [incoming], {
@@ -95,8 +94,8 @@ describe("completed item optional fields", () => {
       expect(item).toMatchObject({
         id: original.id,
         purchaseStatus: "Purchased",
-        price: 700,
-        remarks: "利用者メモ",
+        price: incoming.price,
+        remarks: incoming.remarks,
         quantity: 2,
       });
     }

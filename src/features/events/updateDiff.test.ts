@@ -11,15 +11,12 @@ const currentItem = (overrides: Partial<ShoppingItem> = {}): ShoppingItem => ({
   block: "東A",
   number: "01a",
   title: "新刊",
-  price: 900,
-  catalogPrice: 1000,
+  price: 1000,
   purchaseStatus: "None",
   quantity: 2,
-  remarks: "利用者メモ",
-  sheetRemarks: "旧シート備考",
+  remarks: "旧シート備考",
   url: "https://old.example",
   source: "spreadsheet",
-  sheetIdentityVerified: true,
   protectionLevel: "none",
   assignedTo: "担当者",
   orderIndex: 7,
@@ -27,7 +24,6 @@ const currentItem = (overrides: Partial<ShoppingItem> = {}): ShoppingItem => ({
 });
 
 const sheetItem = (overrides: Partial<SheetItem> = {}): SheetItem => ({
-  sheetIdentityVerified: true,
   circle: "サークルA",
   eventDate: "1日目",
   block: "東A",
@@ -41,7 +37,7 @@ const sheetItem = (overrides: Partial<SheetItem> = {}): SheetItem => ({
 });
 
 describe("createEventUpdateDiff quantity and field allowlist", () => {
-  it("通常品目は数量・カタログ価格・シート備考・URLだけを同期する", () => {
+  it("保護なしの品目は数量・価格・備考・URLを同期し、購入記録を維持する", () => {
     const before = currentItem({
       limitedPurchasedQuantity: 1,
       lastSyncedAt: "2026-01-01",
@@ -51,11 +47,9 @@ describe("createEventUpdateDiff quantity and field allowlist", () => {
     expect(diff.itemsToUpdate).toHaveLength(1);
     expect(diff.itemsToUpdate[0]).toMatchObject({
       quantity: 3,
-      catalogPrice: 1200,
-      sheetRemarks: "新シート備考",
       url: "https://new.example",
-      price: 900,
-      remarks: "利用者メモ",
+      price: 1200,
+      remarks: "新シート備考",
       purchaseStatus: "None",
       limitedPurchasedQuantity: 1,
       assignedTo: "担当者",
@@ -64,24 +58,6 @@ describe("createEventUpdateDiff quantity and field allowlist", () => {
     });
     expect(diff.quantityWarnings).toEqual([]);
     expect(diff.pendingPurchasedQuantityChanges).toEqual([]);
-    expect(diff.appFieldSyncCandidates).toEqual([
-      expect.objectContaining({
-        itemId: before.id,
-        purchaseStatus: "None",
-        price: {
-          currentValue: 900,
-          previousSheetValue: 1000,
-          sheetValue: 1200,
-          canFillEmpty: false,
-        },
-        remarks: {
-          currentValue: "利用者メモ",
-          previousSheetValue: "旧シート備考",
-          sheetValue: "新シート備考",
-          canFillEmpty: false,
-        },
-      }),
-    ]);
   });
 
   it("既存品目の空欄と旧データの数量21超をそのまま維持する", () => {
@@ -100,71 +76,29 @@ describe("createEventUpdateDiff quantity and field allowlist", () => {
 
     expect(diff.itemsToUpdate).toEqual([]);
     expect(diff.quantityWarnings).toEqual([]);
-    expect(diff.appFieldSyncCandidates).toEqual([
-      expect.objectContaining({
-        itemId: before.id,
-        price: {
-          currentValue: 900,
-          previousSheetValue: 1000,
-          sheetValue: 1000,
-          canFillEmpty: false,
-        },
-      }),
-    ]);
     expect(before.quantity).toBe(25);
   });
 
-  it("旧シート値と利用者欄が空欄なら、今回のシート値を補完可能な候補にする", () => {
-    const before = currentItem({
-      price: null,
-      catalogPrice: undefined,
-      remarks: " \t",
-      sheetRemarks: undefined,
-      quantity: 3,
-    });
-    const diff = createEventUpdateDiff(
-      [before],
-      [sheetItem({ price: 0, remarks: " 新しい備考 ", quantity: 3 })],
-    );
+  it.each(["deletable", "full"] as const)(
+    "%sで保護された品目は価格・備考・内部識別情報を更新しない",
+    (protectionLevel) => {
+      const before = currentItem({ protectionLevel });
+      const diff = createEventUpdateDiff([before], [sheetItem()]);
+      expect(diff.itemsToUpdate).toEqual([]);
+      expect(diff.protectedFromUpdate).toBe(1);
+      expect(applyEventUpdateToItems([before], diff)).toEqual([before]);
+    },
+  );
 
-    expect(diff.appFieldSyncCandidates).toEqual([
-      expect.objectContaining({
-        itemId: before.id,
-        price: {
-          currentValue: null,
-          previousSheetValue: null,
-          sheetValue: 0,
-          canFillEmpty: true,
-        },
-        remarks: {
-          currentValue: " \t",
-          previousSheetValue: " \t",
-          sheetValue: " 新しい備考 ",
-          canFillEmpty: true,
-        },
-      }),
-    ]);
+  it("アプリ由来でも明示的に保護なしにした品目はシート値で更新する", () => {
+    const before = currentItem({ source: "app", protectionLevel: "none" });
+    const incoming = sheetItem();
+    const diff = createEventUpdateDiff([before], [incoming]);
+    expect(applyEventUpdateToItems([before], diff)[0]).toMatchObject({
+      price: incoming.price,
+      remarks: incoming.remarks,
+    });
   });
-
-  it("アプリ由来品目と更新保護品目は利用者欄の同期候補にしない", () => {
-    const appItem = currentItem({
-      id: "app-item",
-      source: "app",
-      protectionLevel: "none",
-    });
-    const protectedItem = currentItem({
-      id: "protected-item",
-      number: "02a",
-      protectionLevel: "deletable",
-    });
-    const diff = createEventUpdateDiff(
-      [appItem, protectedItem],
-      [sheetItem(), sheetItem({ number: "02a" })],
-    );
-
-    expect(diff.appFieldSyncCandidates).toEqual([]);
-  });
-
   it("既存品目の不正数量を警告し、数量は変更しない", () => {
     const before = currentItem();
     const diff = createEventUpdateDiff(
@@ -202,9 +136,7 @@ describe("createEventUpdateDiff quantity and field allowlist", () => {
         number: "01a",
         quantity: 1,
         price: 1200,
-        catalogPrice: 1200,
         remarks: "新シート備考",
-        sheetRemarks: "新シート備考",
       }),
     ]);
     expect(diff.quantityWarnings).toEqual([
@@ -413,7 +345,11 @@ describe("additional rows alone are deduplicated after matching", () => {
         limitedPurchasedQuantity: 1,
       }),
     ];
-    const row = sheetItem({ rawQuantity: "" });
+    const row = sheetItem({
+      rawQuantity: "",
+      price: before[0].price,
+      remarks: before[0].remarks,
+    });
     const diff = createEventUpdateDiff(before, [row, { ...row }]);
     expect(diff.itemsToAdd).toEqual([]);
     expect(diff.itemsToDelete).toEqual([]);

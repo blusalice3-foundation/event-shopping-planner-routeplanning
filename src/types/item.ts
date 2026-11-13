@@ -28,14 +28,12 @@ export interface ShoppingItem {
   number: string;
   title: string;
   price: number | null;
-  catalogPrice?: number | null;
   purchaseStatus: PurchaseStatus;
   quantity: number;
   limitedPurchasedQuantity?: number;
   remarks: string;
-  sheetRemarks?: string;
-  /** True only for values read from a sheet or an explicitly confirmed update. */
-  sheetIdentityVerified?: boolean;
+  /** Opaque provenance from a sheet; never derived from editable field values. */
+  sheetIdentityFingerprint?: string;
   url?: string;
   priorityLevel?: "none" | "priority" | "highest";
   protectionLevel?: ProtectionLevel;

@@ -58,24 +58,13 @@ export function buildBulkAddItems(
     normalizeItemOptionalFields<ShoppingItem>({
       id: crypto.randomUUID(),
       ...itemData,
-      ...(itemSource === "spreadsheet"
-        ? {
-            catalogPrice:
-              itemData.catalogPrice === undefined
-                ? itemData.price
-                : itemData.catalogPrice,
-            sheetRemarks: itemData.sheetRemarks ?? itemData.remarks,
-            sheetIdentityVerified:
-              itemData.sheetIdentityVerified === true &&
-              itemData.catalogPrice !== undefined &&
-              itemData.sheetRemarks !== undefined
-                ? true
-                : undefined,
-          }
-        : {}),
       quantity: itemData.quantity ?? 1,
       purchaseStatus: "None",
       source: itemSource,
+      sheetIdentityFingerprint:
+        itemSource === "spreadsheet"
+          ? itemData.sheetIdentityFingerprint
+          : undefined,
       protectionLevel: defaultProtectionLevel,
     }),
   );

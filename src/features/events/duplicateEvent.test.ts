@@ -1,3 +1,4 @@
+import { createSheetIdentityFingerprint } from "../../utils/sheetIdentity";
 import { describe, expect, it } from "vitest";
 import type { EventMetadata, ShoppingItem } from "../../types/item";
 import {
@@ -192,13 +193,20 @@ describe("exact duplicate filtering and resolutions", () => {
     expect(result.duplicateItemCount).toBe(2);
   });
 
-  it("利用者が購入金額やメモを変えても同期元が同じなら完全一致として除外する", () => {
-    const incoming = item({ price: 1000, remarks: "シート備考" });
+  it("利用者が価格や備考を変えても内部識別情報が同じなら完全一致として除外する", () => {
+    const sheetIdentityFingerprint = createSheetIdentityFingerprint(
+      1000,
+      "シート備考",
+    );
+    const incoming = item({
+      price: 1000,
+      remarks: "シート備考",
+      sheetIdentityFingerprint,
+    });
     const existing = storedItem({
       price: 700,
-      catalogPrice: 1000,
       remarks: "利用者が追記したメモ",
-      sheetRemarks: "シート備考",
+      sheetIdentityFingerprint,
     });
 
     const result = excludeExactDuplicateItems([incoming], [existing]);
